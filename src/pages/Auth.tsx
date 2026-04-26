@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -111,6 +112,30 @@ export default function Auth() {
                 {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
               </Button>
             </form>
+
+            <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+                if (result.error) {
+                  toast({ title: "Google sign-in failed", description: result.error.message, variant: "destructive" });
+                  setBusy(false);
+                }
+              }}
+              className="h-12 w-full rounded-xl text-base font-semibold"
+            >
+              <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" aria-hidden>
+                <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.24 1.4-1.7 4.1-5.5 4.1-3.3 0-6-2.7-6-6.2s2.7-6.2 6-6.2c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.7 3.3 14.6 2.4 12 2.4 6.7 2.4 2.4 6.7 2.4 12s4.3 9.6 9.6 9.6c5.5 0 9.2-3.9 9.2-9.4 0-.6-.06-1.1-.16-1.6H12z"/>
+              </svg>
+              Continue with Google
+            </Button>
 
             <button
               type="button"
