@@ -15,6 +15,8 @@ import Profile from "./pages/Profile";
 import Chats, { ChatRoom } from "./pages/Chats";
 import Wishlist from "./pages/Wishlist";
 import BookTickets from "./pages/BookTickets";
+import DestinationDetail from "./pages/DestinationDetail";
+import DestinationsSearch from "./pages/DestinationsSearch";
 import { About, CommunityGuidelines, PrivacyPolicy, Support, Terms } from "./pages/Legal";
 
 const queryClient = new QueryClient();
