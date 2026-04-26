@@ -93,19 +93,11 @@ export default function Home() {
   return (
     <div>
       {/* Burgundy hero band with centered wordmark */}
-      <section className="relative bg-primary px-4 pb-8 pt-10 md:pb-14 md:pt-16">
+      <section className="relative bg-primary px-4 pb-10 pt-6 md:pb-14 md:pt-10">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="text-xs font-medium uppercase tracking-[0.25em] text-primary-foreground/60">
-            {user ? `Hi ${profileName?.split(" ")[0] ?? "there"} 👋` : "Welcome"}
-          </p>
-          <h1
-            className="font-handwritten mt-4 text-6xl font-normal leading-none tracking-tight text-primary-foreground md:text-8xl"
-          >
+          <h1 className="font-handwritten text-5xl font-normal leading-none tracking-tight text-primary-foreground md:text-7xl">
             helola
           </h1>
-          <p className="mt-3 text-sm text-primary-foreground/70 md:text-base">
-            Real trips. Real friends. Find your next group adventure.
-          </p>
         </div>
       </section>
 
