@@ -1,96 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* HELOLA Trips design system
+   Brand: deep maroon #65081F on warm white.
+   Friendly, safe, youthful, emotional.
+   All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 30 30% 99%;
+    --foreground: 348 84% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 348 84% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 348 84% 12%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Brand maroon #65081F */
+    --primary: 348 84% 21%;
+    --primary-foreground: 30 30% 99%;
+    --primary-glow: 348 70% 35%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 30 40% 96%;
+    --secondary-foreground: 348 84% 21%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 30 20% 95%;
+    --muted-foreground: 348 15% 38%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 18 90% 60%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --rose: 348 60% 92%;
+    --rose-foreground: 348 84% 21%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --destructive: 0 75% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    --success: 152 50% 40%;
+    --success-foreground: 0 0% 100%;
 
-    --sidebar-background: 0 0% 98%;
+    --border: 348 30% 90%;
+    --input: 348 30% 92%;
+    --ring: 348 84% 21%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --radius: 1rem;
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(348 84% 21%) 0%, hsl(348 70% 35%) 100%);
+    --gradient-warm: linear-gradient(135deg, hsl(348 84% 21%) 0%, hsl(18 90% 55%) 100%);
+    --gradient-soft: linear-gradient(180deg, hsl(348 60% 97%) 0%, hsl(30 40% 99%) 100%);
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    /* Shadows */
+    --shadow-soft: 0 2px 12px -4px hsl(348 84% 21% / 0.08);
+    --shadow-elegant: 0 12px 40px -16px hsl(348 84% 21% / 0.25);
+    --shadow-glow: 0 0 40px hsl(348 70% 35% / 0.15);
 
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar (kept for shadcn compatibility) */
+    --sidebar-background: 30 30% 99%;
+    --sidebar-foreground: 348 84% 12%;
+    --sidebar-primary: 348 84% 21%;
+    --sidebar-primary-foreground: 30 30% 99%;
+    --sidebar-accent: 30 40% 96%;
+    --sidebar-accent-foreground: 348 84% 21%;
+    --sidebar-border: 348 30% 90%;
+    --sidebar-ring: 348 84% 21%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --background: 348 30% 8%;
+    --foreground: 30 30% 96%;
+    --card: 348 30% 11%;
+    --card-foreground: 30 30% 96%;
+    --popover: 348 30% 11%;
+    --popover-foreground: 30 30% 96%;
+    --primary: 348 70% 55%;
+    --primary-foreground: 348 30% 8%;
+    --primary-glow: 348 80% 65%;
+    --secondary: 348 20% 16%;
+    --secondary-foreground: 30 30% 96%;
+    --muted: 348 20% 16%;
+    --muted-foreground: 30 15% 65%;
+    --accent: 18 80% 55%;
+    --accent-foreground: 0 0% 100%;
+    --rose: 348 30% 18%;
+    --rose-foreground: 30 30% 96%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 50% 45%;
+    --success-foreground: 0 0% 100%;
+    --border: 348 20% 20%;
+    --input: 348 20% 20%;
+    --ring: 348 70% 55%;
+    --sidebar-background: 348 30% 8%;
+    --sidebar-foreground: 30 30% 96%;
+    --sidebar-primary: 348 70% 55%;
+    --sidebar-primary-foreground: 348 30% 8%;
+    --sidebar-accent: 348 20% 16%;
+    --sidebar-accent-foreground: 30 30% 96%;
+    --sidebar-border: 348 20% 20%;
+    --sidebar-ring: 348 70% 55%;
   }
 }
 
@@ -99,7 +112,47 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'ss01', 'cv11';
   }
+
+  h1, h2, h3, h4, h5 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-feature-settings: 'ss01';
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Fraunces', Georgia, serif;
+  }
+  .bg-gradient-primary {
+    background-image: var(--gradient-primary);
+  }
+  .bg-gradient-warm {
+    background-image: var(--gradient-warm);
+  }
+  .bg-gradient-soft {
+    background-image: var(--gradient-soft);
+  }
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  .shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  /* Hide scrollbars on horizontal carousels */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
 }
