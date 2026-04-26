@@ -134,6 +134,9 @@
   .font-display {
     font-family: 'Fraunces', Georgia, serif;
   }
+  .font-handwritten {
+    font-family: 'Homemade Apple', 'Snell Roundhand', cursive;
+  }
   .bg-gradient-primary {
     background-image: var(--gradient-primary);
   }
