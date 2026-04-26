@@ -171,7 +171,7 @@ export default function TripDetails() {
                 <Link key={m.user_id} to={`/u/${m.user_id}`} className="group flex flex-col items-center gap-1.5">
                   <div className="relative">
                     <Avatar2D config={m.avatar_config} size={56} />
-                    {m.is_verified && <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-[10px] text-white ring-2 ring-background">✓</span>}
+                    {m.is_verified && <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] text-accent-foreground ring-2 ring-background">✓</span>}
                   </div>
                   <span className="max-w-[64px] truncate text-xs text-foreground/70 group-hover:text-foreground">{m.full_name?.split(" ")[0] ?? "Friend"}</span>
                 </Link>
