@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, MapPin, Calendar, Users, IndianRupee, Sparkles, TrendingUp, Plane } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DestinationsExplorer } from "@/components/DestinationsExplorer";
 
 interface Trip {
   id: string;
