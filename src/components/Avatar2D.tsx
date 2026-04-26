@@ -108,6 +108,55 @@ export function Avatar2D({ config, size = 96, className = "", rounded = true, sh
   );
 }
 
+/* ---------------- Outfit ---------------- */
+function Outfit({ outfit, color, dark }: { outfit: AvatarConfig["outfit"]; color: string; dark: string }) {
+  switch (outfit) {
+    case "tee":
+      return <path d="M30 200 L30 175 Q30 155 70 148 Q85 165 100 165 Q115 165 130 148 Q170 155 170 175 L170 200 Z" fill={color} />;
+    case "hoodie":
+      return (
+        <g>
+          <path d="M25 200 L25 170 Q25 150 65 142 Q85 162 100 162 Q115 162 135 142 Q175 150 175 170 L175 200 Z" fill={color} />
+          <path d="M70 148 Q85 168 100 168 Q115 168 130 148 Q120 175 100 175 Q80 175 70 148 Z" fill={dark} />
+          <line x1="100" y1="168" x2="100" y2="200" stroke={dark} strokeWidth="2" />
+        </g>
+      );
+    case "sweater":
+      return (
+        <g>
+          <path d="M30 200 L30 172 Q30 154 70 148 Q85 165 100 165 Q115 165 130 148 Q170 154 170 172 L170 200 Z" fill={color} />
+          <g stroke={dark} strokeWidth="1.5" opacity="0.6">
+            <line x1="40" y1="180" x2="160" y2="180" />
+            <line x1="40" y1="190" x2="160" y2="190" />
+          </g>
+        </g>
+      );
+    case "tank":
+      return (
+        <g>
+          <path d="M40 200 L40 178 Q60 162 78 152 L80 148 L120 148 L122 152 Q140 162 160 178 L160 200 Z" fill={color} />
+        </g>
+      );
+    case "blazer":
+      return (
+        <g>
+          <path d="M30 200 L30 172 Q30 152 70 146 L100 162 L130 146 Q170 152 170 172 L170 200 Z" fill={color} />
+          <path d="M70 146 L100 200 L130 146 Z" fill={dark} opacity="0.4" />
+          <line x1="100" y1="162" x2="100" y2="200" stroke={dark} strokeWidth="2" />
+        </g>
+      );
+    case "kurta":
+      return (
+        <g>
+          <path d="M30 200 L30 172 Q30 152 65 146 Q85 165 100 165 Q115 165 135 146 Q170 152 170 172 L170 200 Z" fill={color} />
+          <path d="M85 148 L100 200 L115 148" stroke={dark} strokeWidth="2.5" fill="none" />
+          <circle cx="100" cy="172" r="2" fill={dark} />
+          <circle cx="100" cy="184" r="2" fill={dark} />
+        </g>
+      );
+  }
+}
+
 /* ---------------- Face shapes ---------------- */
 function FaceShape({ shape, skin }: { shape: AvatarConfig["face"]; skin: string }) {
   switch (shape) {
