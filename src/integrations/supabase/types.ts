@@ -14,16 +14,231 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          sender_id: string
+          trip_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          sender_id: string
+          trip_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          age: number | null
+          avatar_config: Json | null
+          bio: string | null
+          created_at: string
+          full_name: string | null
+          gender: string | null
+          hobbies: string[] | null
+          id: string
+          is_verified: boolean
+          location: string | null
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          age?: number | null
+          avatar_config?: Json | null
+          bio?: string | null
+          created_at?: string
+          full_name?: string | null
+          gender?: string | null
+          hobbies?: string[] | null
+          id: string
+          is_verified?: boolean
+          location?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          age?: number | null
+          avatar_config?: Json | null
+          bio?: string | null
+          created_at?: string
+          full_name?: string | null
+          gender?: string | null
+          hobbies?: string[] | null
+          id?: string
+          is_verified?: boolean
+          location?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      trip_members: {
+        Row: {
+          id: string
+          joined_at: string
+          trip_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          trip_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          trip_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_members_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trips: {
+        Row: {
+          coordinator_contact: string | null
+          coordinator_name: string | null
+          cost_food: number | null
+          cost_other: number | null
+          cost_stay: number | null
+          cost_travel: number | null
+          cover_image_url: string | null
+          created_at: string
+          creator_id: string
+          description: string | null
+          destination: string
+          end_date: string
+          id: string
+          important_notes: Json | null
+          interests: string[] | null
+          itinerary: Json | null
+          max_members: number
+          price_per_person: number
+          start_date: string
+          status: Database["public"]["Enums"]["trip_status"]
+          stay_details: Json | null
+          travel_details: Json | null
+          updated_at: string
+        }
+        Insert: {
+          coordinator_contact?: string | null
+          coordinator_name?: string | null
+          cost_food?: number | null
+          cost_other?: number | null
+          cost_stay?: number | null
+          cost_travel?: number | null
+          cover_image_url?: string | null
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          destination: string
+          end_date: string
+          id?: string
+          important_notes?: Json | null
+          interests?: string[] | null
+          itinerary?: Json | null
+          max_members?: number
+          price_per_person?: number
+          start_date: string
+          status?: Database["public"]["Enums"]["trip_status"]
+          stay_details?: Json | null
+          travel_details?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          coordinator_contact?: string | null
+          coordinator_name?: string | null
+          cost_food?: number | null
+          cost_other?: number | null
+          cost_stay?: number | null
+          cost_travel?: number | null
+          cover_image_url?: string | null
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          destination?: string
+          end_date?: string
+          id?: string
+          important_notes?: Json | null
+          interests?: string[] | null
+          itinerary?: Json | null
+          max_members?: number
+          price_per_person?: number
+          start_date?: string
+          status?: Database["public"]["Enums"]["trip_status"]
+          stay_details?: Json | null
+          travel_details?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      wishlists: {
+        Row: {
+          created_at: string
+          id: string
+          trip_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          trip_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          trip_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wishlists_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_trip_member: {
+        Args: { _trip_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      trip_status: "upcoming" | "ongoing" | "completed" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +365,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      trip_status: ["upcoming", "ongoing", "completed", "cancelled"],
+    },
   },
 } as const
