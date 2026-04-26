@@ -79,7 +79,7 @@ export default function AvatarEditor() {
   const save = async () => {
     if (!user) return;
     setBusy(true);
-    const { error } = await supabase.from("profiles").update({ avatar_config: config }).eq("id", user.id);
+    const { error } = await supabase.from("profiles").update({ avatar_config: config as unknown as Record<string, string> }).eq("id", user.id);
     setBusy(false);
     if (error) { toast({ title: "Save failed", description: error.message, variant: "destructive" }); return; }
     setOriginal(config);
