@@ -91,87 +91,106 @@ export default function Home() {
   }, [trips, search, activeInterest, maxBudget]);
 
   return (
-    <div className="px-4 pt-6 md:px-8 md:pt-10">
-      {/* Greeting */}
-      <div className="mb-6 flex items-start justify-between gap-3 md:mb-10">
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">
-            {user ? `Hi ${profileName?.split(" ")[0] ?? "there"} 👋` : "Welcome to HELOLA"}
+    <div>
+      {/* Burgundy hero band with centered wordmark */}
+      <section className="relative bg-primary px-4 pb-8 pt-10 md:pb-14 md:pt-16">
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-xs font-medium uppercase tracking-[0.25em] text-primary-foreground/60">
+            {user ? `Hi ${profileName?.split(" ")[0] ?? "there"} 👋` : "Welcome"}
           </p>
-          <h1 className="mt-1 font-display text-3xl font-bold leading-tight text-foreground md:text-5xl">
-            Where to next?
+          <h1
+            className="mt-3 text-5xl font-semibold tracking-tight text-primary-foreground md:text-7xl"
+            style={{ fontFamily: '-apple-system, "SF Pro Display", "SF Pro", BlinkMacSystemFont, "Helvetica Neue", sans-serif', letterSpacing: '-0.04em' }}
+          >
+            helola<span className="text-accent">.</span>
           </h1>
+          <p className="mt-3 text-sm text-primary-foreground/70 md:text-base">
+            Real trips. Real friends. Find your next group adventure.
+          </p>
         </div>
-        <Button
-          onClick={() => navigate(user ? "/trips/new" : "/auth")}
-          className="hidden rounded-full px-5 shadow-soft md:inline-flex"
-        >
-          <Plus className="mr-1 h-4 w-4" /> Create trip
-        </Button>
+      </section>
+
+      <div className="px-4 md:px-8">
+        {/* Search bar (overlapping the band) */}
+        <div className="relative -mt-6 md:-mt-8">
+          <div className="mx-auto max-w-3xl">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="search-input"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Explore places, cities etc"
+                className="h-14 rounded-full border-border bg-card pl-12 pr-5 text-base shadow-elegant"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Create trip CTA */}
+        <div className="mx-auto mt-4 max-w-3xl">
+          <Button
+            onClick={() => navigate(user ? "/trips/new" : "/auth")}
+            className="h-14 w-full rounded-full text-base font-semibold shadow-soft"
+          >
+            <Plus className="mr-1.5 h-5 w-5" /> Create a group for trips
+          </Button>
+        </div>
+
+        {/* Filters */}
+        <div className="mx-auto mt-5 max-w-5xl space-y-3">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            {["All", ...INTERESTS].map(i => (
+              <button
+                key={i}
+                onClick={() => setActiveInterest(i)}
+                className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                  activeInterest === i ? "bg-primary text-primary-foreground shadow-soft" : "bg-card text-foreground/70 hover:bg-muted"
+                }`}
+              >
+                {i}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-soft">
+            <IndianRupee className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Up to ₹{maxBudget.toLocaleString("en-IN")}</span>
+            <input type="range" min={2000} max={100000} step={1000} value={maxBudget} onChange={(e) => setMaxBudget(Number(e.target.value))}
+              className="ml-auto flex-1 max-w-[60%] accent-primary" />
+          </div>
+        </div>
+
+        {/* Book travel tickets card */}
+        <div className="mx-auto mt-6 max-w-5xl">
+          <BookTicketsCard />
+        </div>
+
+        {/* Trips list — wide rectangular boxes */}
+        <div className="mx-auto mt-8 max-w-5xl">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-display text-2xl font-semibold text-foreground">
+              Explore trips
+            </h2>
+            <span className="text-xs text-muted-foreground">
+              <TrendingUp className="mr-1 inline h-3 w-3" />{filtered.length} active
+            </span>
+          </div>
+
+          {loading ? (
+            <div className="space-y-4">
+              {[1,2,3].map(i => <Skeleton key={i} className="h-44 rounded-3xl" />)}
+            </div>
+          ) : filtered.length === 0 ? (
+            <EmptyState onCreate={() => navigate(user ? "/trips/new" : "/auth")} />
+          ) : (
+            <div className="space-y-4">
+              {filtered.map(t => (
+                <TripCard key={t.id} trip={t} memberCount={members[t.id] || 0} creator={creators[t.creator_id]} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-
-      {/* Search + filters */}
-      <div className="mb-5 space-y-3">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            id="search-input"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search Goa, Bali, Jaipur..."
-            className="h-12 rounded-2xl border-border bg-card pl-11 text-base shadow-soft"
-          />
-        </div>
-        <div className="flex gap-2 overflow-x-auto no-scrollbar">
-          {["All", ...INTERESTS].map(i => (
-            <button
-              key={i}
-              onClick={() => setActiveInterest(i)}
-              className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                activeInterest === i ? "bg-primary text-primary-foreground shadow-soft" : "bg-card text-foreground/70 hover:bg-muted"
-              }`}
-            >
-              {i}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-soft">
-          <IndianRupee className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Up to ₹{maxBudget.toLocaleString("en-IN")}</span>
-          <input type="range" min={2000} max={100000} step={1000} value={maxBudget} onChange={(e) => setMaxBudget(Number(e.target.value))}
-            className="ml-auto flex-1 max-w-[60%] accent-primary" />
-        </div>
-      </div>
-
-      {/* Mobile create trip CTA */}
-      <Button onClick={() => navigate(user ? "/trips/new" : "/auth")} className="mb-6 h-12 w-full rounded-2xl text-base font-semibold shadow-soft md:hidden">
-        <Plus className="mr-1 h-4 w-4" /> Create a trip
-      </Button>
-
-      {/* Book travel tickets card */}
-      <BookTicketsCard />
-
-      {/* Trips list */}
-      <div className="mb-3 mt-8 flex items-center justify-between">
-        <h2 className="font-display text-2xl font-semibold text-foreground">
-          {filtered.length} trip{filtered.length === 1 ? "" : "s"}
-        </h2>
-        <span className="text-xs text-muted-foreground"><TrendingUp className="mr-1 inline h-3 w-3" />Most loved first</span>
-      </div>
-
-      {loading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[1,2,3].map(i => <Skeleton key={i} className="h-64 rounded-2xl" />)}
-        </div>
-      ) : filtered.length === 0 ? (
-        <EmptyState onCreate={() => navigate(user ? "/trips/new" : "/auth")} />
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filtered.map(t => (
-            <TripCard key={t.id} trip={t} memberCount={members[t.id] || 0} creator={creators[t.creator_id]} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
