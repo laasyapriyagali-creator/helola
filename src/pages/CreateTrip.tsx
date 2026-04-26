@@ -77,6 +77,9 @@ export default function CreateTrip() {
         cost_food: Number(food || 0),
         cost_other: Number(other || 0),
         interests: chosenInterests,
+        cover_image_url: coverImage,
+        itinerary: itinerary ? [{ summary: itinerary }] : [],
+        important_notes: safetyRules ? { safety_and_rules: safetyRules } : {},
       }).select("id").single();
       if (error) throw error;
 
