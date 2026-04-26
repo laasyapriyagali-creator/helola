@@ -50,6 +50,7 @@ export type Database = {
         Row: {
           age: number | null
           avatar_config: Json | null
+          avatar_url: string | null
           bio: string | null
           created_at: string
           full_name: string | null
@@ -64,6 +65,7 @@ export type Database = {
         Insert: {
           age?: number | null
           avatar_config?: Json | null
+          avatar_url?: string | null
           bio?: string | null
           created_at?: string
           full_name?: string | null
@@ -78,6 +80,7 @@ export type Database = {
         Update: {
           age?: number | null
           avatar_config?: Json | null
+          avatar_url?: string | null
           bio?: string | null
           created_at?: string
           full_name?: string | null

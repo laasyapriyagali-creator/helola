@@ -12,7 +12,6 @@ import CreateTrip from "./pages/CreateTrip";
 import TripDetails from "./pages/TripDetails";
 import MyTrips from "./pages/MyTrips";
 import Profile from "./pages/Profile";
-import AvatarEditor from "./pages/AvatarEditor";
 import Chats, { ChatRoom } from "./pages/Chats";
 import Wishlist from "./pages/Wishlist";
 import BookTickets from "./pages/BookTickets";
@@ -29,7 +28,6 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/avatar" element={<AvatarEditor />} />
             <Route path="/chats/:tripId" element={<AppShell><ChatRoom /></AppShell>} />
             <Route path="/" element={<AppShell><Index /></AppShell>} />
             <Route path="/trips" element={<AppShell><MyTrips /></AppShell>} />

@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Avatar2D } from "@/components/Avatar2D";
+import { UserAvatar } from "@/components/UserAvatar";
+import { AvatarUploader } from "@/components/AvatarUploader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,8 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Edit2, MapPin, Settings, LogOut, Sparkles, Heart, Bell, Lock, FileText, HelpCircle } from "lucide-react";
-import type { AvatarConfig } from "@/lib/avatar";
+import { Edit2, MapPin, Settings, LogOut, Heart, Bell, Lock, FileText } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -23,7 +23,7 @@ interface Profile {
   gender: string | null;
   location: string | null;
   hobbies: string[] | null;
-  avatar_config: Partial<AvatarConfig> | null;
+  avatar_url: string | null;
   is_verified: boolean;
 }
 
@@ -85,16 +85,23 @@ export default function Profile() {
         <div className="h-24 bg-primary md:h-32" />
         <CardContent className="relative p-5 md:p-7">
           <div className="-mt-16 flex flex-col gap-3 md:-mt-20 md:flex-row md:items-end md:justify-between">
-            <div className="w-fit rounded-3xl bg-card p-2 shadow-soft">
-              <Avatar2D config={profile.avatar_config} size={108} />
+            <div>
+              {isOwn ? (
+                <AvatarUploader
+                  userId={user!.id}
+                  currentUrl={profile.avatar_url}
+                  fullName={profile.full_name}
+                  onChange={(url) => setProfile({ ...profile, avatar_url: url })}
+                  size={108}
+                />
+              ) : (
+                <UserAvatar url={profile.avatar_url} name={profile.full_name} size={108} />
+              )}
             </div>
             {isOwn && (
               <div className="flex flex-wrap gap-2">
-                <Button asChild variant="outline" size="sm" className="rounded-full">
-                  <Link to="/avatar"><Sparkles className="mr-1 h-3.5 w-3.5" />Edit avatar</Link>
-                </Button>
                 <Button onClick={() => setEditing(!editing)} size="sm" className="rounded-full">
-                  <Edit2 className="mr-1 h-3.5 w-3.5" />{editing ? "Cancel" : "Edit"}
+                  <Edit2 className="mr-1 h-3.5 w-3.5" />{editing ? "Cancel" : "Edit profile"}
                 </Button>
               </div>
             )}
