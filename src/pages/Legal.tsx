@@ -47,6 +47,18 @@ export function PrivacyPolicy() {
       <p>We use cookies to improve your experience.</p>
       <h2>7. Updates</h2>
       <p>You'll be notified of major changes to this policy.</p>
+
+      <h2>8. Aadhaar verification & legal framework (India)</h2>
+      <p>For users in India, identity verification on HELOLA may involve Aadhaar-based checks. Misuse, fraud, or forgery related to Aadhaar is governed primarily by the <strong>Aadhaar Act, 2016 (Sections 38–40)</strong> and supported by relevant provisions of the <strong>Indian Penal Code (IPC)</strong>. Users found engaging in such conduct will be reported to the appropriate authorities.</p>
+
+      <h3>Key IPC and legal provisions for Aadhaar misuse</h3>
+      <ul>
+        <li><strong>Forgery & fraud</strong> — Creating fake Aadhaar cards or altering data is punishable under <strong>IPC 464</strong> (making a false document) and <strong>IPC 467 / 468</strong> (forgery of valuable security / forgery for the purpose of cheating).</li>
+        <li><strong>Unauthorised use or possession</strong> — Using a forged document as genuine falls under <strong>IPC Section 471</strong>.</li>
+        <li><strong>Impersonation</strong> — Pretending to be someone else using their Aadhaar details is covered under <strong>IPC Section 419</strong>.</li>
+        <li><strong>Aadhaar Act offences</strong> — Unauthorised access to the Central Identities Data Repository (CIDR), or capturing biometrics without authority, can attract <strong>3–10 years imprisonment</strong> and fines under the <strong>Aadhaar Act, 2016</strong>.</li>
+      </ul>
+      <p className="text-xs text-muted-foreground">This section is provided for general awareness. It does not constitute legal advice. For official guidance, refer to UIDAI (uidai.gov.in) and consult a qualified legal professional.</p>
     </LegalPage>
   );
 }

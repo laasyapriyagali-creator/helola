@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocked_users: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -46,6 +67,33 @@ export type Database = {
           },
         ]
       }
+      notification_prefs: {
+        Row: {
+          group_chat: boolean
+          new_trip_alerts: boolean
+          offers_promotions: boolean
+          trip_updates: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          group_chat?: boolean
+          new_trip_alerts?: boolean
+          offers_promotions?: boolean
+          trip_updates?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          group_chat?: boolean
+          new_trip_alerts?: boolean
+          offers_promotions?: boolean
+          trip_updates?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           age: number | null
@@ -59,6 +107,8 @@ export type Database = {
           id: string
           is_verified: boolean
           location: string | null
+          message_permission: string
+          profile_visibility: string
           updated_at: string
           username: string | null
         }
@@ -74,6 +124,8 @@ export type Database = {
           id: string
           is_verified?: boolean
           location?: string | null
+          message_permission?: string
+          profile_visibility?: string
           updated_at?: string
           username?: string | null
         }
@@ -89,8 +141,40 @@ export type Database = {
           id?: string
           is_verified?: boolean
           location?: string | null
+          message_permission?: string
+          profile_visibility?: string
           updated_at?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      travel_prefs: {
+        Row: {
+          budget_max: number | null
+          budget_min: number | null
+          location_access: boolean
+          preferred_destinations: string[]
+          travel_interests: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget_max?: number | null
+          budget_min?: number | null
+          location_access?: boolean
+          preferred_destinations?: string[]
+          travel_interests?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget_max?: number | null
+          budget_min?: number | null
+          location_access?: boolean
+          preferred_destinations?: string[]
+          travel_interests?: string[]
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -198,6 +282,36 @@ export type Database = {
           stay_details?: Json | null
           travel_details?: Json | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          reason: string
+          reported_id: string
+          reporter_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason: string
+          reported_id: string
+          reporter_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason?: string
+          reported_id?: string
+          reporter_id?: string
+          status?: string
         }
         Relationships: []
       }
