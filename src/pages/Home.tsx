@@ -99,10 +99,9 @@ export default function Home() {
             {user ? `Hi ${profileName?.split(" ")[0] ?? "there"} 👋` : "Welcome"}
           </p>
           <h1
-            className="mt-3 text-5xl font-semibold tracking-tight text-primary-foreground md:text-7xl"
-            style={{ fontFamily: '-apple-system, "SF Pro Display", "SF Pro", BlinkMacSystemFont, "Helvetica Neue", sans-serif', letterSpacing: '-0.04em' }}
+            className="font-handwritten mt-4 text-6xl font-normal leading-none tracking-tight text-primary-foreground md:text-8xl"
           >
-            helola<span className="text-accent">.</span>
+            helola
           </h1>
           <p className="mt-3 text-sm text-primary-foreground/70 md:text-base">
             Real trips. Real friends. Find your next group adventure.

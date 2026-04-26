@@ -82,14 +82,14 @@ export default function Profile() {
     <div className="px-4 pt-4 md:px-8 md:pt-8">
       {/* Hero */}
       <Card className="overflow-hidden border-border/60 shadow-elegant">
-        <div className="h-24 bg-gradient-warm md:h-32" />
+        <div className="h-24 bg-primary md:h-32" />
         <CardContent className="relative p-5 md:p-7">
-          <div className="-mt-16 flex items-end justify-between md:-mt-20">
-            <div className="rounded-3xl bg-card p-2 shadow-soft">
+          <div className="-mt-16 flex flex-col gap-3 md:-mt-20 md:flex-row md:items-end md:justify-between">
+            <div className="w-fit rounded-3xl bg-card p-2 shadow-soft">
               <Avatar2D config={profile.avatar_config} size={108} />
             </div>
             {isOwn && (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button asChild variant="outline" size="sm" className="rounded-full">
                   <Link to="/avatar"><Sparkles className="mr-1 h-3.5 w-3.5" />Edit avatar</Link>
                 </Button>
