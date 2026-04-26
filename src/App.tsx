@@ -15,6 +15,8 @@ import Profile from "./pages/Profile";
 import Chats, { ChatRoom } from "./pages/Chats";
 import Wishlist from "./pages/Wishlist";
 import BookTickets from "./pages/BookTickets";
+import DestinationDetail from "./pages/DestinationDetail";
+import DestinationsSearch from "./pages/DestinationsSearch";
 import { About, CommunityGuidelines, PrivacyPolicy, Support, Terms } from "./pages/Legal";
 
 const queryClient = new QueryClient();
@@ -38,6 +40,8 @@ const App = () => (
             <Route path="/profile" element={<AppShell><Profile /></AppShell>} />
             <Route path="/u/:userId" element={<AppShell><Profile /></AppShell>} />
             <Route path="/book-tickets" element={<AppShell><BookTickets /></AppShell>} />
+            <Route path="/destinations/search" element={<AppShell><DestinationsSearch /></AppShell>} />
+            <Route path="/destinations/:query" element={<AppShell><DestinationDetail /></AppShell>} />
             <Route path="/about" element={<AppShell><About /></AppShell>} />
             <Route path="/legal/privacy" element={<AppShell><PrivacyPolicy /></AppShell>} />
             <Route path="/legal/terms" element={<AppShell><Terms /></AppShell>} />

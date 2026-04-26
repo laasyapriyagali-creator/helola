@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, MapPin, Calendar, Users, IndianRupee, Sparkles, TrendingUp, Plane } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DestinationsExplorer } from "@/components/DestinationsExplorer";
 
 interface Trip {
   id: string;
@@ -154,6 +155,9 @@ export default function Home() {
         <div className="mx-auto mt-6 max-w-5xl">
           <BookTicketsCard />
         </div>
+
+        {/* Real-world destinations (live data, real photos) */}
+        <DestinationsExplorer />
 
         {/* Trips list — wide rectangular boxes */}
         <div className="mx-auto mt-8 max-w-5xl">

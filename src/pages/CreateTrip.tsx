@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -8,16 +8,21 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Users } from "lucide-react";
+import { ArrowLeft, Users, ImageOff } from "lucide-react";
+import { PlaceSearchInput } from "@/components/PlaceSearchInput";
+import { getPlaceSummary } from "@/lib/places";
 
 const INTERESTS = ["Beach", "Mountains", "Adventure", "Culture", "Food", "Nightlife", "Wellness", "Wildlife", "Road Trip"];
 
 export default function CreateTrip() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const [busy, setBusy] = useState(false);
 
   const [destination, setDestination] = useState("");
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [placeBlurb, setPlaceBlurb] = useState<string>("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -28,9 +33,27 @@ export default function CreateTrip() {
   const [food, setFood] = useState<number | "">("");
   const [other, setOther] = useState<number | "">("");
   const [chosenInterests, setChosenInterests] = useState<string[]>([]);
+  const [itinerary, setItinerary] = useState("");
+  const [safetyRules, setSafetyRules] = useState("");
 
   useEffect(() => { document.title = "Create a trip · HELOLA"; }, []);
   useEffect(() => { if (!loading && !user) navigate("/auth"); }, [user, loading, navigate]);
+
+  async function loadPlaceMeta(name: string) {
+    const sum = await getPlaceSummary(name);
+    if (sum?.image) setCoverImage(sum.image);
+    if (sum?.extract) setPlaceBlurb(sum.extract);
+  }
+
+  // Prefill destination from query string (e.g. /trips/new?destination=Goa)
+  useEffect(() => {
+    const d = params.get("destination");
+    if (d && !destination) {
+      setDestination(d);
+      loadPlaceMeta(d);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
 
   const total = Number(stay || 0) + Number(travel || 0) + Number(food || 0) + Number(other || 0);
 
@@ -54,6 +77,9 @@ export default function CreateTrip() {
         cost_food: Number(food || 0),
         cost_other: Number(other || 0),
         interests: chosenInterests,
+        cover_image_url: coverImage,
+        itinerary: itinerary ? [{ summary: itinerary }] : [],
+        important_notes: safetyRules ? { safety_and_rules: safetyRules } : {},
       }).select("id").single();
       if (error) throw error;
 
@@ -81,7 +107,23 @@ export default function CreateTrip() {
         <Card className="border-border/60 shadow-soft"><CardContent className="space-y-4 p-5">
           <div className="space-y-2">
             <Label>Destination *</Label>
-            <Input required value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Goa, Bali, Manali..." />
+            <PlaceSearchInput
+              required
+              value={destination}
+              onChange={setDestination}
+              onSelect={(p) => { setDestination(p.name); loadPlaceMeta(p.name); }}
+              placeholder="Search any place — Goa, Bali, Hampi, Kyoto…"
+            />
+            {(coverImage || placeBlurb) && (
+              <div className="mt-2 overflow-hidden rounded-xl border border-border bg-card">
+                {coverImage ? (
+                  <img src={coverImage} alt={`${destination} real photograph`} className="h-32 w-full object-cover md:h-40" />
+                ) : (
+                  <div className="flex h-32 w-full items-center justify-center bg-muted text-muted-foreground"><ImageOff className="h-5 w-5" /></div>
+                )}
+                {placeBlurb && <p className="line-clamp-2 p-3 text-xs text-muted-foreground">{placeBlurb}</p>}
+              </div>
+            )}
           </div>
           <div className="space-y-2">
             <Label>What's the vibe?</Label>
@@ -102,8 +144,21 @@ export default function CreateTrip() {
               <span>Max members</span>
               <span className="flex items-center gap-1 text-primary"><Users className="h-4 w-4" /> {maxMembers}</span>
             </Label>
-            <input type="range" min={2} max={20} value={maxMembers} onChange={(e) => setMaxMembers(Number(e.target.value))} className="w-full accent-primary" />
-            <div className="flex justify-between text-xs text-muted-foreground"><span>2</span><span>20</span></div>
+            <input type="range" min={4} max={20} value={maxMembers} onChange={(e) => setMaxMembers(Number(e.target.value))} className="w-full accent-primary" />
+            <div className="flex justify-between text-xs text-muted-foreground"><span>4</span><span>20</span></div>
+          </div>
+        </CardContent></Card>
+
+        <Card className="border-border/60 shadow-soft"><CardContent className="space-y-4 p-5">
+          <div className="space-y-2">
+            <Label>Day-wise itinerary (short)</Label>
+            <Textarea value={itinerary} onChange={(e) => setItinerary(e.target.value)} rows={4}
+              placeholder={"Day 1 – Arrival & beach\nDay 2 – Old town walk\nDay 3 – Sunset cruise"} />
+          </div>
+          <div className="space-y-2">
+            <Label>Safety & group rules</Label>
+            <Textarea value={safetyRules} onChange={(e) => setSafetyRules(e.target.value)} rows={3}
+              placeholder="No solo wandering after dark, share live location, respect local customs…" />
           </div>
         </CardContent></Card>
 
