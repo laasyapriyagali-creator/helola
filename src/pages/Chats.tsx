@@ -2,13 +2,12 @@ import { useEffect, useState, useRef } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Avatar2D } from "@/components/Avatar2D";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Send, Lock, MessageCircle, Users } from "lucide-react";
-import type { AvatarConfig } from "@/lib/avatar";
 
 interface ChatThread { trip_id: string; destination: string; start_date: string; max_members: number; member_count: number; }
 
@@ -88,7 +87,7 @@ export function ChatRoom() {
   const navigate = useNavigate();
   const [tripName, setTripName] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
-  const [profiles, setProfiles] = useState<Record<string, { full_name: string | null; avatar_config: Partial<AvatarConfig> | null }>>({});
+  const [profiles, setProfiles] = useState<Record<string, { full_name: string | null; avatar_url: string | null }>>({});
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -107,9 +106,9 @@ export function ChatRoom() {
 
       const senderIds = Array.from(new Set((msgs ?? []).map(m => m.sender_id)));
       if (senderIds.length) {
-        const { data: ps } = await supabase.from("profiles").select("id,full_name,avatar_config").in("id", senderIds);
-        const map: Record<string, { full_name: string | null; avatar_config: Partial<AvatarConfig> | null }> = {};
-        (ps ?? []).forEach(p => { map[p.id] = { full_name: p.full_name, avatar_config: (p.avatar_config as Partial<AvatarConfig>) || null }; });
+        const { data: ps } = await supabase.from("profiles").select("id,full_name,avatar_url").in("id", senderIds);
+        const map: Record<string, { full_name: string | null; avatar_url: string | null }> = {};
+        (ps ?? []).forEach(p => { map[p.id] = { full_name: p.full_name, avatar_url: p.avatar_url ?? null }; });
         setProfiles(map);
       }
     })();
@@ -121,8 +120,8 @@ export function ChatRoom() {
           const msg = payload.new as Message;
           setMessages(prev => [...prev, msg]);
           if (!profiles[msg.sender_id]) {
-            const { data } = await supabase.from("profiles").select("id,full_name,avatar_config").eq("id", msg.sender_id).maybeSingle();
-            if (data) setProfiles(p => ({ ...p, [data.id]: { full_name: data.full_name, avatar_config: (data.avatar_config as Partial<AvatarConfig>) || null } }));
+            const { data } = await supabase.from("profiles").select("id,full_name,avatar_url").eq("id", msg.sender_id).maybeSingle();
+            if (data) setProfiles(p => ({ ...p, [data.id]: { full_name: data.full_name, avatar_url: data.avatar_url ?? null } }));
           }
         })
       .subscribe();
@@ -172,7 +171,7 @@ export function ChatRoom() {
               const prof = profiles[m.sender_id];
               return (
                 <div key={m.id} className={`flex items-end gap-2 ${me ? "flex-row-reverse" : ""}`}>
-                  <Avatar2D config={prof?.avatar_config} size={32} />
+                  <UserAvatar url={prof?.avatar_url} name={prof?.full_name} size={32} />
                   <div className={`max-w-[75%] rounded-2xl px-3.5 py-2 text-sm ${me ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md bg-card shadow-soft"}`}>
                     {!me && <p className="mb-0.5 text-[11px] font-semibold opacity-70">{prof?.full_name ?? "Friend"}</p>}
                     <p className="whitespace-pre-wrap break-words">{m.content}</p>

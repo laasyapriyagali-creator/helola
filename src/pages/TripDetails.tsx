@@ -2,14 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Avatar2D } from "@/components/Avatar2D";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Calendar, MapPin, Users, MessageCircle, Heart, Share2, Phone, Plane, Hotel, Cloud, ListChecks, ShieldAlert, Download, X, IndianRupee } from "lucide-react";
-import type { AvatarConfig } from "@/lib/avatar";
 
 interface Trip {
   id: string;
@@ -31,7 +30,7 @@ interface Trip {
   creator_id: string;
 }
 
-interface Member { user_id: string; full_name: string | null; avatar_config: Partial<AvatarConfig> | null; is_verified: boolean; }
+interface Member { user_id: string; full_name: string | null; avatar_url: string | null; is_verified: boolean; }
 
 const DEFAULT_ITINERARY = [
   { day: "Day 1", plan: "Arrival + welcome dinner" },
@@ -61,11 +60,11 @@ export default function TripDetails() {
       const { data: tm } = await supabase.from("trip_members").select("user_id").eq("trip_id", id);
       const memberIds = (tm ?? []).map(m => m.user_id);
       if (memberIds.length) {
-        const { data: ps } = await supabase.from("profiles").select("id,full_name,avatar_config,is_verified").in("id", memberIds);
+        const { data: ps } = await supabase.from("profiles").select("id,full_name,avatar_url,is_verified").in("id", memberIds);
         setMembers((ps ?? []).map(p => ({
           user_id: p.id,
           full_name: p.full_name,
-          avatar_config: (p.avatar_config as Partial<AvatarConfig>) || null,
+          avatar_url: p.avatar_url ?? null,
           is_verified: p.is_verified,
         })));
         if (user) setIsMember(memberIds.includes(user.id));
@@ -89,7 +88,7 @@ export default function TripDetails() {
     if (error) { toast({ title: "Couldn't join", description: error.message, variant: "destructive" }); return; }
     toast({ title: "You're in! 🎉", description: "Group chat unlocked." });
     setIsMember(true);
-    setMembers([...members, { user_id: user.id, full_name: "You", avatar_config: null, is_verified: false }]);
+    setMembers([...members, { user_id: user.id, full_name: "You", avatar_url: null, is_verified: false }]);
   };
 
   const leave = async () => {
@@ -170,7 +169,7 @@ export default function TripDetails() {
               {members.map(m => (
                 <Link key={m.user_id} to={`/u/${m.user_id}`} className="group flex flex-col items-center gap-1.5">
                   <div className="relative">
-                    <Avatar2D config={m.avatar_config} size={56} />
+                    <UserAvatar url={m.avatar_url} name={m.full_name} size={56} />
                     {m.is_verified && <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] text-accent-foreground ring-2 ring-background">✓</span>}
                   </div>
                   <span className="max-w-[64px] truncate text-xs text-foreground/70 group-hover:text-foreground">{m.full_name?.split(" ")[0] ?? "Friend"}</span>

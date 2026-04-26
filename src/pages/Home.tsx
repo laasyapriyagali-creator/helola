@@ -2,14 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Avatar2D } from "@/components/Avatar2D";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, MapPin, Calendar, Users, IndianRupee, Sparkles, TrendingUp, Plane } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { AvatarConfig } from "@/lib/avatar";
 
 interface Trip {
   id: string;
@@ -34,7 +33,7 @@ export default function Home() {
   const [maxBudget, setMaxBudget] = useState<number>(50000);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [members, setMembers] = useState<Record<string, number>>({});
-  const [creators, setCreators] = useState<Record<string, { full_name: string | null; avatar_config: Partial<AvatarConfig> | null }>>({});
+  const [creators, setCreators] = useState<Record<string, { full_name: string | null; avatar_url: string | null }>>({});
   const [loading, setLoading] = useState(true);
   const [profileName, setProfileName] = useState<string | null>(null);
 
@@ -72,9 +71,9 @@ export default function Home() {
 
         // Creator profiles
         const creatorIds = Array.from(new Set(list.map(t => t.creator_id)));
-        const { data: ps } = await supabase.from("profiles").select("id,full_name,avatar_config").in("id", creatorIds);
-        const map: Record<string, { full_name: string | null; avatar_config: Partial<AvatarConfig> | null }> = {};
-        (ps ?? []).forEach(p => { map[p.id] = { full_name: p.full_name, avatar_config: (p.avatar_config as Partial<AvatarConfig>) || null }; });
+        const { data: ps } = await supabase.from("profiles").select("id,full_name,avatar_url").in("id", creatorIds);
+        const map: Record<string, { full_name: string | null; avatar_url: string | null }> = {};
+        (ps ?? []).forEach(p => { map[p.id] = { full_name: p.full_name, avatar_url: p.avatar_url ?? null }; });
         setCreators(map);
       }
       setLoading(false);
@@ -189,7 +188,7 @@ export default function Home() {
 function TripCard({ trip, memberCount, creator }: {
   trip: Trip;
   memberCount: number;
-  creator?: { full_name: string | null; avatar_config: Partial<AvatarConfig> | null };
+  creator?: { full_name: string | null; avatar_url: string | null };
 }) {
   const start = new Date(trip.start_date);
   const end = new Date(trip.end_date);
@@ -228,7 +227,7 @@ function TripCard({ trip, memberCount, creator }: {
             <Users className="h-3.5 w-3.5 text-primary" /> {memberCount}/{trip.max_members}
           </div>
           <div className="hidden items-center gap-1.5 sm:flex">
-            <Avatar2D config={creator?.avatar_config} size={24} />
+            <UserAvatar url={creator?.avatar_url} name={creator?.full_name} size={24} />
             <span className="truncate text-xs text-muted-foreground">by {creator?.full_name?.split(" ")[0] ?? "HELOLA"}</span>
           </div>
         </div>
