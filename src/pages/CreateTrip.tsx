@@ -17,9 +17,12 @@ const INTERESTS = ["Beach", "Mountains", "Adventure", "Culture", "Food", "Nightl
 export default function CreateTrip() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const [busy, setBusy] = useState(false);
 
   const [destination, setDestination] = useState("");
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [placeBlurb, setPlaceBlurb] = useState<string>("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -30,9 +33,27 @@ export default function CreateTrip() {
   const [food, setFood] = useState<number | "">("");
   const [other, setOther] = useState<number | "">("");
   const [chosenInterests, setChosenInterests] = useState<string[]>([]);
+  const [itinerary, setItinerary] = useState("");
+  const [safetyRules, setSafetyRules] = useState("");
 
   useEffect(() => { document.title = "Create a trip · HELOLA"; }, []);
   useEffect(() => { if (!loading && !user) navigate("/auth"); }, [user, loading, navigate]);
+
+  async function loadPlaceMeta(name: string) {
+    const sum = await getPlaceSummary(name);
+    if (sum?.image) setCoverImage(sum.image);
+    if (sum?.extract) setPlaceBlurb(sum.extract);
+  }
+
+  // Prefill destination from query string (e.g. /trips/new?destination=Goa)
+  useEffect(() => {
+    const d = params.get("destination");
+    if (d && !destination) {
+      setDestination(d);
+      loadPlaceMeta(d);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
 
   const total = Number(stay || 0) + Number(travel || 0) + Number(food || 0) + Number(other || 0);
 
