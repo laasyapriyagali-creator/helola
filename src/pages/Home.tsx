@@ -206,47 +206,47 @@ function TripCard({ trip, memberCount, creator }: {
   const isFull = memberCount >= trip.max_members;
 
   return (
-    <Link to={`/trips/${trip.id}`} className="group block">
-      <Card className="overflow-hidden border-border/60 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-elegant">
-        <div className="relative h-40 bg-gradient-warm">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/40 via-primary/20 to-accent/30" />
-          <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-background/95 px-2.5 py-1 text-xs font-semibold shadow-soft">
-            <Users className="h-3 w-3 text-primary" /> {memberCount}/{trip.max_members}
+    <Card className="overflow-hidden border-border/60 shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:shadow-elegant">
+      {/* Wide rectangular hero band */}
+      <Link to={`/trips/${trip.id}`} className="block">
+        <div className="relative h-40 bg-gradient-warm md:h-48">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/50 via-primary/25 to-accent/30" />
+          <div className="absolute inset-0 flex items-center justify-center px-4">
+            <h3 className="font-display text-4xl font-bold uppercase tracking-wide text-primary-foreground drop-shadow-md md:text-5xl">
+              {trip.destination}
+            </h3>
           </div>
-          <div className="absolute bottom-3 left-4">
-            <h3 className="font-display text-2xl font-bold text-primary-foreground drop-shadow">{trip.destination}</h3>
-            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-primary-foreground/90">
-              <Calendar className="h-3 w-3" /> {dateLabel}
-            </div>
+          <div className="absolute left-4 top-3 flex items-center gap-1.5 rounded-full bg-background/90 px-3 py-1 text-xs font-semibold text-foreground shadow-soft">
+            <Calendar className="h-3 w-3 text-primary" /> {dateLabel}
           </div>
-        </div>
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="line-clamp-2 text-sm text-muted-foreground">
-                {trip.description || `Group trip to ${trip.destination}`}
-              </p>
-              <div className="mt-3 flex items-center gap-2">
-                <Avatar2D config={creator?.avatar_config} size={28} />
-                <span className="truncate text-xs text-foreground/70">by {creator?.full_name ?? "HELOLA"}</span>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="font-display text-2xl font-bold text-primary">₹{Number(trip.price_per_person).toLocaleString("en-IN")}</p>
-              <p className="text-xs text-muted-foreground">per person</p>
-            </div>
-          </div>
-          {(trip.interests || []).slice(0, 3).length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {(trip.interests || []).slice(0, 3).map(i => (
-                <Badge key={i} variant="secondary" className="rounded-full bg-rose text-rose-foreground hover:bg-rose">{i}</Badge>
-              ))}
-              {isFull && <Badge variant="outline" className="rounded-full">Full</Badge>}
+          {(trip.interests || [])[0] && (
+            <div className="absolute right-3 top-3 rounded-full bg-background/90 px-3 py-1 text-xs font-semibold text-foreground shadow-soft">
+              {trip.interests[0]}
             </div>
           )}
-        </CardContent>
-      </Card>
-    </Link>
+        </div>
+      </Link>
+
+      {/* Bottom row: JOIN + members + price */}
+      <CardContent className="flex items-center justify-between gap-3 p-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <Button asChild size="sm" className="rounded-full px-5 font-semibold" disabled={isFull}>
+            <Link to={`/trips/${trip.id}`}>{isFull ? "Full" : "JOIN"}</Link>
+          </Button>
+          <div className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-semibold text-foreground">
+            <Users className="h-3.5 w-3.5 text-primary" /> {memberCount}/{trip.max_members}
+          </div>
+          <div className="hidden items-center gap-1.5 sm:flex">
+            <Avatar2D config={creator?.avatar_config} size={24} />
+            <span className="truncate text-xs text-muted-foreground">by {creator?.full_name?.split(" ")[0] ?? "HELOLA"}</span>
+          </div>
+        </div>
+        <div className="text-right shrink-0">
+          <p className="font-display text-xl font-bold text-primary md:text-2xl">₹{Number(trip.price_per_person).toLocaleString("en-IN")}</p>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">per person</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
