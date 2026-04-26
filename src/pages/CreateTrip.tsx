@@ -107,7 +107,23 @@ export default function CreateTrip() {
         <Card className="border-border/60 shadow-soft"><CardContent className="space-y-4 p-5">
           <div className="space-y-2">
             <Label>Destination *</Label>
-            <Input required value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Goa, Bali, Manali..." />
+            <PlaceSearchInput
+              required
+              value={destination}
+              onChange={setDestination}
+              onSelect={(p) => { setDestination(p.name); loadPlaceMeta(p.name); }}
+              placeholder="Search any place — Goa, Bali, Hampi, Kyoto…"
+            />
+            {(coverImage || placeBlurb) && (
+              <div className="mt-2 overflow-hidden rounded-xl border border-border bg-card">
+                {coverImage ? (
+                  <img src={coverImage} alt={`${destination} real photograph`} className="h-32 w-full object-cover md:h-40" />
+                ) : (
+                  <div className="flex h-32 w-full items-center justify-center bg-muted text-muted-foreground"><ImageOff className="h-5 w-5" /></div>
+                )}
+                {placeBlurb && <p className="line-clamp-2 p-3 text-xs text-muted-foreground">{placeBlurb}</p>}
+              </div>
+            )}
           </div>
           <div className="space-y-2">
             <Label>What's the vibe?</Label>
@@ -128,8 +144,21 @@ export default function CreateTrip() {
               <span>Max members</span>
               <span className="flex items-center gap-1 text-primary"><Users className="h-4 w-4" /> {maxMembers}</span>
             </Label>
-            <input type="range" min={2} max={20} value={maxMembers} onChange={(e) => setMaxMembers(Number(e.target.value))} className="w-full accent-primary" />
-            <div className="flex justify-between text-xs text-muted-foreground"><span>2</span><span>20</span></div>
+            <input type="range" min={4} max={20} value={maxMembers} onChange={(e) => setMaxMembers(Number(e.target.value))} className="w-full accent-primary" />
+            <div className="flex justify-between text-xs text-muted-foreground"><span>4</span><span>20</span></div>
+          </div>
+        </CardContent></Card>
+
+        <Card className="border-border/60 shadow-soft"><CardContent className="space-y-4 p-5">
+          <div className="space-y-2">
+            <Label>Day-wise itinerary (short)</Label>
+            <Textarea value={itinerary} onChange={(e) => setItinerary(e.target.value)} rows={4}
+              placeholder={"Day 1 – Arrival & beach\nDay 2 – Old town walk\nDay 3 – Sunset cruise"} />
+          </div>
+          <div className="space-y-2">
+            <Label>Safety & group rules</Label>
+            <Textarea value={safetyRules} onChange={(e) => setSafetyRules(e.target.value)} rows={3}
+              placeholder="No solo wandering after dark, share live location, respect local customs…" />
           </div>
         </CardContent></Card>
 
