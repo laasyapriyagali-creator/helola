@@ -1,12 +1,11 @@
-import { Plane, Home, MessageCircle, User as UserIcon, Heart, Search } from "lucide-react";
+import { Plane, Home, MessageCircle, Heart, Search } from "lucide-react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Avatar2D } from "@/components/Avatar2D";
+import { UserAvatar } from "@/components/UserAvatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { AvatarConfig } from "@/lib/avatar";
 
 const items = [
   { to: "/", icon: Home, label: "Discover" },
@@ -18,12 +17,16 @@ const items = [
 export function DesktopNav() {
   const location = useLocation();
   const { user } = useAuth();
-  const [avatar, setAvatar] = useState<Partial<AvatarConfig> | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [name, setName] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) { setAvatar(null); return; }
-    supabase.from("profiles").select("avatar_config").eq("id", user.id).maybeSingle()
-      .then(({ data }) => setAvatar((data?.avatar_config as Partial<AvatarConfig>) || null));
+    if (!user) { setAvatarUrl(null); setName(null); return; }
+    supabase.from("profiles").select("avatar_url,full_name").eq("id", user.id).maybeSingle()
+      .then(({ data }) => {
+        setAvatarUrl(data?.avatar_url ?? null);
+        setName(data?.full_name ?? null);
+      });
   }, [user]);
 
   if (location.pathname.startsWith("/auth")) return null;
@@ -65,7 +68,7 @@ export function DesktopNav() {
           </Button>
           {user ? (
             <Link to="/profile" className="flex items-center gap-2 rounded-full border border-border bg-card px-1 py-1 pr-3 transition-colors hover:bg-muted">
-              <Avatar2D config={avatar} size={32} />
+              <UserAvatar url={avatarUrl} name={name} size={32} />
               <span className="text-sm font-medium">Profile</span>
             </Link>
           ) : (
