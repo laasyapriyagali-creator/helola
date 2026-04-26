@@ -4,46 +4,35 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar2D } from "@/components/Avatar2D";
 import {
-  AvatarConfig, DEFAULT_AVATAR, mergeAvatar, randomAvatar,
+  AvatarConfig, DEFAULT_AVATAR, mergeAvatar, randomAvatar, AVATAR_OPTIONS,
   SKIN_TONES, HAIR_COLORS, EYE_COLORS, OUTFIT_COLORS, BACKGROUND_COLORS,
 } from "@/lib/avatar";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Shuffle, Save, RotateCcw } from "lucide-react";
+import { X, Dices, Loader2 } from "lucide-react";
 
-const TABS: { key: keyof AvatarConfig | "presets"; label: string; emoji: string }[] = [
-  { key: "presets", label: "Presets", emoji: "✨" },
-  { key: "skin", label: "Skin", emoji: "👤" },
-  { key: "face", label: "Face", emoji: "🟠" },
-  { key: "hair", label: "Hair", emoji: "💇" },
-  { key: "hairColor", label: "Hair color", emoji: "🎨" },
-  { key: "eyes", label: "Eyes", emoji: "👀" },
-  { key: "eyeColor", label: "Eye color", emoji: "🌈" },
-  { key: "mouth", label: "Mouth", emoji: "👄" },
-  { key: "accessory", label: "Accessory", emoji: "🕶️" },
-  { key: "hat", label: "Hat", emoji: "🧢" },
-  { key: "outfit", label: "Outfit", emoji: "👕" },
-  { key: "outfitColor", label: "Outfit color", emoji: "🎨" },
-  { key: "background", label: "Background", emoji: "🖼️" },
+type CategoryKey = keyof typeof AVATAR_OPTIONS;
+type CategoryDef = { key: CategoryKey; label: string; icon: string };
+
+const CATEGORIES: CategoryDef[] = [
+  { key: "face", label: "Face", icon: "😀" },
+  { key: "skin", label: "Skin", icon: "🤚" },
+  { key: "hair", label: "Hair", icon: "💇" },
+  { key: "hairColor", label: "Hair color", icon: "🎨" },
+  { key: "eyebrows", label: "Brows", icon: "🤨" },
+  { key: "eyes", label: "Eyes", icon: "👁️" },
+  { key: "eyeColor", label: "Eye color", icon: "🌈" },
+  { key: "nose", label: "Nose", icon: "👃" },
+  { key: "mouth", label: "Mouth", icon: "👄" },
+  { key: "beard", label: "Beard", icon: "🧔" },
+  { key: "glasses", label: "Glasses", icon: "👓" },
+  { key: "accessory", label: "Extras", icon: "✨" },
+  { key: "hat", label: "Hat", icon: "🎩" },
+  { key: "outfit", label: "Outfit", icon: "👕" },
+  { key: "outfitColor", label: "Outfit color", icon: "🎨" },
+  { key: "background", label: "Background", icon: "🖼️" },
 ];
 
-const OPTIONS: Record<string, string[]> = {
-  skin: ["porcelain", "peach", "sand", "honey", "bronze", "umber", "espresso"],
-  face: ["round", "oval", "square", "heart"],
-  hair: ["buns", "ponytail", "long", "wavy", "bob", "pixie", "buzz", "swept", "curly", "afro", "manbun", "messy"],
-  hairColor: ["black", "brown", "blonde", "auburn", "red", "pink", "purple", "blue", "platinum"],
-  eyes: ["round", "smile", "sleepy", "wink", "star", "heart", "sharp"],
-  eyeColor: ["brown", "hazel", "green", "blue", "gray", "amber"],
-  mouth: ["smile", "grin", "smirk", "neutral", "kiss", "pout", "tongue", "open"],
-  accessory: ["none", "glasses", "sunglasses", "earrings", "freckles", "blush"],
-  hat: ["none", "beanie", "cap", "sunhat", "headband"],
-  outfit: ["tee", "hoodie", "sweater", "tank", "blazer", "kurta"],
-  outfitColor: ["maroon", "rose", "cream", "navy", "olive", "mustard", "sky", "lilac", "black"],
-  background: ["rose", "peach", "sky", "lavender", "mint", "cream", "maroon", "transparent"],
-};
-
-const COLOR_MAPS: Record<string, Record<string, string>> = {
+const COLOR_MAPS: Partial<Record<CategoryKey, Record<string, string>>> = {
   skin: SKIN_TONES,
   hairColor: HAIR_COLORS,
   eyeColor: EYE_COLORS,
@@ -54,10 +43,10 @@ const COLOR_MAPS: Record<string, Record<string, string>> = {
 export default function AvatarEditor() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<keyof AvatarConfig | "presets">("presets");
+  const [activeCategory, setActiveCategory] = useState<CategoryKey>("hair");
   const [config, setConfig] = useState<AvatarConfig>(DEFAULT_AVATAR);
-  const [original, setOriginal] = useState<AvatarConfig>(DEFAULT_AVATAR);
   const [busy, setBusy] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => { document.title = "Edit your 2D avatar · HELOLA"; }, []);
   useEffect(() => { if (!authLoading && !user) navigate("/auth"); }, [user, authLoading, navigate]);
@@ -66,9 +55,8 @@ export default function AvatarEditor() {
     if (!user) return;
     supabase.from("profiles").select("avatar_config").eq("id", user.id).maybeSingle()
       .then(({ data }) => {
-        const merged = mergeAvatar((data?.avatar_config as Partial<AvatarConfig>) || null);
-        setConfig(merged);
-        setOriginal(merged);
+        setConfig(mergeAvatar((data?.avatar_config as Partial<AvatarConfig>) || null));
+        setLoaded(true);
       });
   }, [user]);
 
@@ -79,159 +67,148 @@ export default function AvatarEditor() {
   const save = async () => {
     if (!user) return;
     setBusy(true);
-    const { error } = await supabase.from("profiles").update({ avatar_config: config as unknown as Record<string, string> }).eq("id", user.id);
+    const { error } = await supabase.from("profiles")
+      .update({ avatar_config: config as unknown as Record<string, string> })
+      .eq("id", user.id);
     setBusy(false);
-    if (error) { toast({ title: "Save failed", description: error.message, variant: "destructive" }); return; }
-    setOriginal(config);
+    if (error) {
+      toast({ title: "Save failed", description: error.message, variant: "destructive" });
+      return;
+    }
     toast({ title: "Avatar saved! ✨" });
     navigate("/profile");
   };
 
+  const previewBg = BACKGROUND_COLORS[config.background] === "transparent"
+    ? "#C9D2DA"
+    : BACKGROUND_COLORS[config.background];
+
   return (
-    <div className="min-h-screen bg-gradient-soft pb-8">
-      {/* Top bar */}
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/90 px-4 py-3 backdrop-blur">
-        <button onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted">
-          <ArrowLeft className="h-4 w-4" />
+    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+      {/* Top bar — X / Dice / Save */}
+      <div className="flex items-center justify-between px-4 pt-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-muted text-foreground/70 hover:bg-muted/70"
+          aria-label="Close"
+        >
+          <X className="h-5 w-5" />
         </button>
-        <h1 className="font-display text-lg font-bold">Edit avatar</h1>
-        <Button onClick={save} disabled={busy} size="sm" className="rounded-full">
-          <Save className="mr-1 h-3.5 w-3.5" />Save
-        </Button>
-      </div>
-
-      {/* Avatar preview */}
-      <div className="mx-auto max-w-md px-4 pt-6">
-        <div className="relative mx-auto">
-          <div className="mx-auto flex h-64 w-64 items-center justify-center rounded-3xl bg-card shadow-elegant md:h-80 md:w-80">
-            <Avatar2D config={config} size={260} />
-          </div>
-          <div className="mt-4 flex justify-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setConfig(randomAvatar())} className="rounded-full">
-              <Shuffle className="mr-1 h-3.5 w-3.5" />Randomize
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setConfig(original)} className="rounded-full">
-              <RotateCcw className="mr-1 h-3.5 w-3.5" />Reset
-            </Button>
-          </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setConfig(randomAvatar())}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-foreground text-background hover:opacity-90"
+            aria-label="Randomize"
+          >
+            <Dices className="h-5 w-5" />
+          </button>
+          <button
+            onClick={save}
+            disabled={busy || !loaded}
+            className="flex h-11 items-center justify-center rounded-full bg-foreground px-6 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-50"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+          </button>
         </div>
-
-        <p className="mt-4 text-center text-xs text-muted-foreground">
-          This 2D character is yours — edit anytime. Real photos optional.
-        </p>
       </div>
 
-      {/* Tabs */}
-      <div className="mt-6">
-        <div className="flex gap-2 overflow-x-auto px-4 no-scrollbar">
-          {TABS.map(tab => (
+      {/* Big preview */}
+      <div
+        className="mx-4 mt-3 flex h-[44vh] items-end justify-center overflow-hidden rounded-3xl md:h-[48vh]"
+        style={{ backgroundColor: previewBg }}
+      >
+        <Avatar2D config={config} size={420} rounded={false} showBackground={false} className="h-full w-auto" />
+      </div>
+
+      {/* Category bar */}
+      <div className="border-t border-border bg-card pt-2">
+        <div className="flex gap-1 overflow-x-auto px-2 pb-2 no-scrollbar">
+          {CATEGORIES.map(cat => (
             <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === tab.key ? "bg-primary text-primary-foreground" : "bg-card text-foreground/70 hover:bg-muted"
+              key={cat.key}
+              onClick={() => setActiveCategory(cat.key)}
+              className={`flex shrink-0 flex-col items-center gap-0.5 rounded-2xl px-3 py-2 text-[10px] font-medium transition-colors ${
+                activeCategory === cat.key
+                  ? "bg-primary text-primary-foreground"
+                  : "text-foreground/60 hover:bg-muted"
               }`}
             >
-              <span>{tab.emoji}</span>{tab.label}
+              <span className="text-lg leading-none">{cat.icon}</span>
+              <span>{cat.label}</span>
             </button>
           ))}
         </div>
 
-        <div className="mx-auto mt-4 max-w-2xl px-4">
-          <Card className="border-border/60 shadow-soft">
-            <CardContent className="p-4">
-              {activeTab === "presets" ? (
-                <Presets onPick={setConfig} />
-              ) : (
-                <OptionGrid
-                  field={activeTab}
-                  selected={config[activeTab as keyof AvatarConfig]}
-                  options={OPTIONS[activeTab as string]}
-                  config={config}
-                  onSelect={(value) => update(activeTab as keyof AvatarConfig, value as never)}
-                />
-              )}
-            </CardContent>
-          </Card>
+        {/* Parts grid */}
+        <div className="max-h-[36vh] overflow-y-auto border-t border-border bg-background px-3 py-3 md:max-h-[32vh]">
+          <PartsGrid
+            category={activeCategory}
+            config={config}
+            onSelect={(value) => update(activeCategory as keyof AvatarConfig, value as never)}
+          />
         </div>
       </div>
     </div>
   );
 }
 
-function OptionGrid({ field, selected, options, config, onSelect }: {
-  field: string;
-  selected: unknown;
-  options: string[];
+function PartsGrid({ category, config, onSelect }: {
+  category: CategoryKey;
   config: AvatarConfig;
   onSelect: (value: string) => void;
 }) {
-  const colorMap = COLOR_MAPS[field];
+  const options = AVATAR_OPTIONS[category] as readonly string[];
+  const selected = config[category as keyof AvatarConfig];
+  const colorMap = COLOR_MAPS[category];
 
   if (colorMap) {
     return (
-      <div className="grid grid-cols-5 gap-3 sm:grid-cols-7">
-        {options.map(opt => (
-          <button
-            key={opt}
-            onClick={() => onSelect(opt)}
-            className={`flex flex-col items-center gap-1.5 rounded-2xl p-2 transition-all ${
-              selected === opt ? "ring-2 ring-primary ring-offset-2 ring-offset-card" : "hover:bg-muted"
-            }`}
-          >
-            <span
-              className="h-12 w-12 rounded-full shadow-soft"
-              style={{ backgroundColor: colorMap[opt], border: opt === "transparent" ? "2px dashed hsl(var(--border))" : undefined }}
-            />
-            <span className="text-[10px] capitalize text-muted-foreground">{opt}</span>
-          </button>
-        ))}
+      <div className="grid grid-cols-5 gap-3 sm:grid-cols-7 md:grid-cols-10">
+        {options.map(opt => {
+          const isTransparent = opt === "transparent";
+          return (
+            <button
+              key={opt}
+              onClick={() => onSelect(opt)}
+              className={`flex flex-col items-center gap-1 rounded-2xl p-1.5 transition-all ${
+                selected === opt ? "bg-muted ring-2 ring-foreground" : "hover:bg-muted"
+              }`}
+            >
+              <span
+                className="h-12 w-12 rounded-full border-2 border-foreground shadow-soft"
+                style={{
+                  backgroundColor: colorMap[opt],
+                  borderStyle: isTransparent ? "dashed" : "solid",
+                }}
+              />
+              <span className="text-[9px] capitalize text-muted-foreground">{opt}</span>
+            </button>
+          );
+        })}
       </div>
     );
   }
 
-  // Render avatar previews with the option swapped in
   return (
-    <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
+    <div className="grid grid-cols-4 gap-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-9">
       {options.map(opt => {
-        const previewConfig = { ...config, [field]: opt };
+        const previewConfig = { ...config, [category]: opt } as AvatarConfig;
         const isSelected = selected === opt;
         return (
           <button
             key={opt}
             onClick={() => onSelect(opt)}
-            className={`flex flex-col items-center gap-1.5 rounded-2xl bg-muted/50 p-2 transition-all ${
-              isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-card" : "hover:bg-muted"
+            className={`flex flex-col items-center gap-1 rounded-2xl p-1.5 transition-all ${
+              isSelected ? "bg-muted ring-2 ring-foreground" : "hover:bg-muted"
             }`}
           >
-            <Avatar2D config={previewConfig} size={64} rounded={false} showBackground={false} />
-            <span className="text-[10px] capitalize text-muted-foreground">{opt}</span>
+            <div className="overflow-hidden rounded-2xl border-2 border-foreground bg-background">
+              <Avatar2D config={previewConfig} size={72} rounded={false} showBackground={false} />
+            </div>
+            <span className="text-[9px] capitalize text-muted-foreground">{opt === "none" ? "None" : opt}</span>
           </button>
         );
       })}
-    </div>
-  );
-}
-
-function Presets({ onPick }: { onPick: (c: AvatarConfig) => void }) {
-  const presets: AvatarConfig[] = [
-    { skin: "peach", face: "round", hair: "buns", hairColor: "black", eyes: "smile", eyeColor: "brown", mouth: "smile", accessory: "blush", hat: "none", outfit: "tee", outfitColor: "rose", background: "rose" },
-    { skin: "honey", face: "oval", hair: "wavy", hairColor: "auburn", eyes: "round", eyeColor: "hazel", mouth: "grin", accessory: "freckles", hat: "none", outfit: "hoodie", outfitColor: "maroon", background: "peach" },
-    { skin: "bronze", face: "square", hair: "afro", hairColor: "black", eyes: "smile", eyeColor: "brown", mouth: "smile", accessory: "glasses", hat: "none", outfit: "blazer", outfitColor: "navy", background: "mint" },
-    { skin: "sand", face: "heart", hair: "long", hairColor: "blonde", eyes: "star", eyeColor: "blue", mouth: "kiss", accessory: "earrings", hat: "headband", outfit: "tank", outfitColor: "lilac", background: "lavender" },
-    { skin: "umber", face: "oval", hair: "curly", hairColor: "black", eyes: "smile", eyeColor: "brown", mouth: "grin", accessory: "none", hat: "cap", outfit: "tee", outfitColor: "mustard", background: "sky" },
-    { skin: "porcelain", face: "round", hair: "pixie", hairColor: "pink", eyes: "wink", eyeColor: "green", mouth: "smirk", accessory: "earrings", hat: "none", outfit: "sweater", outfitColor: "cream", background: "rose" },
-    { skin: "espresso", face: "oval", hair: "manbun", hairColor: "black", eyes: "sharp", eyeColor: "brown", mouth: "neutral", accessory: "sunglasses", hat: "none", outfit: "kurta", outfitColor: "olive", background: "cream" },
-    { skin: "peach", face: "round", hair: "messy", hairColor: "brown", eyes: "heart", eyeColor: "brown", mouth: "smile", accessory: "blush", hat: "sunhat", outfit: "tee", outfitColor: "sky", background: "peach" },
-  ];
-  return (
-    <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-      {presets.map((p, i) => (
-        <button key={i} onClick={() => onPick(p)} className="rounded-2xl bg-muted/50 p-2 transition-all hover:bg-muted hover:scale-105">
-          <Avatar2D config={p} size={88} />
-          <p className="mt-1 text-center text-[10px] text-muted-foreground">Preset {i + 1}</p>
-        </button>
-      ))}
     </div>
   );
 }
