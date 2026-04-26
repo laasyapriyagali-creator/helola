@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Users } from "lucide-react";
+import { ArrowLeft, Users, ImageOff } from "lucide-react";
+import { PlaceSearchInput } from "@/components/PlaceSearchInput";
+import { getPlaceSummary } from "@/lib/places";
 
 const INTERESTS = ["Beach", "Mountains", "Adventure", "Culture", "Food", "Nightlife", "Wellness", "Wildlife", "Road Trip"];
 
