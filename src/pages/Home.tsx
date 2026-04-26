@@ -156,6 +156,9 @@ export default function Home() {
           <BookTicketsCard />
         </div>
 
+        {/* Real-world destinations (live data, real photos) */}
+        <DestinationsExplorer />
+
         {/* Trips list — wide rectangular boxes */}
         <div className="mx-auto mt-8 max-w-5xl">
           <div className="mb-3 flex items-center justify-between">
