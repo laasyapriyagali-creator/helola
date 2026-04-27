@@ -36,7 +36,6 @@ export default function Home() {
   const [members, setMembers] = useState<Record<string, number>>({});
   const [creators, setCreators] = useState<Record<string, { full_name: string | null; avatar_url: string | null }>>({});
   const [loading, setLoading] = useState(true);
-  const [profileName, setProfileName] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = "HELOLA Trips · Real trips, real friends";
@@ -44,12 +43,6 @@ export default function Home() {
       document.getElementById("search-input")?.focus();
     }
   }, [params]);
-
-  useEffect(() => {
-    if (!user) return;
-    supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle()
-      .then(({ data }) => setProfileName(data?.full_name ?? null));
-  }, [user]);
 
   useEffect(() => {
     (async () => {
