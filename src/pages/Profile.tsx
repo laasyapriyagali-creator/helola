@@ -97,41 +97,41 @@ export default function Profile() {
   const prefsOpen = dialog === "prefs" || dialog?.startsWith("prefs-");
 
   return (
-    <div className="px-4 pt-4 md:px-8 md:pt-8">
+    <div className="min-w-0 overflow-x-hidden bg-texture-paper px-4 pt-4 md:px-8 md:pt-8">
       <Card className="overflow-hidden border-border/60 shadow-elegant">
-        <div className="h-24 bg-primary md:h-32" />
-        <CardContent className="relative p-5 md:p-7">
-          <div className="-mt-16 flex flex-col gap-3 md:-mt-20 md:flex-row md:items-end md:justify-between">
-            <div>
-              {isOwn ? (
-                <AvatarUploader userId={user!.id} currentUrl={profile.avatar_url} fullName={profile.full_name}
-                  onChange={(url) => setProfile({ ...profile, avatar_url: url })} size={108} />
-              ) : (
-                <UserAvatar url={profile.avatar_url} name={profile.full_name} size={108} />
-              )}
-            </div>
-            {isOwn && (
-              <div className="flex flex-wrap gap-2">
-                <Button onClick={() => setEditing(!editing)} size="sm" className="rounded-full">
-                  <Edit2 className="mr-1 h-3.5 w-3.5" />{editing ? "Cancel" : "Edit profile"}
-                </Button>
-              </div>
+        <div className="h-32 bg-primary bg-texture-hero md:h-40" />
+        <CardContent className="relative p-5 pt-0 md:p-7 md:pt-0">
+          {/* Avatar overlapping the band */}
+          <div className="-mt-14 flex md:-mt-16">
+            {isOwn ? (
+              <AvatarUploader userId={user!.id} currentUrl={profile.avatar_url} fullName={profile.full_name}
+                onChange={(url) => setProfile({ ...profile, avatar_url: url })} size={108} />
+            ) : (
+              <UserAvatar url={profile.avatar_url} name={profile.full_name} size={108} />
             )}
           </div>
 
+          {isOwn && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button onClick={() => setEditing(!editing)} size="sm" className="rounded-full">
+                <Edit2 className="mr-1 h-3.5 w-3.5" />{editing ? "Cancel" : "Edit profile"}
+              </Button>
+            </div>
+          )}
+
           {!editing ? (
             <>
-              <div className="mt-4 flex items-center gap-2">
-                <h1 className="font-display text-2xl font-bold md:text-3xl">{profile.full_name || "Unnamed traveler"}</h1>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <h1 className="font-display text-2xl font-bold md:text-3xl break-words">{profile.full_name || "Unnamed traveler"}</h1>
                 {profile.is_verified && <Badge className="rounded-full bg-accent text-accent-foreground">✓ Verified</Badge>}
               </div>
-              <p className="text-sm text-muted-foreground">@{profile.username || "user"}</p>
+              <p className="text-sm text-muted-foreground break-all">@{profile.username || "user"}</p>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground/70">
                 {profile.age && <span>Age {profile.age}</span>}
                 {profile.gender && <span className="capitalize">{profile.gender}</span>}
-                {profile.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{profile.location}</span>}
+                {profile.location && <span className="flex items-center gap-1 min-w-0"><MapPin className="h-3 w-3 shrink-0" /><span className="truncate">{profile.location}</span></span>}
               </div>
-              {profile.bio && <p className="mt-4 text-base leading-relaxed text-foreground/90">{profile.bio}</p>}
+              {profile.bio && <p className="mt-4 text-base leading-relaxed text-foreground/90 break-words">{profile.bio}</p>}
               {profile.hobbies && profile.hobbies.length > 0 && (
                 <div className="mt-4">
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Hobbies</p>
