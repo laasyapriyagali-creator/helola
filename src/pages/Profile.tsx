@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Edit2, MapPin, Settings, LogOut, Heart, Bell, Lock, FileText, ChevronRight } from "lucide-react";
+import { CoverUploader } from "@/components/CoverUploader";
 import { SettingsRow } from "@/components/settings/SettingsRow";
 import { VisibilityDialog, MessagePermissionDialog, BlockedUsersDialog, ReportIssueDialog } from "@/components/settings/PrivacySafetyDialogs";
 import { NotificationDialog } from "@/components/settings/NotificationDialog";
@@ -28,6 +29,7 @@ interface Profile {
   location: string | null;
   hobbies: string[] | null;
   avatar_url: string | null;
+  cover_url: string | null;
   is_verified: boolean;
 }
 
