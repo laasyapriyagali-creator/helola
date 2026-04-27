@@ -90,20 +90,32 @@ export default function Home() {
     });
   }, [trips, search, activeInterest, maxBudget]);
 
+  const greeting = useMemo(() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 17) return "Good afternoon";
+    if (h < 21) return "Good evening";
+    return "Good night";
+  }, []);
+  const firstName = (profileName || user?.email?.split("@")[0] || "traveler").split(" ")[0];
+
   return (
-    <div>
+    <div className="bg-texture-paper">
       {/* Burgundy hero band with centered wordmark */}
-      <section className="relative bg-primary px-4 pb-10 pt-6 md:pb-14 md:pt-10">
+      <section className="relative overflow-hidden bg-primary bg-texture-hero px-4 pb-14 pt-8 md:pb-20 md:pt-14">
         <div className="mx-auto max-w-3xl text-center">
-          <h1 className="font-handwritten text-5xl font-normal leading-none tracking-tight text-primary-foreground md:text-7xl">
+          <h1 className="font-handwritten text-6xl font-semibold leading-[1.05] tracking-normal text-primary-foreground md:text-8xl">
             helola
           </h1>
+          <p className="mt-3 text-base text-primary-foreground/90 md:mt-4 md:text-lg">
+            Hey {firstName} <span aria-hidden>👋</span> — {greeting.toLowerCase()}, where to next?
+          </p>
         </div>
       </section>
 
       <div className="px-4 md:px-8">
         {/* Search bar (overlapping the band) */}
-        <div className="relative -mt-6 md:-mt-8">
+        <div className="relative -mt-7 md:-mt-9">
           <div className="mx-auto max-w-3xl">
             <div className="relative">
               <Search className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
