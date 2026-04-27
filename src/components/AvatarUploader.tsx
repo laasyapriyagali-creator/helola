@@ -31,7 +31,7 @@ export function AvatarUploader({
       return;
     }
     if (file.size > MAX_BYTES) {
-      toast({ title: "Image too large", description: "Max 5 MB.", variant: "destructive" });
+      toast({ title: "Image too large", description: "Max 25 MB.", variant: "destructive" });
       return;
     }
 
