@@ -13,7 +13,7 @@ interface AvatarUploaderProps {
   size?: number;
 }
 
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_BYTES = 25 * 1024 * 1024; // 25 MB
 
 export function AvatarUploader({
   userId,
