@@ -13,7 +13,7 @@ interface AvatarUploaderProps {
   size?: number;
 }
 
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_BYTES = 25 * 1024 * 1024; // 25 MB
 
 export function AvatarUploader({
   userId,
@@ -31,7 +31,7 @@ export function AvatarUploader({
       return;
     }
     if (file.size > MAX_BYTES) {
-      toast({ title: "Image too large", description: "Max 5 MB.", variant: "destructive" });
+      toast({ title: "Image too large", description: "Max 25 MB.", variant: "destructive" });
       return;
     }
 
