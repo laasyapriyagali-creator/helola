@@ -23,14 +23,11 @@ interface Trip {
   creator_id: string;
 }
 
-const INTERESTS = ["Beach", "Mountains", "Adventure", "Culture", "Food", "Nightlife", "Wellness", "Wildlife", "Road Trip"];
-
 export default function Home() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [search, setSearch] = useState("");
-  const [activeInterest, setActiveInterest] = useState<string>("All");
   const [maxBudget, setMaxBudget] = useState<number>(50000);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [members, setMembers] = useState<Record<string, number>>({});
