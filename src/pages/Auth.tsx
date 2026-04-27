@@ -114,13 +114,36 @@ export default function Auth() {
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === "signup" && (
-                <div className="space-y-2">
-                  <Label htmlFor="name">Your name</Label>
-                  <div className="relative">
-                    <UserIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Lily Portlyn" className="pl-10" />
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full name <span className="text-xs text-muted-foreground">(can't be changed later)</span></Label>
+                    <div className="relative">
+                      <UserIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Lily Portlyn" className="pl-10" />
+                    </div>
                   </div>
-                </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="age">Age <span className="text-xs text-muted-foreground">(locked)</span></Label>
+                      <div className="relative">
+                        <CalendarIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input id="age" type="number" min={13} max={120} required value={age} onChange={(e) => setAge(e.target.value)} placeholder="18" className="pl-10" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Gender <span className="text-xs text-muted-foreground">(locked)</span></Label>
+                      <Select value={gender} onValueChange={setGender}>
+                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="female">Female</SelectItem>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="non-binary">Non-binary</SelectItem>
+                          <SelectItem value="prefer-not">Prefer not to say</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </>
               )}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
