@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Camera, Loader2, Trash2 } from "lucide-react";
 
@@ -79,26 +80,30 @@ export function CoverUploader({ userId, currentUrl, onChange, className }: Props
       ) : (
         <div className="h-full w-full bg-primary bg-texture-hero" />
       )}
+      {/* Subtle dark overlay so buttons stay legible on any photo */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/15" />
+
       <div className="absolute right-3 top-3 flex gap-2">
-        <button
+        <Button
           type="button"
+          size="sm"
           onClick={() => inputRef.current?.click()}
           disabled={busy}
-          className="flex h-9 items-center gap-1.5 rounded-full bg-background/90 px-3 text-xs font-semibold text-foreground shadow-soft backdrop-blur transition-transform hover:scale-105 disabled:opacity-60"
-          aria-label="Change background photo"
+          className="h-9 rounded-full bg-primary text-primary-foreground shadow-soft hover:bg-primary/90"
         >
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+          {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Camera className="mr-1 h-3.5 w-3.5" />}
           {currentUrl ? "Change cover" : "Add cover"}
-        </button>
+        </Button>
         {currentUrl && !busy && (
-          <button
+          <Button
             type="button"
+            size="icon"
             onClick={remove}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-background/90 text-foreground shadow-soft backdrop-blur transition-transform hover:scale-105"
+            className="h-9 w-9 rounded-full bg-primary text-primary-foreground shadow-soft hover:bg-primary/90"
             aria-label="Remove background photo"
           >
             <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          </Button>
         )}
       </div>
       <input
