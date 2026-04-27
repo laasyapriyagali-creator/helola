@@ -103,17 +103,24 @@ export default function Profile() {
         }
       }
 
-      const updates: Record<string, unknown> = {
-        bio: form.bio,
-        location: form.location,
+      const updates: {
+        bio?: string | null;
+        location?: string | null;
+        hobbies?: string[];
+        username?: string;
+        full_name?: string | null;
+        age?: number | null;
+        gender?: string | null;
+      } = {
+        bio: form.bio ?? null,
+        location: form.location ?? null,
         hobbies,
       };
       if (usernameChanged) updates.username = newUsername;
-      // Only let unlocked users edit name/age/gender
       if (!profile.identity_locked) {
-        updates.full_name = form.full_name;
-        updates.age = form.age;
-        updates.gender = form.gender;
+        updates.full_name = form.full_name ?? null;
+        updates.age = form.age ?? null;
+        updates.gender = form.gender ?? null;
       }
 
       const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
