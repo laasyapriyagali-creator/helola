@@ -22,7 +22,7 @@ export function CoverUploader({ userId, currentUrl, onChange, className }: Props
       return;
     }
     if (file.size > MAX_BYTES) {
-      toast({ title: "Image too large", description: "Max 8 MB.", variant: "destructive" });
+      toast({ title: "Image too large", description: "Max 25 MB.", variant: "destructive" });
       return;
     }
     setBusy(true);
