@@ -101,7 +101,20 @@ export default function Profile() {
   return (
     <div className="min-w-0 overflow-x-hidden bg-texture-paper px-4 pt-4 md:px-8 md:pt-8">
       <Card className="overflow-hidden border-border/60 shadow-elegant">
-        <div className="h-32 bg-primary bg-texture-hero md:h-40" />
+        <div className="relative h-32 md:h-40">
+          {isOwn ? (
+            <CoverUploader
+              userId={user!.id}
+              currentUrl={profile.cover_url}
+              onChange={(url) => setProfile({ ...profile, cover_url: url })}
+              className="absolute inset-0"
+            />
+          ) : profile.cover_url ? (
+            <img src={profile.cover_url} alt="Profile background" className="h-full w-full object-cover" />
+          ) : (
+            <div className="h-full w-full bg-primary bg-texture-hero" />
+          )}
+        </div>
         <CardContent className="relative p-5 pt-0 md:p-7 md:pt-0">
           {/* Avatar overlapping the band */}
           <div className="-mt-14 flex md:-mt-16">
@@ -159,8 +172,8 @@ export default function Profile() {
       </Card>
 
       {isOwn && (
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <SectionCard title="Privacy & safety" icon={<Lock />}>
+        <div className="mx-auto mt-8 max-w-3xl space-y-10 pb-6">
+          <Section title="Privacy & safety" icon={<Lock className="h-4 w-4" />}>
             <SettingsRow label="Profile visibility" hint="Who can see your profile" onClick={() => setDialog("visibility")} />
             <Divider />
             <SettingsRow label="Who can message you" onClick={() => setDialog("messages")} />
@@ -168,9 +181,9 @@ export default function Profile() {
             <SettingsRow label="Blocked users" onClick={() => setDialog("blocked")} />
             <Divider />
             <SettingsRow label="Report issues" onClick={() => setDialog("report")} />
-          </SectionCard>
+          </Section>
 
-          <SectionCard title="Notifications" icon={<Bell />}>
+          <Section title="Notifications" icon={<Bell className="h-4 w-4" />}>
             <SettingsRow label="Trip updates" onClick={() => setDialog("notif-trip")} />
             <Divider />
             <SettingsRow label="Group chat messages" onClick={() => setDialog("notif-chat")} />
@@ -178,9 +191,9 @@ export default function Profile() {
             <SettingsRow label="New trip alerts" onClick={() => setDialog("notif-alerts")} />
             <Divider />
             <SettingsRow label="Offers & promotions" onClick={() => setDialog("notif-offers")} />
-          </SectionCard>
+          </Section>
 
-          <SectionCard title="Preferences" icon={<Heart />}>
+          <Section title="Preferences" icon={<Heart className="h-4 w-4" />}>
             <SettingsRow label="Location access" onClick={() => setDialog("prefs-location")} />
             <Divider />
             <SettingsRow label="Preferred destinations" onClick={() => setDialog("prefs-destinations")} />
@@ -188,9 +201,9 @@ export default function Profile() {
             <SettingsRow label="Budget range" onClick={() => setDialog("prefs-budget")} />
             <Divider />
             <SettingsRow label="Travel interests" onClick={() => setDialog("prefs-interests")} />
-          </SectionCard>
+          </Section>
 
-          <SectionCard title="Legal & support" icon={<FileText />}>
+          <Section title="Legal & support" icon={<FileText className="h-4 w-4" />}>
             <LinkRow to="/legal/privacy" label="Privacy Policy" />
             <Divider />
             <LinkRow to="/legal/terms" label="Terms & Conditions" />
@@ -200,20 +213,18 @@ export default function Profile() {
             <LinkRow to="/about" label="About HELOLA" />
             <Divider />
             <LinkRow to="/support" label="Contact support" />
-          </SectionCard>
+          </Section>
 
-          <Card className="border-border/60 shadow-soft md:col-span-2">
-            <CardContent className="flex items-center justify-between p-5">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose text-rose-foreground"><Settings className="h-4 w-4" /></div>
-                <div><p className="font-semibold">Account</p><p className="text-xs text-muted-foreground">{user?.email}</p></div>
-              </div>
-              <Button variant="outline" onClick={async () => { await signOut(); navigate("/auth"); }} className="rounded-full">
+          <Section title="Account" icon={<Settings className="h-4 w-4" />}>
+            <div className="flex items-center justify-between gap-3 py-3">
+              <p className="truncate text-sm text-muted-foreground">{user?.email}</p>
+              <Button variant="outline" size="sm" onClick={async () => { await signOut(); navigate("/auth"); }} className="rounded-full">
                 <LogOut className="mr-1 h-3.5 w-3.5" />Log out
               </Button>
-            </CardContent>
-          </Card>
-          <p className="md:col-span-2 text-center text-xs text-muted-foreground">© All rights reserved by HELOLA</p>
+            </div>
+          </Section>
+
+          <p className="pt-4 text-center text-xs text-muted-foreground">© All rights reserved by HELOLA</p>
         </div>
       )}
 
@@ -228,17 +239,15 @@ export default function Profile() {
   );
 }
 
-function SectionCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <Card className="border-border/60 shadow-soft">
-      <CardContent className="p-5">
-        <div className="mb-3 flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-rose text-rose-foreground">{icon}</div>
-          <h3 className="font-display text-lg font-semibold">{title}</h3>
-        </div>
-        <div>{children}</div>
-      </CardContent>
-    </Card>
+    <section>
+      <div className="mb-2 flex items-center gap-2 text-primary">
+        {icon}
+        <h3 className="font-display text-lg font-semibold">{title}</h3>
+      </div>
+      <div>{children}</div>
+    </section>
   );
 }
 
