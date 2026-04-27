@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Edit2, MapPin, Settings, LogOut, Heart, Bell, Lock, FileText, ChevronRight } from "lucide-react";
+import { Edit2, MapPin, Settings, LogOut, Heart, Bell, Lock, FileText, ChevronRight, Lock as LockIcon } from "lucide-react";
 import { CoverUploader } from "@/components/CoverUploader";
 import { SettingsRow } from "@/components/settings/SettingsRow";
 import { VisibilityDialog, MessagePermissionDialog, BlockedUsersDialog, ReportIssueDialog } from "@/components/settings/PrivacySafetyDialogs";
@@ -31,6 +31,8 @@ interface Profile {
   avatar_url: string | null;
   cover_url: string | null;
   is_verified: boolean;
+  identity_locked: boolean;
+  username_change_count: number;
 }
 
 type DialogId =
@@ -49,6 +51,7 @@ export default function Profile() {
   const [form, setForm] = useState<Partial<Profile>>({});
   const [hobbiesText, setHobbiesText] = useState("");
   const [dialog, setDialog] = useState<DialogId>(null);
+  const [saving, setSaving] = useState(false);
 
   const targetId = userId || user?.id;
   const isOwn = !userId || userId === user?.id;
@@ -71,16 +74,59 @@ export default function Profile() {
   }, [targetId]);
 
   const save = async () => {
-    if (!user) return;
-    const hobbies = hobbiesText.split(",").map(s => s.trim()).filter(Boolean);
-    const { error } = await supabase.from("profiles").update({
-      full_name: form.full_name, username: form.username, bio: form.bio,
-      age: form.age, gender: form.gender, location: form.location, hobbies,
-    }).eq("id", user.id);
-    if (error) { toast({ title: "Save failed", description: error.message, variant: "destructive" }); return; }
-    toast({ title: "Profile updated ✨" });
-    setProfile({ ...(profile as Profile), ...form, hobbies });
-    setEditing(false);
+    if (!user || !profile) return;
+    setSaving(true);
+    try {
+      const hobbies = hobbiesText.split(",").map(s => s.trim()).filter(Boolean);
+      const newUsername = (form.username || "").trim().toLowerCase().replace(/\s+/g, "_");
+      const usernameChanged = newUsername && newUsername !== (profile.username || "").toLowerCase();
+
+      // Username uniqueness check
+      if (usernameChanged) {
+        if (profile.username_change_count >= 2) {
+          toast({ title: "Username locked", description: "You've already changed your username twice.", variant: "destructive" });
+          setSaving(false); return;
+        }
+        if (!/^[a-z0-9_]{3,20}$/.test(newUsername)) {
+          toast({ title: "Invalid username", description: "Use 3–20 lowercase letters, numbers, or underscores.", variant: "destructive" });
+          setSaving(false); return;
+        }
+        const { data: existing } = await supabase
+          .from("profiles")
+          .select("id")
+          .ilike("username", newUsername)
+          .neq("id", user.id)
+          .maybeSingle();
+        if (existing) {
+          toast({ title: "This username already exists", description: "Try another one.", variant: "destructive" });
+          setSaving(false); return;
+        }
+      }
+
+      const updates: Record<string, unknown> = {
+        bio: form.bio,
+        location: form.location,
+        hobbies,
+      };
+      if (usernameChanged) updates.username = newUsername;
+      // Only let unlocked users edit name/age/gender
+      if (!profile.identity_locked) {
+        updates.full_name = form.full_name;
+        updates.age = form.age;
+        updates.gender = form.gender;
+      }
+
+      const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
+      if (error) {
+        toast({ title: "Save failed", description: error.message, variant: "destructive" });
+        setSaving(false); return;
+      }
+      toast({ title: "Profile updated ✨" });
+      setProfile({ ...profile, ...form, hobbies, username: usernameChanged ? newUsername : profile.username, username_change_count: usernameChanged ? profile.username_change_count + 1 : profile.username_change_count });
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) return <div className="space-y-3 p-4"><Skeleton className="h-48 rounded-2xl" /><Skeleton className="h-32 rounded-2xl" /></div>;
@@ -98,10 +144,13 @@ export default function Profile() {
   const notifOpen = dialog === "notif" || dialog?.startsWith("notif-");
   const prefsOpen = dialog === "prefs" || dialog?.startsWith("prefs-");
 
+  const usernameLeft = Math.max(0, 2 - (profile.username_change_count || 0));
+
   return (
     <div className="min-w-0 overflow-x-hidden bg-texture-paper px-4 pt-4 md:px-8 md:pt-8">
-      <Card className="overflow-hidden border-border/60 shadow-elegant">
-        <div className="relative h-32 md:h-40">
+      <Card className="overflow-hidden border-border/60 bg-card shadow-elegant">
+        {/* Cover band — strictly contained */}
+        <div className="relative h-36 md:h-44">
           {isOwn ? (
             <CoverUploader
               userId={user!.id}
@@ -115,8 +164,9 @@ export default function Profile() {
             <div className="h-full w-full bg-primary bg-texture-hero" />
           )}
         </div>
+
+        {/* Content area sits on solid card — cover does NOT bleed here */}
         <CardContent className="relative p-5 pt-0 md:p-7 md:pt-0">
-          {/* Avatar overlapping the band */}
           <div className="-mt-14 flex md:-mt-16">
             {isOwn ? (
               <AvatarUploader userId={user!.id} currentUrl={profile.avatar_url} fullName={profile.full_name}
@@ -137,7 +187,7 @@ export default function Profile() {
           {!editing ? (
             <>
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-2xl font-bold md:text-3xl break-words">{profile.full_name || "Unnamed traveler"}</h1>
+                <h1 className="font-display text-2xl font-bold text-foreground md:text-3xl break-words">{profile.full_name || "Unnamed traveler"}</h1>
                 {profile.is_verified && <Badge className="rounded-full bg-accent text-accent-foreground">✓ Verified</Badge>}
               </div>
               <p className="text-sm text-muted-foreground break-all">@{profile.username || "user"}</p>
@@ -158,14 +208,30 @@ export default function Profile() {
             </>
           ) : (
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <div className="space-y-1.5"><Label>Full name</Label><Input value={form.full_name || ""} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label>Username</Label><Input value={form.username || ""} onChange={(e) => setForm({ ...form, username: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label>Age</Label><Input type="number" value={form.age || ""} onChange={(e) => setForm({ ...form, age: e.target.value ? Number(e.target.value) : null })} /></div>
-              <div className="space-y-1.5"><Label>Gender</Label><Input value={form.gender || ""} onChange={(e) => setForm({ ...form, gender: e.target.value })} placeholder="Female / Male / Non-binary..." /></div>
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1">Full name {profile.identity_locked && <LockIcon className="h-3 w-3 text-muted-foreground" />}</Label>
+                <Input value={form.full_name || ""} disabled={profile.identity_locked} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
+                {profile.identity_locked && <p className="text-xs text-muted-foreground">Name is locked and can't be changed.</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label>Username {usernameLeft > 0 ? <span className="text-xs text-muted-foreground">({usernameLeft} change{usernameLeft === 1 ? "" : "s"} left)</span> : <span className="text-xs text-destructive">(locked)</span>}</Label>
+                <Input value={form.username || ""} disabled={usernameLeft === 0} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="username_only" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1">Age {profile.identity_locked && <LockIcon className="h-3 w-3 text-muted-foreground" />}</Label>
+                <Input type="number" disabled={profile.identity_locked} value={form.age || ""} onChange={(e) => setForm({ ...form, age: e.target.value ? Number(e.target.value) : null })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1">Gender {profile.identity_locked && <LockIcon className="h-3 w-3 text-muted-foreground" />}</Label>
+                <Input value={form.gender || ""} disabled={profile.identity_locked} onChange={(e) => setForm({ ...form, gender: e.target.value })} placeholder="Female / Male / Non-binary..." />
+              </div>
               <div className="space-y-1.5 md:col-span-2"><Label>Location</Label><Input value={form.location || ""} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Mumbai, India" /></div>
               <div className="space-y-1.5 md:col-span-2"><Label>Bio</Label><Textarea rows={3} value={form.bio || ""} onChange={(e) => setForm({ ...form, bio: e.target.value })} placeholder="I like travelling and making friends!" /></div>
               <div className="space-y-1.5 md:col-span-2"><Label>Hobbies (comma separated)</Label><Input value={hobbiesText} onChange={(e) => setHobbiesText(e.target.value)} placeholder="Swimming, drawing, reading..." /></div>
-              <div className="md:col-span-2"><Button onClick={save} className="rounded-full">Save changes</Button></div>
+              <div className="md:col-span-2 flex gap-2">
+                <Button onClick={save} disabled={saving} className="rounded-full">{saving ? "Saving…" : "Save changes"}</Button>
+                <Button variant="outline" onClick={() => { setEditing(false); setForm(profile); setHobbiesText((profile.hobbies || []).join(", ")); }} className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground">Cancel</Button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -218,7 +284,7 @@ export default function Profile() {
           <Section title="Account" icon={<Settings className="h-4 w-4" />}>
             <div className="flex items-center justify-between gap-3 py-3">
               <p className="truncate text-sm text-muted-foreground">{user?.email}</p>
-              <Button variant="outline" size="sm" onClick={async () => { await signOut(); navigate("/auth"); }} className="rounded-full">
+              <Button size="sm" onClick={async () => { await signOut(); navigate("/auth"); }} className="rounded-full">
                 <LogOut className="mr-1 h-3.5 w-3.5" />Log out
               </Button>
             </div>
@@ -228,7 +294,6 @@ export default function Profile() {
         </div>
       )}
 
-      {/* Dialogs */}
       <VisibilityDialog open={dialog === "visibility"} onOpenChange={(v) => !v && close()} />
       <MessagePermissionDialog open={dialog === "messages"} onOpenChange={(v) => !v && close()} />
       <BlockedUsersDialog open={dialog === "blocked"} onOpenChange={(v) => !v && close()} />
