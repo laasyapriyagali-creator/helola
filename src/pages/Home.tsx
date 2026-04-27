@@ -36,7 +36,6 @@ export default function Home() {
   const [members, setMembers] = useState<Record<string, number>>({});
   const [creators, setCreators] = useState<Record<string, { full_name: string | null; avatar_url: string | null }>>({});
   const [loading, setLoading] = useState(true);
-  const [profileName, setProfileName] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = "HELOLA Trips · Real trips, real friends";
@@ -44,12 +43,6 @@ export default function Home() {
       document.getElementById("search-input")?.focus();
     }
   }, [params]);
-
-  useEffect(() => {
-    if (!user) return;
-    supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle()
-      .then(({ data }) => setProfileName(data?.full_name ?? null));
-  }, [user]);
 
   useEffect(() => {
     (async () => {
@@ -90,26 +83,14 @@ export default function Home() {
     });
   }, [trips, search, activeInterest, maxBudget]);
 
-  const greeting = useMemo(() => {
-    const h = new Date().getHours();
-    if (h < 12) return "Good morning";
-    if (h < 17) return "Good afternoon";
-    if (h < 21) return "Good evening";
-    return "Good night";
-  }, []);
-  const firstName = (profileName || user?.email?.split("@")[0] || "traveler").split(" ")[0];
-
   return (
     <div className="bg-texture-paper">
       {/* Burgundy hero band with centered wordmark */}
-      <section className="relative overflow-hidden bg-primary bg-texture-hero px-4 pb-14 pt-8 md:pb-20 md:pt-14">
+      <section className="relative overflow-hidden bg-primary bg-texture-hero px-4 pb-10 pt-5 md:pb-12 md:pt-8">
         <div className="mx-auto max-w-3xl text-center">
-          <h1 className="font-handwritten text-6xl font-semibold leading-[1.05] tracking-normal text-primary-foreground md:text-8xl">
+          <h1 className="font-handwritten text-5xl leading-[1.05] tracking-normal text-primary-foreground md:text-7xl">
             helola
           </h1>
-          <p className="mt-3 text-base text-primary-foreground/90 md:mt-4 md:text-lg">
-            Hey {firstName} <span aria-hidden>👋</span> — {greeting.toLowerCase()}, where to next?
-          </p>
         </div>
       </section>
 

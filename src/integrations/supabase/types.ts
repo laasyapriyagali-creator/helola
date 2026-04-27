@@ -100,6 +100,7 @@ export type Database = {
           avatar_config: Json | null
           avatar_url: string | null
           bio: string | null
+          cover_url: string | null
           created_at: string
           full_name: string | null
           gender: string | null
@@ -117,6 +118,7 @@ export type Database = {
           avatar_config?: Json | null
           avatar_url?: string | null
           bio?: string | null
+          cover_url?: string | null
           created_at?: string
           full_name?: string | null
           gender?: string | null
@@ -134,6 +136,7 @@ export type Database = {
           avatar_config?: Json | null
           avatar_url?: string | null
           bio?: string | null
+          cover_url?: string | null
           created_at?: string
           full_name?: string | null
           gender?: string | null
