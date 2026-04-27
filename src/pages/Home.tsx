@@ -23,14 +23,11 @@ interface Trip {
   creator_id: string;
 }
 
-const INTERESTS = ["Beach", "Mountains", "Adventure", "Culture", "Food", "Nightlife", "Wellness", "Wildlife", "Road Trip"];
-
 export default function Home() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [search, setSearch] = useState("");
-  const [activeInterest, setActiveInterest] = useState<string>("All");
   const [maxBudget, setMaxBudget] = useState<number>(50000);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [members, setMembers] = useState<Record<string, number>>({});
@@ -77,11 +74,10 @@ export default function Home() {
   const filtered = useMemo(() => {
     return trips.filter(t => {
       if (search && !t.destination.toLowerCase().includes(search.toLowerCase())) return false;
-      if (activeInterest !== "All" && !(t.interests || []).includes(activeInterest)) return false;
       if (Number(t.price_per_person) > maxBudget) return false;
       return true;
     });
-  }, [trips, search, activeInterest, maxBudget]);
+  }, [trips, search, maxBudget]);
 
   return (
     <div className="bg-texture-paper">
@@ -121,21 +117,8 @@ export default function Home() {
           </Button>
         </div>
 
-        {/* Filters */}
-        <div className="mx-auto mt-5 max-w-5xl space-y-3">
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
-            {["All", ...INTERESTS].map(i => (
-              <button
-                key={i}
-                onClick={() => setActiveInterest(i)}
-                className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                  activeInterest === i ? "bg-primary text-primary-foreground shadow-soft" : "bg-card text-foreground/70 hover:bg-muted"
-                }`}
-              >
-                {i}
-              </button>
-            ))}
-          </div>
+        {/* Budget filter */}
+        <div className="mx-auto mt-5 max-w-5xl">
           <div className="flex items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-soft">
             <IndianRupee className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">Up to ₹{maxBudget.toLocaleString("en-IN")}</span>

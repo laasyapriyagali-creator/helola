@@ -106,12 +106,14 @@ export type Database = {
           gender: string | null
           hobbies: string[] | null
           id: string
+          identity_locked: boolean
           is_verified: boolean
           location: string | null
           message_permission: string
           profile_visibility: string
           updated_at: string
           username: string | null
+          username_change_count: number
         }
         Insert: {
           age?: number | null
@@ -124,12 +126,14 @@ export type Database = {
           gender?: string | null
           hobbies?: string[] | null
           id: string
+          identity_locked?: boolean
           is_verified?: boolean
           location?: string | null
           message_permission?: string
           profile_visibility?: string
           updated_at?: string
           username?: string | null
+          username_change_count?: number
         }
         Update: {
           age?: number | null
@@ -142,12 +146,14 @@ export type Database = {
           gender?: string | null
           hobbies?: string[] | null
           id?: string
+          identity_locked?: boolean
           is_verified?: boolean
           location?: string | null
           message_permission?: string
           profile_visibility?: string
           updated_at?: string
           username?: string | null
+          username_change_count?: number
         }
         Relationships: []
       }
