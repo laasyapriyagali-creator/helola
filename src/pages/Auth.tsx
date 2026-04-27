@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { Plane, Mail, Lock, User as UserIcon } from "lucide-react";
+import { Plane, Mail, Lock, User as UserIcon, Calendar as CalendarIcon } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -17,6 +18,8 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [age, setAge] = useState<string>("");
+  const [gender, setGender] = useState<string>("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -32,15 +35,41 @@ export default function Auth() {
     setBusy(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const ageNum = Number(age);
+        if (!name.trim()) throw new Error("Please enter your full name");
+        if (!ageNum || ageNum < 13 || ageNum > 120) throw new Error("Please enter a valid age (13+)");
+        if (!gender) throw new Error("Please select your gender");
+
+        const baseUsername = name.toLowerCase().trim().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
+
+        const { data: signUpData, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
-            data: { full_name: name, username: name.toLowerCase().replace(/\s+/g, "_") },
+            data: { full_name: name.trim(), username: baseUsername },
           },
         });
         if (error) throw error;
+
+        // Lock identity & set age/gender on the freshly-created profile
+        const newUserId = signUpData.user?.id;
+        if (newUserId) {
+          // Try a few times in case the profile trigger hasn't run yet
+          for (let i = 0; i < 5; i++) {
+            const { error: pErr } = await supabase
+              .from("profiles")
+              .update({
+                full_name: name.trim(),
+                age: ageNum,
+                gender,
+                identity_locked: true,
+              })
+              .eq("id", newUserId);
+            if (!pErr) break;
+            await new Promise((r) => setTimeout(r, 250));
+          }
+        }
         toast({ title: "Welcome to HELOLA!", description: "Account created. You're in." });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Camera, Loader2, Trash2 } from "lucide-react";
+import { AvatarEditorDialog } from "@/components/AvatarEditorDialog";
 
 interface AvatarUploaderProps {
   userId: string;
@@ -13,7 +14,7 @@ interface AvatarUploaderProps {
   size?: number;
 }
 
-const MAX_BYTES = 25 * 1024 * 1024; // 25 MB
+const MAX_BYTES = 25 * 1024 * 1024;
 
 export function AvatarUploader({
   userId,
@@ -24,8 +25,15 @@ export function AvatarUploader({
 }: AvatarUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [editorSrc, setEditorSrc] = useState<string | null>(null);
 
-  const handleFile = async (file: File) => {
+  const openPicker = () => inputRef.current?.click();
+
+  const editExisting = () => {
+    if (currentUrl) setEditorSrc(currentUrl);
+  };
+
+  const handleFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
       toast({ title: "Pick an image file", variant: "destructive" });
       return;
@@ -34,15 +42,18 @@ export function AvatarUploader({
       toast({ title: "Image too large", description: "Max 25 MB.", variant: "destructive" });
       return;
     }
+    const reader = new FileReader();
+    reader.onload = () => setEditorSrc(reader.result as string);
+    reader.readAsDataURL(file);
+  };
 
+  const uploadBlob = async (blob: Blob) => {
     setBusy(true);
     try {
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const path = `${userId}/avatar-${Date.now()}.${ext}`;
-
+      const path = `${userId}/avatar-${Date.now()}.jpg`;
       const { error: upErr } = await supabase.storage
         .from("avatars")
-        .upload(path, file, { upsert: true, contentType: file.type });
+        .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
       if (upErr) throw upErr;
 
       const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
@@ -55,6 +66,7 @@ export function AvatarUploader({
       if (dbErr) throw dbErr;
 
       onChange(publicUrl);
+      setEditorSrc(null);
       toast({ title: "Profile photo updated ✨" });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Upload failed";
@@ -89,7 +101,7 @@ export function AvatarUploader({
         <UserAvatar url={currentUrl} name={fullName} size={size} />
         <button
           type="button"
-          onClick={() => inputRef.current?.click()}
+          onClick={openPicker}
           disabled={busy}
           className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-elegant ring-2 ring-background transition-transform hover:scale-105 disabled:opacity-60"
           aria-label="Upload profile photo"
@@ -101,26 +113,37 @@ export function AvatarUploader({
         <Button
           type="button"
           size="sm"
-          variant="outline"
           className="rounded-full"
-          onClick={() => inputRef.current?.click()}
+          onClick={openPicker}
           disabled={busy}
         >
           <Camera className="mr-1 h-3.5 w-3.5" />
           {currentUrl ? "Change photo" : "Upload photo"}
         </Button>
         {currentUrl && (
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            className="rounded-full text-muted-foreground hover:text-destructive"
-            onClick={remove}
-            disabled={busy}
-          >
-            <Trash2 className="mr-1 h-3.5 w-3.5" />
-            Remove
-          </Button>
+          <>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+              onClick={editExisting}
+              disabled={busy}
+            >
+              Edit
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+              onClick={remove}
+              disabled={busy}
+            >
+              <Trash2 className="mr-1 h-3.5 w-3.5" />
+              Remove
+            </Button>
+          </>
         )}
       </div>
       <input
@@ -132,6 +155,13 @@ export function AvatarUploader({
           const file = e.target.files?.[0];
           if (file) handleFile(file);
         }}
+      />
+
+      <AvatarEditorDialog
+        open={!!editorSrc}
+        imageSrc={editorSrc}
+        onCancel={() => setEditorSrc(null)}
+        onSave={uploadBlob}
       />
     </div>
   );
