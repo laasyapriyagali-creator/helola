@@ -389,7 +389,7 @@ export default function Profile() {
   );
 }
 
-function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+function Section({ title, icon, children, id }: { title: string; icon: React.ReactNode; children: React.ReactNode; id?: string }) {
   return (
     <section>
       <div className="mb-2 flex items-center gap-2 text-primary">
