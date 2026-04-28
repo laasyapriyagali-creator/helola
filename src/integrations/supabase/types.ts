@@ -110,6 +110,7 @@ export type Database = {
           is_verified: boolean
           location: string | null
           message_permission: string
+          pending_deletion_at: string | null
           profile_visibility: string
           updated_at: string
           username: string | null
@@ -130,6 +131,7 @@ export type Database = {
           is_verified?: boolean
           location?: string | null
           message_permission?: string
+          pending_deletion_at?: string | null
           profile_visibility?: string
           updated_at?: string
           username?: string | null
@@ -150,6 +152,7 @@ export type Database = {
           is_verified?: boolean
           location?: string | null
           message_permission?: string
+          pending_deletion_at?: string | null
           profile_visibility?: string
           updated_at?: string
           username?: string | null
@@ -358,10 +361,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_account_deletion: { Args: never; Returns: undefined }
       is_trip_member: {
         Args: { _trip_id: string; _user_id: string }
         Returns: boolean
       }
+      purge_expired_accounts: { Args: never; Returns: number }
+      request_account_deletion: { Args: never; Returns: undefined }
     }
     Enums: {
       trip_status: "upcoming" | "ongoing" | "completed" | "cancelled"
