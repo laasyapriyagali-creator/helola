@@ -159,9 +159,9 @@ export default function Profile() {
 
   return (
     <div className="min-w-0 overflow-x-hidden bg-texture-paper px-4 pt-4 md:px-8 md:pt-8">
-      {/* LinkedIn-style header: thin cover band + avatar overlapping */}
+      {/* Header: taller cover + avatar overlapping ~half of it */}
       <Card className="overflow-hidden border-border/60 bg-card shadow-elegant">
-        <div className="relative h-24 md:h-32">
+        <div className="relative h-40 md:h-52">
           {isOwn ? (
             <CoverUploader
               userId={user!.id}
@@ -176,14 +176,30 @@ export default function Profile() {
           )}
         </div>
 
-        {/* Avatar bar — solid card surface so nothing bleeds through */}
+        {/* Avatar bar — avatar pulled up so half of it sits over the cover */}
         <div className="relative bg-card px-5 pb-5 md:px-7 md:pb-6">
-          <div className="-mt-12 md:-mt-14">
+          <div className="-mt-16 md:-mt-20">
             {isOwn ? (
-              <AvatarUploader userId={user!.id} currentUrl={profile.avatar_url} fullName={profile.full_name}
-                onChange={(url) => setProfile({ ...profile, avatar_url: url })} size={96} />
+              <div className="relative inline-block">
+                <button
+                  type="button"
+                  onClick={() => profile.avatar_url && setViewerOpen(true)}
+                  className="block rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
+                  aria-label="View profile photo"
+                >
+                  <AvatarUploader userId={user!.id} currentUrl={profile.avatar_url} fullName={profile.full_name}
+                    onChange={(url) => setProfile({ ...profile, avatar_url: url })} size={128} />
+                </button>
+              </div>
             ) : (
-              <UserAvatar url={profile.avatar_url} name={profile.full_name} size={96} />
+              <button
+                type="button"
+                onClick={() => profile.avatar_url && setViewerOpen(true)}
+                className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
+                aria-label="View profile photo"
+              >
+                <UserAvatar url={profile.avatar_url} name={profile.full_name} size={128} />
+              </button>
             )}
           </div>
         </div>
