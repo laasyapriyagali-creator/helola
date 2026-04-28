@@ -366,6 +366,8 @@ export default function Profile() {
       <ReportIssueDialog open={dialog === "report"} onOpenChange={(v) => !v && close()} />
       <NotificationDialog open={notifOpen} onOpenChange={(v) => !v && close()} focusKey={notifFocus} />
       <PreferencesDialog open={prefsOpen} onOpenChange={(v) => !v && close()} focusKey={prefsFocus} />
+      <AvatarViewerDialog open={viewerOpen} onOpenChange={setViewerOpen} url={profile.avatar_url} name={profile.full_name} />
+      <DeleteAccountDialog open={deleteOpen} onOpenChange={setDeleteOpen} />
     </div>
   );
 }
