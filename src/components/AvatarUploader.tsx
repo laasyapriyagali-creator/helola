@@ -12,6 +12,7 @@ interface AvatarUploaderProps {
   fullName: string | null;
   onChange: (url: string | null) => void;
   size?: number;
+  onView?: () => void;
 }
 
 const MAX_BYTES = 25 * 1024 * 1024;
@@ -22,6 +23,7 @@ export function AvatarUploader({
   fullName,
   onChange,
   size = 108,
+  onView,
 }: AvatarUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -98,7 +100,18 @@ export function AvatarUploader({
   return (
     <div className="flex flex-col items-start gap-3">
       <div className="relative">
-        <UserAvatar url={currentUrl} name={fullName} size={size} />
+        {onView && currentUrl ? (
+          <button
+            type="button"
+            onClick={onView}
+            className="block rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
+            aria-label="View profile photo"
+          >
+            <UserAvatar url={currentUrl} name={fullName} size={size} />
+          </button>
+        ) : (
+          <UserAvatar url={currentUrl} name={fullName} size={size} />
+        )}
         <button
           type="button"
           onClick={openPicker}
