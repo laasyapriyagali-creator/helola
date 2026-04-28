@@ -13,6 +13,8 @@ interface AvatarUploaderProps {
   onChange: (url: string | null) => void;
   size?: number;
   onView?: () => void;
+  /** Hide the inline action buttons (Change/Edit/Remove) and only show the camera FAB. */
+  compact?: boolean;
 }
 
 const MAX_BYTES = 25 * 1024 * 1024;
@@ -24,6 +26,7 @@ export function AvatarUploader({
   onChange,
   size = 108,
   onView,
+  compact = false,
 }: AvatarUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -122,43 +125,45 @@ export function AvatarUploader({
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
         </button>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          size="sm"
-          className="rounded-full"
-          onClick={openPicker}
-          disabled={busy}
-        >
-          <Camera className="mr-1 h-3.5 w-3.5" />
-          {currentUrl ? "Change photo" : "Upload photo"}
-        </Button>
-        {currentUrl && (
-          <>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-              onClick={editExisting}
-              disabled={busy}
-            >
-              Edit
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-              onClick={remove}
-              disabled={busy}
-            >
-              <Trash2 className="mr-1 h-3.5 w-3.5" />
-              Remove
-            </Button>
-          </>
-        )}
-      </div>
+      {!compact && (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            className="rounded-full"
+            onClick={openPicker}
+            disabled={busy}
+          >
+            <Camera className="mr-1 h-3.5 w-3.5" />
+            {currentUrl ? "Change photo" : "Upload photo"}
+          </Button>
+          {currentUrl && (
+            <>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                onClick={editExisting}
+                disabled={busy}
+              >
+                Edit
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                onClick={remove}
+                disabled={busy}
+              >
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                Remove
+              </Button>
+            </>
+          )}
+        </div>
+      )}
       <input
         ref={inputRef}
         type="file"

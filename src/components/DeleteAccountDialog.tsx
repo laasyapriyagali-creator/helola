@@ -69,8 +69,8 @@ export function DeleteAccountDialog({ open, onOpenChange }: Props) {
             <DialogHeader>
               <DialogTitle className="text-destructive">Type DELETE to confirm</DialogTitle>
               <DialogDescription className="space-y-2 text-foreground/80">
-                <span className="block">These changes can't be undone. Your profile and all the details saved in it will be deleted, and you'll have no access to it after deletion.</span>
-                <span className="block text-xs text-muted-foreground">Your account will be permanently erased after a 30-day grace period. Log back in any time within 30 days to reactivate. After that, you can sign up again with the same email or phone number.</span>
+                <span className="block">These changes can't be undone.</span>
+                <span className="block">Your account will be deleted after a 30-day grace period, and you can reactivate it anytime within that period if you change your mind.</span>
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-2 py-2">
