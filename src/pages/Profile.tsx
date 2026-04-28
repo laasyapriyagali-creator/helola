@@ -155,9 +155,9 @@ export default function Profile() {
 
   return (
     <div className="min-w-0 overflow-x-hidden bg-texture-paper px-4 pt-4 md:px-8 md:pt-8">
+      {/* LinkedIn-style header: thin cover band + avatar overlapping */}
       <Card className="overflow-hidden border-border/60 bg-card shadow-elegant">
-        {/* Cover band — strictly contained */}
-        <div className="relative h-36 md:h-44">
+        <div className="relative h-24 md:h-32">
           {isOwn ? (
             <CoverUploader
               userId={user!.id}
@@ -172,77 +172,65 @@ export default function Profile() {
           )}
         </div>
 
-        {/* Content area sits on solid card — cover does NOT bleed here */}
-        <CardContent className="relative p-5 pt-0 md:p-7 md:pt-0">
-          <div className="-mt-14 flex md:-mt-16">
+        {/* Avatar bar — solid card surface so nothing bleeds through */}
+        <div className="relative bg-card px-5 pb-5 md:px-7 md:pb-6">
+          <div className="-mt-12 md:-mt-14">
             {isOwn ? (
               <AvatarUploader userId={user!.id} currentUrl={profile.avatar_url} fullName={profile.full_name}
-                onChange={(url) => setProfile({ ...profile, avatar_url: url })} size={108} />
+                onChange={(url) => setProfile({ ...profile, avatar_url: url })} size={96} />
             ) : (
-              <UserAvatar url={profile.avatar_url} name={profile.full_name} size={108} />
+              <UserAvatar url={profile.avatar_url} name={profile.full_name} size={96} />
             )}
           </div>
-
-          {isOwn && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button onClick={() => setEditing(!editing)} size="sm" className="rounded-full">
-                <Edit2 className="mr-1 h-3.5 w-3.5" />{editing ? "Cancel" : "Edit profile"}
-              </Button>
-            </div>
-          )}
-
-          {!editing ? (
-            <>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-2xl font-bold text-foreground md:text-3xl break-words">{profile.full_name || "Unnamed traveler"}</h1>
-                {profile.is_verified && <Badge className="rounded-full bg-accent text-accent-foreground">✓ Verified</Badge>}
-              </div>
-              <p className="text-sm text-muted-foreground break-all">@{profile.username || "user"}</p>
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground/70">
-                {profile.age && <span>Age {profile.age}</span>}
-                {profile.gender && <span className="capitalize">{profile.gender}</span>}
-                {profile.location && <span className="flex items-center gap-1 min-w-0"><MapPin className="h-3 w-3 shrink-0" /><span className="truncate">{profile.location}</span></span>}
-              </div>
-              {profile.bio && <p className="mt-4 text-base leading-relaxed text-foreground/90 break-words">{profile.bio}</p>}
-              {profile.hobbies && profile.hobbies.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Hobbies</p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {profile.hobbies.map(h => <Badge key={h} variant="secondary" className="rounded-full bg-rose text-rose-foreground hover:bg-rose">{h}</Badge>)}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="flex items-center gap-1">Full name {profile.identity_locked && <LockIcon className="h-3 w-3 text-muted-foreground" />}</Label>
-                <Input value={form.full_name || ""} disabled={profile.identity_locked} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
-                {profile.identity_locked && <p className="text-xs text-muted-foreground">Name is locked and can't be changed.</p>}
-              </div>
-              <div className="space-y-1.5">
-                <Label>Username {usernameLeft > 0 ? <span className="text-xs text-muted-foreground">({usernameLeft} change{usernameLeft === 1 ? "" : "s"} left)</span> : <span className="text-xs text-destructive">(locked)</span>}</Label>
-                <Input value={form.username || ""} disabled={usernameLeft === 0} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="username_only" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="flex items-center gap-1">Age {profile.identity_locked && <LockIcon className="h-3 w-3 text-muted-foreground" />}</Label>
-                <Input type="number" disabled={profile.identity_locked} value={form.age || ""} onChange={(e) => setForm({ ...form, age: e.target.value ? Number(e.target.value) : null })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="flex items-center gap-1">Gender {profile.identity_locked && <LockIcon className="h-3 w-3 text-muted-foreground" />}</Label>
-                <Input value={form.gender || ""} disabled={profile.identity_locked} onChange={(e) => setForm({ ...form, gender: e.target.value })} placeholder="Female / Male / Non-binary..." />
-              </div>
-              <div className="space-y-1.5 md:col-span-2"><Label>Location</Label><Input value={form.location || ""} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Mumbai, India" /></div>
-              <div className="space-y-1.5 md:col-span-2"><Label>Bio</Label><Textarea rows={3} value={form.bio || ""} onChange={(e) => setForm({ ...form, bio: e.target.value })} placeholder="I like travelling and making friends!" /></div>
-              <div className="space-y-1.5 md:col-span-2"><Label>Hobbies (comma separated)</Label><Input value={hobbiesText} onChange={(e) => setHobbiesText(e.target.value)} placeholder="Swimming, drawing, reading..." /></div>
-              <div className="md:col-span-2 flex gap-2">
-                <Button onClick={save} disabled={saving} className="rounded-full">{saving ? "Saving…" : "Save changes"}</Button>
-                <Button variant="outline" onClick={() => { setEditing(false); setForm(profile); setHobbiesText((profile.hobbies || []).join(", ")); }} className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground">Cancel</Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
+        </div>
       </Card>
+
+      {/* Profile details — clean stacked rows, divided by lines (no random buttons) */}
+      <div className="mx-auto mt-5 max-w-3xl divide-y divide-border rounded-2xl border border-border/60 bg-card shadow-soft">
+        <div className="px-5 py-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Name</p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <h1 className="font-display text-2xl font-bold text-foreground md:text-3xl break-words">{profile.full_name || "Unnamed traveler"}</h1>
+            {profile.is_verified && <Badge className="rounded-full bg-accent text-accent-foreground">✓ Verified</Badge>}
+          </div>
+          <p className="mt-0.5 text-sm text-muted-foreground break-all">@{profile.username || "user"}</p>
+        </div>
+
+        <div className="px-5 py-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Location</p>
+          <p className="mt-1 flex items-center gap-1.5 text-base text-foreground break-words">
+            <MapPin className="h-4 w-4 shrink-0 text-primary" />
+            {profile.location || <span className="text-muted-foreground">Not set</span>}
+          </p>
+        </div>
+
+        <div className="px-5 py-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Age & gender</p>
+          <p className="mt-1 text-base text-foreground">
+            {profile.age ? `Age ${profile.age}` : <span className="text-muted-foreground">Age not set</span>}
+            <span className="mx-2 text-muted-foreground">•</span>
+            <span className="capitalize">{profile.gender || <span className="text-muted-foreground">—</span>}</span>
+          </p>
+        </div>
+
+        <div className="px-5 py-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Bio</p>
+          <p className="mt-1 text-base leading-relaxed text-foreground/90 break-words">
+            {profile.bio || <span className="text-muted-foreground">No bio yet.</span>}
+          </p>
+        </div>
+
+        <div className="px-5 py-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Hobbies</p>
+          {profile.hobbies && profile.hobbies.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {profile.hobbies.map(h => <Badge key={h} variant="secondary" className="rounded-full bg-rose text-rose-foreground hover:bg-rose">{h}</Badge>)}
+            </div>
+          ) : (
+            <p className="mt-1 text-muted-foreground">No hobbies added.</p>
+          )}
+        </div>
+      </div>
 
       {isOwn && (
         <div className="mx-auto mt-8 max-w-3xl space-y-10 pb-6">
