@@ -276,12 +276,53 @@ export default function Profile() {
             <LinkRow to="/support" label="Contact support" />
           </Section>
 
-          <Section title="Account" icon={<Settings className="h-4 w-4" />}>
-            <div className="flex items-center justify-between gap-3 py-3">
-              <p className="truncate text-sm text-muted-foreground">{user?.email}</p>
-              <Button size="sm" onClick={async () => { await signOut(); navigate("/auth"); }} className="rounded-full">
-                <LogOut className="mr-1 h-3.5 w-3.5" />Log out
-              </Button>
+          <Section title="My account" icon={<Settings className="h-4 w-4" />}>
+            <div className="space-y-4 py-3">
+              {!editing ? (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">Edit profile details</p>
+                    <p className="truncate text-xs text-muted-foreground">Name, location, age, gender, bio, hobbies</p>
+                  </div>
+                  <Button size="sm" onClick={() => setEditing(true)} className="rounded-full">
+                    <Edit2 className="mr-1 h-3.5 w-3.5" />Edit
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1">Full name {profile.identity_locked && <LockIcon className="h-3 w-3 text-muted-foreground" />}</Label>
+                    <Input value={form.full_name || ""} disabled={profile.identity_locked} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
+                    {profile.identity_locked && <p className="text-xs text-muted-foreground">Name is locked and can't be changed.</p>}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Username {usernameLeft > 0 ? <span className="text-xs text-muted-foreground">({usernameLeft} change{usernameLeft === 1 ? "" : "s"} left)</span> : <span className="text-xs text-destructive">(locked)</span>}</Label>
+                    <Input value={form.username || ""} disabled={usernameLeft === 0} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="username_only" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1">Age {profile.identity_locked && <LockIcon className="h-3 w-3 text-muted-foreground" />}</Label>
+                    <Input type="number" disabled={profile.identity_locked} value={form.age || ""} onChange={(e) => setForm({ ...form, age: e.target.value ? Number(e.target.value) : null })} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1">Gender {profile.identity_locked && <LockIcon className="h-3 w-3 text-muted-foreground" />}</Label>
+                    <Input value={form.gender || ""} disabled={profile.identity_locked} onChange={(e) => setForm({ ...form, gender: e.target.value })} placeholder="Female / Male / Non-binary..." />
+                  </div>
+                  <div className="space-y-1.5 md:col-span-2"><Label>Location</Label><Input value={form.location || ""} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Mumbai, India" /></div>
+                  <div className="space-y-1.5 md:col-span-2"><Label>Bio</Label><Textarea rows={3} value={form.bio || ""} onChange={(e) => setForm({ ...form, bio: e.target.value })} placeholder="I like travelling and making friends!" /></div>
+                  <div className="space-y-1.5 md:col-span-2"><Label>Hobbies (comma separated)</Label><Input value={hobbiesText} onChange={(e) => setHobbiesText(e.target.value)} placeholder="Swimming, drawing, reading..." /></div>
+                  <div className="md:col-span-2 flex gap-2">
+                    <Button onClick={save} disabled={saving} className="rounded-full">{saving ? "Saving…" : "Save changes"}</Button>
+                    <Button variant="outline" onClick={() => { setEditing(false); setForm(profile); setHobbiesText((profile.hobbies || []).join(", ")); }} className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground">Cancel</Button>
+                  </div>
+                </div>
+              )}
+              <div className="h-px bg-border" />
+              <div className="flex items-center justify-between gap-3">
+                <p className="truncate text-sm text-muted-foreground">{user?.email}</p>
+                <Button size="sm" onClick={async () => { await signOut(); navigate("/auth"); }} className="rounded-full">
+                  <LogOut className="mr-1 h-3.5 w-3.5" />Log out
+                </Button>
+              </div>
             </div>
           </Section>
 
