@@ -180,17 +180,9 @@ export default function Profile() {
         <div className="relative bg-card px-5 pb-5 md:px-7 md:pb-6">
           <div className="-mt-16 md:-mt-20">
             {isOwn ? (
-              <div className="relative inline-block">
-                <button
-                  type="button"
-                  onClick={() => profile.avatar_url && setViewerOpen(true)}
-                  className="block rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
-                  aria-label="View profile photo"
-                >
-                  <AvatarUploader userId={user!.id} currentUrl={profile.avatar_url} fullName={profile.full_name}
-                    onChange={(url) => setProfile({ ...profile, avatar_url: url })} size={128} />
-                </button>
-              </div>
+              <AvatarUploader userId={user!.id} currentUrl={profile.avatar_url} fullName={profile.full_name}
+                onChange={(url) => setProfile({ ...profile, avatar_url: url })} size={128}
+                onView={() => profile.avatar_url && setViewerOpen(true)} />
             ) : (
               <button
                 type="button"
