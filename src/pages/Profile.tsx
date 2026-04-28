@@ -411,3 +411,12 @@ function LinkRow({ to, label }: { to: string; label: string }) {
     </Link>
   );
 }
+
+function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="py-4">
+      <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground/70">{label}</p>
+      <div className="mt-1.5 text-base text-foreground break-words">{value}</div>
+    </div>
+  );
+}
