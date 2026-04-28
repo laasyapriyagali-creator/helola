@@ -29,8 +29,11 @@ export function UserAvatar({ url, name, size = 40, className }: UserAvatarProps)
         src={url}
         alt={name ? `${name}'s profile photo` : "Profile photo"}
         style={dim}
+        draggable={false}
+        onContextMenu={(e) => e.preventDefault()}
+        onDragStart={(e) => e.preventDefault()}
         className={cn(
-          "shrink-0 rounded-full object-cover ring-2 ring-background",
+          "shrink-0 select-none rounded-full object-cover ring-2 ring-background",
           className,
         )}
         loading="lazy"

@@ -4,15 +4,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserAvatar } from "@/components/UserAvatar";
 import { AvatarUploader } from "@/components/AvatarUploader";
+import { AvatarViewerDialog } from "@/components/AvatarViewerDialog";
+import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Edit2, MapPin, Settings, LogOut, Heart, Bell, Lock, FileText, ChevronRight, Lock as LockIcon } from "lucide-react";
+import { Edit2, MapPin, Settings, LogOut, Heart, Bell, Lock, FileText, ChevronRight, Lock as LockIcon, Trash2 } from "lucide-react";
 import { CoverUploader } from "@/components/CoverUploader";
 import { SettingsRow } from "@/components/settings/SettingsRow";
 import { VisibilityDialog, MessagePermissionDialog, BlockedUsersDialog, ReportIssueDialog } from "@/components/settings/PrivacySafetyDialogs";
@@ -52,6 +54,8 @@ export default function Profile() {
   const [hobbiesText, setHobbiesText] = useState("");
   const [dialog, setDialog] = useState<DialogId>(null);
   const [saving, setSaving] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const targetId = userId || user?.id;
   const isOwn = !userId || userId === user?.id;
@@ -155,9 +159,9 @@ export default function Profile() {
 
   return (
     <div className="min-w-0 overflow-x-hidden bg-texture-paper px-4 pt-4 md:px-8 md:pt-8">
-      {/* LinkedIn-style header: thin cover band + avatar overlapping */}
+      {/* Header: taller cover + avatar overlapping ~half of it */}
       <Card className="overflow-hidden border-border/60 bg-card shadow-elegant">
-        <div className="relative h-24 md:h-32">
+        <div className="relative h-40 md:h-52">
           {isOwn ? (
             <CoverUploader
               userId={user!.id}
@@ -172,14 +176,22 @@ export default function Profile() {
           )}
         </div>
 
-        {/* Avatar bar — solid card surface so nothing bleeds through */}
+        {/* Avatar bar — avatar pulled up so half of it sits over the cover */}
         <div className="relative bg-card px-5 pb-5 md:px-7 md:pb-6">
-          <div className="-mt-12 md:-mt-14">
+          <div className="-mt-16 md:-mt-20">
             {isOwn ? (
               <AvatarUploader userId={user!.id} currentUrl={profile.avatar_url} fullName={profile.full_name}
-                onChange={(url) => setProfile({ ...profile, avatar_url: url })} size={96} />
+                onChange={(url) => setProfile({ ...profile, avatar_url: url })} size={128}
+                onView={() => profile.avatar_url && setViewerOpen(true)} />
             ) : (
-              <UserAvatar url={profile.avatar_url} name={profile.full_name} size={96} />
+              <button
+                type="button"
+                onClick={() => profile.avatar_url && setViewerOpen(true)}
+                className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
+                aria-label="View profile photo"
+              >
+                <UserAvatar url={profile.avatar_url} name={profile.full_name} size={128} />
+              </button>
             )}
           </div>
         </div>
@@ -323,6 +335,16 @@ export default function Profile() {
                   <LogOut className="mr-1 h-3.5 w-3.5" />Log out
                 </Button>
               </div>
+              <div className="h-px bg-border" />
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-destructive">Delete account</p>
+                  <p className="truncate text-xs text-muted-foreground">Permanently remove your account after a 30-day grace period.</p>
+                </div>
+                <Button size="sm" onClick={() => setDeleteOpen(true)} className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  <Trash2 className="mr-1 h-3.5 w-3.5" />Delete account
+                </Button>
+              </div>
             </div>
           </Section>
 
@@ -336,6 +358,8 @@ export default function Profile() {
       <ReportIssueDialog open={dialog === "report"} onOpenChange={(v) => !v && close()} />
       <NotificationDialog open={notifOpen} onOpenChange={(v) => !v && close()} focusKey={notifFocus} />
       <PreferencesDialog open={prefsOpen} onOpenChange={(v) => !v && close()} focusKey={prefsFocus} />
+      <AvatarViewerDialog open={viewerOpen} onOpenChange={setViewerOpen} url={profile.avatar_url} name={profile.full_name} />
+      <DeleteAccountDialog open={deleteOpen} onOpenChange={setDeleteOpen} />
     </div>
   );
 }
