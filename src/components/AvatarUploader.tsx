@@ -13,6 +13,8 @@ interface AvatarUploaderProps {
   onChange: (url: string | null) => void;
   size?: number;
   onView?: () => void;
+  /** Hide the inline action buttons (Change/Edit/Remove) and only show the camera FAB. */
+  compact?: boolean;
 }
 
 const MAX_BYTES = 25 * 1024 * 1024;
