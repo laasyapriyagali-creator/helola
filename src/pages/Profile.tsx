@@ -343,6 +343,16 @@ export default function Profile() {
                   <LogOut className="mr-1 h-3.5 w-3.5" />Log out
                 </Button>
               </div>
+              <div className="h-px bg-border" />
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-destructive">Delete account</p>
+                  <p className="truncate text-xs text-muted-foreground">Permanently remove your account after a 30-day grace period.</p>
+                </div>
+                <Button size="sm" onClick={() => setDeleteOpen(true)} className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  <Trash2 className="mr-1 h-3.5 w-3.5" />Delete account
+                </Button>
+              </div>
             </div>
           </Section>
 
