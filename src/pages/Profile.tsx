@@ -159,8 +159,8 @@ export default function Profile() {
 
   return (
     <div className="min-w-0 overflow-x-hidden bg-texture-paper px-4 pt-4 md:px-8 md:pt-8">
-      {/* Header: taller cover + avatar overlapping ~half of it */}
-      <Card className="overflow-hidden border-border/60 bg-card shadow-elegant">
+      {/* One flowing card: cover → avatar → details, generous spacing */}
+      <Card className="mx-auto max-w-3xl overflow-hidden rounded-3xl border-border/40 bg-card shadow-elegant backdrop-blur-sm">
         <div className="relative h-40 md:h-52">
           {isOwn ? (
             <CoverUploader
@@ -176,13 +176,19 @@ export default function Profile() {
           )}
         </div>
 
-        {/* Avatar bar — avatar pulled up so half of it sits over the cover */}
-        <div className="relative bg-card px-5 pb-5 md:px-7 md:pb-6">
+        {/* Avatar + identity, breathing room */}
+        <div className="px-6 pb-2 pt-0 md:px-10">
           <div className="-mt-16 md:-mt-20">
             {isOwn ? (
-              <AvatarUploader userId={user!.id} currentUrl={profile.avatar_url} fullName={profile.full_name}
-                onChange={(url) => setProfile({ ...profile, avatar_url: url })} size={128}
-                onView={() => profile.avatar_url && setViewerOpen(true)} />
+              <AvatarUploader
+                userId={user!.id}
+                currentUrl={profile.avatar_url}
+                fullName={profile.full_name}
+                onChange={(url) => setProfile({ ...profile, avatar_url: url })}
+                size={128}
+                onView={() => profile.avatar_url && setViewerOpen(true)}
+                compact
+              />
             ) : (
               <button
                 type="button"
@@ -194,55 +200,74 @@ export default function Profile() {
               </button>
             )}
           </div>
-        </div>
-      </Card>
 
-      {/* Profile details — clean stacked rows, divided by lines (no random buttons) */}
-      <div className="mx-auto mt-5 max-w-3xl divide-y divide-border rounded-2xl border border-border/60 bg-card shadow-soft">
-        <div className="px-5 py-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Name</p>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <h1 className="font-display text-2xl font-bold text-foreground md:text-3xl break-words">{profile.full_name || "Unnamed traveler"}</h1>
-            {profile.is_verified && <Badge className="rounded-full bg-accent text-accent-foreground">✓ Verified</Badge>}
-          </div>
-          <p className="mt-0.5 text-sm text-muted-foreground break-all">@{profile.username || "user"}</p>
-        </div>
-
-        <div className="px-5 py-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Location</p>
-          <p className="mt-1 flex items-center gap-1.5 text-base text-foreground break-words">
-            <MapPin className="h-4 w-4 shrink-0 text-primary" />
-            {profile.location || <span className="text-muted-foreground">Not set</span>}
-          </p>
-        </div>
-
-        <div className="px-5 py-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Age & gender</p>
-          <p className="mt-1 text-base text-foreground">
-            {profile.age ? `Age ${profile.age}` : <span className="text-muted-foreground">Age not set</span>}
-            <span className="mx-2 text-muted-foreground">•</span>
-            <span className="capitalize">{profile.gender || <span className="text-muted-foreground">—</span>}</span>
-          </p>
-        </div>
-
-        <div className="px-5 py-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Bio</p>
-          <p className="mt-1 text-base leading-relaxed text-foreground/90 break-words">
-            {profile.bio || <span className="text-muted-foreground">No bio yet.</span>}
-          </p>
-        </div>
-
-        <div className="px-5 py-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Hobbies</p>
-          {profile.hobbies && profile.hobbies.length > 0 ? (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {profile.hobbies.map(h => <Badge key={h} variant="secondary" className="rounded-full bg-rose text-rose-foreground hover:bg-rose">{h}</Badge>)}
+          {/* Name + handle */}
+          <div className="mt-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl break-words">
+                {profile.full_name || "Unnamed traveler"}
+              </h1>
+              {profile.is_verified && (
+                <Badge className="rounded-full bg-accent text-accent-foreground">✓ Verified</Badge>
+              )}
             </div>
-          ) : (
-            <p className="mt-1 text-muted-foreground">No hobbies added.</p>
+            <p className="mt-1 text-sm font-light text-muted-foreground/80 break-all">
+              @{profile.username || "user"}
+            </p>
+          </div>
+
+          {/* Details — soft labels, airy rows, hairline dividers */}
+          <div className="mt-6 divide-y divide-border/50">
+            <DetailRow label="Location" value={
+              <span className="inline-flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/8 text-primary">
+                  <MapPin className="h-3.5 w-3.5" strokeWidth={1.5} />
+                </span>
+                {profile.location || <span className="text-muted-foreground">Not set</span>}
+              </span>
+            } />
+
+            <DetailRow label="Age & gender" value={
+              <span>
+                {profile.age ? `${profile.age}` : <span className="text-muted-foreground">—</span>}
+                <span className="mx-2 text-muted-foreground/60">·</span>
+                <span className="capitalize">{profile.gender || <span className="text-muted-foreground">—</span>}</span>
+              </span>
+            } />
+
+            <DetailRow label="Bio" value={
+              profile.bio
+                ? <span className="leading-relaxed text-foreground/90">{profile.bio}</span>
+                : <span className="text-muted-foreground">No bio yet.</span>
+            } />
+
+            <DetailRow label="Hobbies" value={
+              profile.hobbies && profile.hobbies.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {profile.hobbies.map(h => (
+                    <Badge key={h} variant="secondary" className="rounded-full bg-rose font-normal text-rose-foreground hover:bg-rose">
+                      {h}
+                    </Badge>
+                  ))}
+                </div>
+              ) : <span className="text-muted-foreground">No hobbies added.</span>
+            } />
+          </div>
+
+          {/* Single primary action */}
+          {isOwn && (
+            <div className="mt-7 pb-7">
+              <Button
+                onClick={() => { setEditing(true); document.getElementById("account-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+                className="rounded-full px-5 shadow-soft"
+              >
+                <Edit2 className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.75} />
+                Edit profile
+              </Button>
+            </div>
           )}
         </div>
-      </div>
+      </Card>
 
       {isOwn && (
         <div className="mx-auto mt-8 max-w-3xl space-y-10 pb-6">
