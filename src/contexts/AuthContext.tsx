@@ -23,10 +23,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
       setLoading(false);
+      // Auto-reactivate account if user logs in within 30-day grace period
+      if (event === "SIGNED_IN" && newSession?.user) {
+        setTimeout(() => {
+          supabase.rpc("cancel_account_deletion").then(({ error }) => {
+            if (!error) {
+              // best-effort — silent on success
+            }
+          });
+        }, 0);
+      }
     });
 
     supabase.auth.getSession().then(({ data: { session: existing } }) => {
