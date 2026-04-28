@@ -26,6 +26,7 @@ export function AvatarUploader({
   onChange,
   size = 108,
   onView,
+  compact = false,
 }: AvatarUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
