@@ -391,7 +391,7 @@ export default function Profile() {
 
 function Section({ title, icon, children, id }: { title: string; icon: React.ReactNode; children: React.ReactNode; id?: string }) {
   return (
-    <section>
+    <section id={id} className="scroll-mt-20">
       <div className="mb-2 flex items-center gap-2 text-primary">
         {icon}
         <h3 className="font-display text-lg font-semibold">{title}</h3>
