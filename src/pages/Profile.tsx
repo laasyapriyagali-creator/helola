@@ -54,6 +54,8 @@ export default function Profile() {
   const [hobbiesText, setHobbiesText] = useState("");
   const [dialog, setDialog] = useState<DialogId>(null);
   const [saving, setSaving] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const targetId = userId || user?.id;
   const isOwn = !userId || userId === user?.id;
