@@ -313,7 +313,7 @@ export default function Profile() {
             <LinkRow to="/support" label="Contact support" />
           </Section>
 
-          <Section title="My account" icon={<Settings className="h-4 w-4" />}>
+          <Section title="My account" icon={<Settings className="h-4 w-4" />} id="account-section">
             <div className="space-y-4 py-3">
               {!editing ? (
                 <div className="flex items-center justify-between gap-3">
