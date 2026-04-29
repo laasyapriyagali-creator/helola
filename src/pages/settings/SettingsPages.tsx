@@ -161,7 +161,7 @@ export function AccountInfoPage() {
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
-  const [busy, setBusy] = useState(false);
+  // username & displayName are read-only here; edit happens on /settings/edit-profile
   const [verifyingEmail, setVerifyingEmail] = useState(false);
   const [verifyingPhone, setVerifyingPhone] = useState(false);
 
