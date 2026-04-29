@@ -81,10 +81,10 @@ export default function Home() {
 
   return (
     <div className="bg-texture-paper">
-      {/* Burgundy hero band with centered wordmark */}
-      <section className="relative overflow-hidden bg-primary bg-texture-hero px-4 pb-10 pt-5 md:pb-12 md:pt-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <h1 className="font-handwritten text-5xl leading-[1.05] tracking-normal text-primary-foreground md:text-7xl">
+      {/* Burgundy hero band — wordmark visually balanced (equal breathing room top + bottom) */}
+      <section className="relative overflow-hidden bg-primary bg-texture-hero px-4 py-10 md:py-14">
+        <div className="mx-auto flex max-w-3xl items-center justify-center text-center">
+          <h1 className="font-handwritten text-5xl leading-none tracking-normal text-primary-foreground md:text-7xl">
             helola
           </h1>
         </div>
