@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Calendar, MapPin, Users, MessageCircle, Heart, Share2, Phone, Plane, Hotel, Cloud, ListChecks, ShieldAlert, Download, X, IndianRupee } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Users, MessageCircle, Heart, Share2, Phone, Plane, Hotel, Cloud, ListChecks, ShieldAlert, Download, X, IndianRupee, Trash2 } from "lucide-react";
 
 interface Trip {
   id: string;
@@ -110,6 +110,19 @@ export default function TripDetails() {
     setInWishlist(!inWishlist);
   };
 
+  const deleteTrip = async () => {
+    if (!user || !trip) return;
+    if (!confirm("Delete this trip? This can't be undone.")) return;
+    const { error } = await supabase.from("trips").delete().eq("id", trip.id);
+    if (error) return toast({ title: "Couldn't delete", description: error.message, variant: "destructive" });
+    toast({ title: "Trip deleted" });
+    navigate("/trips");
+  };
+
+  const isCreator = !!user && !!trip && user.id === trip.creator_id;
+  const otherMembersCount = members.filter(m => m.user_id !== trip?.creator_id).length;
+  const canDelete = isCreator && otherMembersCount === 0;
+
   if (loading) return <div className="space-y-3 p-4"><Skeleton className="h-48 w-full rounded-2xl" /><Skeleton className="h-32 w-full rounded-2xl" /></div>;
   if (!trip) return <div className="p-10 text-center"><p>Trip not found.</p><Link to="/" className="mt-3 inline-block text-primary underline">Back home</Link></div>;
 
@@ -145,7 +158,7 @@ export default function TripDetails() {
 
       <div className="mx-auto max-w-3xl px-4 pt-6 md:px-8">
         {/* Action bar */}
-        <div className="mb-6 flex items-center gap-3">
+        <div className="mb-6 flex flex-wrap items-center gap-3">
           {isMember ? (
             <>
               <Button asChild className="flex-1 rounded-full"><Link to={`/chats/${trip.id}`}><MessageCircle className="mr-1 h-4 w-4" />Group chat</Link></Button>
@@ -156,7 +169,15 @@ export default function TripDetails() {
               {members.length >= trip.max_members ? "Trip is full" : "Join this trip"}
             </Button>
           )}
+          {canDelete && (
+            <Button onClick={deleteTrip} variant="outline" className="rounded-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground">
+              <Trash2 className="mr-1 h-4 w-4" />Delete trip
+            </Button>
+          )}
         </div>
+        {isCreator && otherMembersCount > 0 && (
+          <p className="mb-4 text-xs text-muted-foreground">You can delete this trip once everyone else has left.</p>
+        )}
 
         {trip.description && <p className="mb-6 text-base leading-relaxed text-foreground/80">{trip.description}</p>}
 

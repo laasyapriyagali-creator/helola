@@ -65,14 +65,38 @@ export function PrivacyPolicy() {
 
 export function Terms() {
   return (
-    <LegalPage title="Terms & Conditions" subtitle="The fine print, kept friendly.">
-      <h2>1. Eligibility</h2><p>You must be 18 or older to use HELOLA Trips.</p>
-      <h2>2. User responsibility</h2><ul><li>Respect other members</li><li>No harassment, abuse, or illegal behavior</li></ul>
-      <h2>3. Group conduct</h2><ul><li>Follow group rules</li><li>No unsafe or inappropriate actions during trips</li></ul>
-      <h2>4. Booking & payments</h2><ul><li>Pricing is shown clearly per person</li><li>Cancellation & refund policies apply per trip</li></ul>
-      <h2>5. Liability disclaimer</h2><p>HELOLA facilitates connections — we are not responsible for personal disputes or behavior of users.</p>
-      <h2>6. Account suspension</h2><ul><li>Misconduct</li><li>Fake profiles</li><li>Violations of these terms</li></ul>
-      <h2>7. Content rules</h2><p>No offensive, explicit, or harmful content. Period.</p>
+    <LegalPage title="Terms & Conditions" subtitle="HELOLA Trips">
+      <p>Welcome to HELOLA Trips. By using our platform, you agree to the following terms:</p>
+
+      <h2>1. Eligibility</h2>
+      <p>You must be at least 18 years old to use HELOLA.</p>
+
+      <h2>2. User Responsibility</h2>
+      <p>You are responsible for your behavior on the platform and during trips. You agree to treat others respectfully and follow all community guidelines.</p>
+
+      <h2>3. Trip Participation</h2>
+      <p>HELOLA facilitates connections between users but does not organize or control individual behavior during trips. Users participate at their own risk.</p>
+
+      <h2>4. Bookings & Payments</h2>
+      <p>All trip costs, inclusions, and terms must be clearly understood before booking. Cancellation and refund policies will be defined per trip.</p>
+
+      <h2>5. Safety Disclaimer</h2>
+      <p>HELOLA is not responsible for personal disputes, injuries, losses, or damages that may occur during trips.</p>
+
+      <h2>6. Account Integrity</h2>
+      <p>Users must provide accurate information. Fake accounts or misuse may lead to suspension or permanent ban.</p>
+
+      <h2>7. Content Policy</h2>
+      <p>Users may not post harmful, illegal, or offensive content on the platform.</p>
+
+      <h2>8. Account Suspension</h2>
+      <p>HELOLA reserves the right to suspend or terminate accounts that violate rules or harm the community.</p>
+
+      <h2>9. Modifications</h2>
+      <p>HELOLA may update these terms at any time. Continued use means acceptance of updated terms.</p>
+
+      <h2>10. Contact</h2>
+      <p>For any concerns, users can contact support through the app.</p>
     </LegalPage>
   );
 }
@@ -80,14 +104,31 @@ export function Terms() {
 export function CommunityGuidelines() {
   return (
     <LegalPage title="Community Guidelines" subtitle="What makes HELOLA feel like home.">
-      <ul>
-        <li>Be respectful — always.</li>
-        <li>No discrimination of any kind.</li>
-        <li>No harassment.</li>
-        <li>Respect personal boundaries.</li>
-        <li>Keep conversations safe and inclusive.</li>
-      </ul>
-      <p>These rules build trust — and trust is what makes real friendships possible.</p>
+      <h2>1. Be Respectful</h2>
+      <p>Treat everyone with kindness. No hate, bullying, discrimination, or offensive language.</p>
+
+      <h2>2. Respect Boundaries</h2>
+      <p>Not everyone is comfortable with the same things. Respect personal space, opinions, and choices.</p>
+
+      <h2>3. No Harassment or Misconduct</h2>
+      <p>Any form of harassment, inappropriate behavior, or unwanted advances will not be tolerated — online or during trips.</p>
+
+      <h2>4. Be Honest</h2>
+      <p>Use real information. No fake identities, misleading profiles, or impersonation.</p>
+
+      <h2>5. Keep It Safe</h2>
+      <p>Do not encourage risky, illegal, or unsafe activities during trips.</p>
+
+      <h2>6. No Spam or Promotions</h2>
+      <p>Do not use HELOLA for advertising, selling, or promoting unrelated services.</p>
+
+      <h2>7. Inclusive Environment</h2>
+      <p>We welcome people from all backgrounds. Discrimination of any kind is not allowed.</p>
+
+      <h2>8. Report Issues</h2>
+      <p>If something feels wrong, report it. Your safety matters to us.</p>
+
+      <p className="mt-6 text-sm text-muted-foreground">Violating these guidelines may result in warnings, suspension, or permanent removal from HELOLA.</p>
     </LegalPage>
   );
 }
