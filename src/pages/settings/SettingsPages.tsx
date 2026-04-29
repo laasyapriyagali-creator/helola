@@ -63,7 +63,10 @@ export function EditProfilePage() {
         // normalised
       }
 
-      const updates: Record<string, unknown> = {
+      const updates: {
+        bio?: string | null; location?: string | null; hobbies?: string[];
+        username?: string; full_name?: string | null; age?: number | null; gender?: string | null;
+      } = {
         bio: form.bio ?? null,
         location: form.location ?? null,
         hobbies,
