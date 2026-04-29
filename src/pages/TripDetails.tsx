@@ -158,7 +158,7 @@ export default function TripDetails() {
 
       <div className="mx-auto max-w-3xl px-4 pt-6 md:px-8">
         {/* Action bar */}
-        <div className="mb-6 flex items-center gap-3">
+        <div className="mb-6 flex flex-wrap items-center gap-3">
           {isMember ? (
             <>
               <Button asChild className="flex-1 rounded-full"><Link to={`/chats/${trip.id}`}><MessageCircle className="mr-1 h-4 w-4" />Group chat</Link></Button>
@@ -169,7 +169,15 @@ export default function TripDetails() {
               {members.length >= trip.max_members ? "Trip is full" : "Join this trip"}
             </Button>
           )}
+          {canDelete && (
+            <Button onClick={deleteTrip} variant="outline" className="rounded-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground">
+              <Trash2 className="mr-1 h-4 w-4" />Delete trip
+            </Button>
+          )}
         </div>
+        {isCreator && otherMembersCount > 0 && (
+          <p className="mb-4 text-xs text-muted-foreground">You can delete this trip once everyone else has left.</p>
+        )}
 
         {trip.description && <p className="mb-6 text-base leading-relaxed text-foreground/80">{trip.description}</p>}
 
