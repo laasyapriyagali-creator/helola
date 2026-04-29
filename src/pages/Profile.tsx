@@ -62,9 +62,10 @@ export default function Profile() {
 
   return (
     <div className="min-w-0 overflow-x-hidden bg-texture-paper px-4 pt-4 md:px-8 md:pt-8">
-      {/* One flowing card: cover → avatar → details */}
+      {/* One flowing card: cover → avatar+name → details (LinkedIn-style header) */}
       <Card className="mx-auto max-w-3xl overflow-hidden rounded-3xl border-border/40 bg-card shadow-elegant backdrop-blur-sm">
-        <div className="relative h-40 md:h-52">
+        {/* Compact cover — avatar overlaps bottom-left like the reference mockup */}
+        <div className="relative h-32 md:h-40">
           {isOwn ? (
             <CoverUploader
               userId={user!.id}
@@ -79,42 +80,45 @@ export default function Profile() {
           )}
         </div>
 
-        <div className="px-6 pb-2 pt-0 md:px-10">
-          <div className="-mt-16 md:-mt-20">
-            {isOwn ? (
-              <AvatarUploader
-                userId={user!.id}
-                currentUrl={profile.avatar_url}
-                fullName={profile.full_name}
-                onChange={(url) => setProfile({ ...profile, avatar_url: url })}
-                size={128}
-                onView={() => profile.avatar_url && setViewerOpen(true)}
-                compact
-              />
-            ) : (
-              <button
-                type="button"
-                onClick={() => profile.avatar_url && setViewerOpen(true)}
-                className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
-                aria-label="View profile photo"
-              >
-                <UserAvatar url={profile.avatar_url} name={profile.full_name} size={128} />
-              </button>
-            )}
-          </div>
-
-          <div className="mt-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-sans text-2xl font-semibold tracking-tight text-foreground md:text-3xl break-words">
-                {profile.full_name || "Unnamed traveler"}
-              </h1>
-              {profile.is_verified && (
-                <Badge className="rounded-full bg-accent text-accent-foreground">✓ Verified</Badge>
+        <div className="px-6 pb-2 md:px-10">
+          {/* Avatar + name row — avatar overlaps cover, name sits to the right */}
+          <div className="flex items-end gap-4 -mt-12 md:-mt-14">
+            <div className="shrink-0 rounded-full ring-4 ring-background">
+              {isOwn ? (
+                <AvatarUploader
+                  userId={user!.id}
+                  currentUrl={profile.avatar_url}
+                  fullName={profile.full_name}
+                  onChange={(url) => setProfile({ ...profile, avatar_url: url })}
+                  size={104}
+                  onView={() => profile.avatar_url && setViewerOpen(true)}
+                  compact
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => profile.avatar_url && setViewerOpen(true)}
+                  className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
+                  aria-label="View profile photo"
+                >
+                  <UserAvatar url={profile.avatar_url} name={profile.full_name} size={104} />
+                </button>
               )}
             </div>
-            <p className="mt-1 text-sm font-light text-muted-foreground/80 break-all">
-              @{profile.username || "user"}
-            </p>
+
+            <div className="min-w-0 flex-1 pb-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="font-sans text-2xl font-semibold tracking-tight text-foreground md:text-3xl break-words">
+                  {profile.full_name || "Unnamed traveler"}
+                </h1>
+                {profile.is_verified && (
+                  <Badge className="rounded-full bg-accent text-accent-foreground">✓ Verified</Badge>
+                )}
+              </div>
+              <p className="mt-0.5 text-sm font-light text-muted-foreground/80 break-all">
+                @{profile.username || "user"}
+              </p>
+            </div>
           </div>
 
           <div className="mt-6 divide-y divide-border/50">

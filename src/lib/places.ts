@@ -45,18 +45,42 @@ export async function searchPlaces(query: string, limit = 6): Promise<PlaceSugge
 }
 
 export async function getPlaceSummary(name: string): Promise<{ extract: string; thumb?: string; image?: string } | null> {
-  try {
-    const res = await fetch(`${WIKI_REST}/page/summary/${encodeURIComponent(name)}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    return {
-      extract: data.extract || "",
-      thumb: data.thumbnail?.source,
-      image: data.originalimage?.source || data.thumbnail?.source,
-    };
-  } catch {
-    return null;
+  // Try multiple name variants against Wikipedia, then fall back to Commons image search.
+  const variants = Array.from(new Set([
+    name,
+    name.split(",")[0]?.trim(),
+    name.replace(/,.*$/, "").trim(),
+  ].filter(Boolean))) as string[];
+
+  let extract = "";
+  let image: string | undefined;
+  let thumb: string | undefined;
+
+  for (const v of variants) {
+    try {
+      const res = await fetch(`${WIKI_REST}/page/summary/${encodeURIComponent(v)}`);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (!extract && data.extract) extract = data.extract;
+      const img = data.originalimage?.source || data.thumbnail?.source;
+      if (img) {
+        image = img;
+        thumb = data.thumbnail?.source || img;
+        break;
+      }
+    } catch { /* keep trying */ }
   }
+
+  // Fallback: search Wikimedia Commons for a real photo of the place.
+  if (!image) {
+    try {
+      const imgs = await getPlaceImages(variants[0], 1);
+      if (imgs[0]) { image = imgs[0].url; thumb = imgs[0].thumb; }
+    } catch { /* ignore */ }
+  }
+
+  if (!extract && !image) return null;
+  return { extract, thumb, image };
 }
 
 export async function getPlaceImages(name: string, limit = 8): Promise<PlaceImage[]> {
