@@ -18,6 +18,10 @@ import BookTickets from "./pages/BookTickets";
 import DestinationDetail from "./pages/DestinationDetail";
 import DestinationsSearch from "./pages/DestinationsSearch";
 import { About, CommunityGuidelines, PrivacyPolicy, Support, Terms } from "./pages/Legal";
+import {
+  EditProfilePage, AccountInfoPage, VisibilityPage, MessagePermissionPage,
+  BlockedUsersPage, ReportIssuePage, NotificationsPage, PreferencesPage,
+} from "./pages/settings/SettingsPages";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +51,25 @@ const App = () => (
             <Route path="/legal/terms" element={<AppShell><Terms /></AppShell>} />
             <Route path="/legal/community" element={<AppShell><CommunityGuidelines /></AppShell>} />
             <Route path="/support" element={<AppShell><Support /></AppShell>} />
+
+            {/* Settings sub-pages — full-screen white pages */}
+            <Route path="/settings/edit-profile" element={<EditProfilePage />} />
+            <Route path="/settings/account" element={<AccountInfoPage />} />
+            <Route path="/settings/visibility" element={<VisibilityPage />} />
+            <Route path="/settings/messages" element={<MessagePermissionPage />} />
+            <Route path="/settings/blocked" element={<BlockedUsersPage />} />
+            <Route path="/settings/report" element={<ReportIssuePage />} />
+            <Route path="/settings/notifications" element={<NotificationsPage />} />
+            <Route path="/settings/notifications/trip-updates" element={<NotificationsPage focusKey="trip_updates" />} />
+            <Route path="/settings/notifications/group-chat" element={<NotificationsPage focusKey="group_chat" />} />
+            <Route path="/settings/notifications/new-trip-alerts" element={<NotificationsPage focusKey="new_trip_alerts" />} />
+            <Route path="/settings/notifications/offers" element={<NotificationsPage focusKey="offers_promotions" />} />
+            <Route path="/settings/preferences" element={<PreferencesPage />} />
+            <Route path="/settings/preferences/location" element={<PreferencesPage focusKey="location" />} />
+            <Route path="/settings/preferences/destinations" element={<PreferencesPage focusKey="destinations" />} />
+            <Route path="/settings/preferences/budget" element={<PreferencesPage focusKey="budget" />} />
+            <Route path="/settings/preferences/interests" element={<PreferencesPage focusKey="interests" />} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
