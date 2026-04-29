@@ -110,6 +110,19 @@ export default function TripDetails() {
     setInWishlist(!inWishlist);
   };
 
+  const deleteTrip = async () => {
+    if (!user || !trip) return;
+    if (!confirm("Delete this trip? This can't be undone.")) return;
+    const { error } = await supabase.from("trips").delete().eq("id", trip.id);
+    if (error) return toast({ title: "Couldn't delete", description: error.message, variant: "destructive" });
+    toast({ title: "Trip deleted" });
+    navigate("/trips");
+  };
+
+  const isCreator = !!user && !!trip && user.id === trip.creator_id;
+  const otherMembersCount = members.filter(m => m.user_id !== trip?.creator_id).length;
+  const canDelete = isCreator && otherMembersCount === 0;
+
   if (loading) return <div className="space-y-3 p-4"><Skeleton className="h-48 w-full rounded-2xl" /><Skeleton className="h-32 w-full rounded-2xl" /></div>;
   if (!trip) return <div className="p-10 text-center"><p>Trip not found.</p><Link to="/" className="mt-3 inline-block text-primary underline">Back home</Link></div>;
 
