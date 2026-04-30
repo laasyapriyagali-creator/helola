@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plane, Train, Bus, Car, ExternalLink, Check, Ban } from "lucide-react";
+import { PlaceSearchInput } from "@/components/PlaceSearchInput";
 
 type Mode = "flight" | "train" | "bus" | "cab";
 
@@ -80,6 +81,7 @@ export default function BookTickets() {
   const [results, setResults] = useState<Result[]>([]);
   const [unavailable, setUnavailable] = useState(false);
   const [searched, setSearched] = useState(false);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { document.title = "Compare ticket prices · HELOLA"; }, []);
 
@@ -90,16 +92,20 @@ export default function BookTickets() {
     if (!isAvailable(m, from, to)) {
       setUnavailable(true);
       setResults([]);
-      return;
+    } else {
+      setUnavailable(false);
+      const meta = MODE_META[m];
+      const base = meta.basePrice + Math.floor(Math.random() * meta.spread);
+      const list: Result[] = PROVIDERS[m].map(p => ({
+        ...p,
+        price: base + Math.floor((Math.random() - 0.5) * meta.spread),
+      })).sort((a, b) => a.price - b.price);
+      setResults(list);
     }
-    setUnavailable(false);
-    const meta = MODE_META[m];
-    const base = meta.basePrice + Math.floor(Math.random() * meta.spread);
-    const list: Result[] = PROVIDERS[m].map(p => ({
-      ...p,
-      price: base + Math.floor((Math.random() - 0.5) * meta.spread),
-    })).sort((a, b) => a.price - b.price);
-    setResults(list);
+    // Scroll results into view so users see them immediately
+    setTimeout(() => {
+      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
   };
 
   const switchMode = (m: Mode) => {
@@ -124,15 +130,21 @@ export default function BookTickets() {
 
       <Card className="mt-5 border-border/60 shadow-elegant">
         <CardContent className="grid gap-3 p-5 md:grid-cols-4">
-          <div className="space-y-1.5"><Label>From</Label><Input value={from} onChange={(e) => setFrom(e.target.value)} placeholder="Mumbai" /></div>
-          <div className="space-y-1.5"><Label>To</Label><Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="Goa" /></div>
+          <div className="space-y-1.5">
+            <Label>From</Label>
+            <PlaceSearchInput value={from} onChange={setFrom} onSelect={(p) => setFrom(p.name)} placeholder="Mumbai" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>To</Label>
+            <PlaceSearchInput value={to} onChange={setTo} onSelect={(p) => setTo(p.name)} placeholder="Goa" />
+          </div>
           <div className="space-y-1.5"><Label>Date</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
           <div className="flex items-end"><Button onClick={() => compare()} className="w-full rounded-xl">Compare prices</Button></div>
         </CardContent>
       </Card>
 
       {/* Mode tabs */}
-      <div className="mt-5 flex flex-wrap gap-2">
+      <div ref={resultsRef} className="mt-5 flex flex-wrap gap-2 scroll-mt-4">
         {(Object.keys(MODE_META) as Mode[]).map((m) => {
           const M = MODE_META[m];
           const Icon = M.icon;

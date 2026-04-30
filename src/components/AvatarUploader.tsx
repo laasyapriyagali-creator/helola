@@ -174,6 +174,13 @@ export function AvatarUploader({
           if (file) handleFile(file);
         }}
       />
+      {/* Hidden triggers so external buttons (e.g., header "Change photo" / "Remove") can drive this uploader */}
+      {compact && (
+        <>
+          <button id="avatar-change-trigger" type="button" className="hidden" onClick={openPicker} aria-hidden />
+          <button id="avatar-remove-trigger" type="button" className="hidden" onClick={remove} aria-hidden />
+        </>
+      )}
 
       <AvatarEditorDialog
         open={!!editorSrc}
