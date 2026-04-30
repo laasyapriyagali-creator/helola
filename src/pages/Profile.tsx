@@ -11,8 +11,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Edit2, MapPin, Settings, LogOut, Heart, Bell, Lock, FileText, ChevronRight, Trash2, UserCircle2 } from "lucide-react";
+import { Edit2, MapPin, Settings, LogOut, Heart, Bell, Lock, FileText, ChevronRight, Trash2, UserCircle2, Camera } from "lucide-react";
 import { CoverUploader } from "@/components/CoverUploader";
+import { UserAvatar as Avatar } from "@/components/UserAvatar";
 
 interface Profile {
   id: string;
