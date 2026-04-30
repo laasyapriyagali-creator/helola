@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plane, Train, Bus, Car, ExternalLink, Check, Ban } from "lucide-react";
+import { PlaceSearchInput } from "@/components/PlaceSearchInput";
 
 type Mode = "flight" | "train" | "bus" | "cab";
 
