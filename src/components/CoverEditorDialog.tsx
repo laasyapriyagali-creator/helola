@@ -39,14 +39,18 @@ export function CoverEditorDialog({ open, imageSrc, onCancel, onSave }: Props) {
     <Dialog open={open} onOpenChange={(v) => { if (!v) { reset(); onCancel(); } }}>
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>Edit cover photo</DialogTitle></DialogHeader>
-        <div className="relative h-56 w-full overflow-hidden rounded-2xl bg-muted">
+        <div className="relative h-40 w-full overflow-hidden rounded-2xl bg-muted">
           {imageSrc && (
             <Cropper
               image={imageSrc}
               crop={crop}
               zoom={zoom}
               rotation={rotation}
-              aspect={11 / 4}
+              aspect={4 / 1}
+              minZoom={1}
+              maxZoom={2}
+              restrictPosition={true}
+              objectFit="horizontal-cover"
               showGrid={true}
               onCropChange={setCrop}
               onZoomChange={setZoom}
@@ -54,11 +58,16 @@ export function CoverEditorDialog({ open, imageSrc, onCancel, onSave }: Props) {
               onCropComplete={onCropComplete}
             />
           )}
+          {/* Safe area indicator — center 70% where text should stay */}
+          <div className="pointer-events-none absolute inset-y-0 left-[15%] right-[15%] border-x border-dashed border-white/40" />
         </div>
+        <p className="text-[11px] text-muted-foreground">
+          Drag to reposition. Center 70% is the safe area for text.
+        </p>
         <div className="space-y-3">
           <div>
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">Zoom</Label>
-            <Slider value={[zoom]} min={1} max={3} step={0.05} onValueChange={(v) => setZoom(v[0])} className="mt-2" />
+            <Slider value={[zoom]} min={1} max={2} step={0.02} onValueChange={(v) => setZoom(v[0])} className="mt-2" />
           </div>
           <div>
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">Rotate</Label>
