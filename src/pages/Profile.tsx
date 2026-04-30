@@ -63,16 +63,17 @@ export default function Profile() {
 
   return (
     <div className="min-w-0 overflow-x-hidden bg-texture-paper px-4 pt-4 md:px-8 md:pt-8">
-      {/* One flowing card: cover → avatar+name → details (LinkedIn-style header) */}
-      <Card className="mx-auto max-w-3xl overflow-hidden rounded-3xl border-border/40 bg-card shadow-elegant backdrop-blur-sm">
-        {/* Compact cover — avatar overlaps bottom-left like the reference mockup */}
-        <div className="relative h-32 md:h-40">
+      {/* Header card — matches reference: 11:4 banner, avatar overlapping bottom-left,
+          name + action buttons to the right, Remove sits below the avatar. */}
+      <Card className="mx-auto max-w-3xl overflow-hidden rounded-3xl border-border/40 bg-card shadow-elegant">
+        {/* 11:4 cover banner */}
+        <div className="relative aspect-[11/4] w-full">
           {isOwn ? (
             <CoverUploader
               userId={user!.id}
               currentUrl={profile.cover_url}
               onChange={(url) => setProfile({ ...profile, cover_url: url })}
-              className="absolute inset-0"
+              className="absolute inset-0 h-full w-full"
             />
           ) : profile.cover_url ? (
             <img src={profile.cover_url} alt="Profile background" className="h-full w-full object-cover" />
@@ -81,9 +82,10 @@ export default function Profile() {
           )}
         </div>
 
-        <div className="px-6 pb-2 md:px-10">
-          {/* Avatar + name row — avatar overlaps cover, name sits to the right */}
-          <div className="flex items-end gap-4 -mt-12 md:-mt-14">
+        {/* Avatar + name + action buttons row */}
+        <div className="px-5 md:px-8">
+          <div className="flex items-start gap-4 md:gap-5 -mt-14 md:-mt-16">
+            {/* Avatar overlaps the banner */}
             <div className="shrink-0 rounded-full ring-4 ring-background">
               {isOwn ? (
                 <AvatarUploader
@@ -91,7 +93,7 @@ export default function Profile() {
                   currentUrl={profile.avatar_url}
                   fullName={profile.full_name}
                   onChange={(url) => setProfile({ ...profile, avatar_url: url })}
-                  size={104}
+                  size={112}
                   onView={() => profile.avatar_url && setViewerOpen(true)}
                   compact
                 />
@@ -102,27 +104,66 @@ export default function Profile() {
                   className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
                   aria-label="View profile photo"
                 >
-                  <UserAvatar url={profile.avatar_url} name={profile.full_name} size={104} />
+                  <UserAvatar url={profile.avatar_url} name={profile.full_name} size={112} />
                 </button>
               )}
             </div>
 
-            <div className="min-w-0 flex-1 pb-1">
+            {/* Name + handle + action buttons */}
+            <div className="min-w-0 flex-1 pt-16 md:pt-20">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="font-sans text-2xl font-semibold tracking-tight text-foreground md:text-3xl break-words">
+                <h1 className="font-display text-3xl font-bold tracking-tight text-primary md:text-4xl break-words leading-none">
                   {profile.full_name || "Unnamed traveler"}
                 </h1>
                 {profile.is_verified && (
                   <Badge className="rounded-full bg-accent text-accent-foreground">✓ Verified</Badge>
                 )}
               </div>
-              <p className="mt-0.5 text-sm font-light text-muted-foreground/80 break-all">
+              <p className="mt-1 text-sm text-muted-foreground break-all">
                 @{profile.username || "user"}
               </p>
+
+              {isOwn && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    onClick={() => document.getElementById("avatar-change-trigger")?.click()}
+                    className="rounded-full px-5 shadow-soft"
+                  >
+                    <Camera className="mr-1.5 h-4 w-4" />
+                    Change photo
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate("/settings/edit-profile")}
+                    className="rounded-full border-primary px-5 text-primary hover:bg-primary hover:text-primary-foreground"
+                  >
+                    <Edit2 className="mr-1.5 h-4 w-4" />
+                    Edit
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="mt-6 divide-y divide-border/50">
+          {/* Remove button below avatar (mockup) */}
+          {isOwn && profile.avatar_url && (
+            <div className="mt-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => document.getElementById("avatar-remove-trigger")?.click()}
+                className="rounded-full border-primary px-5 text-primary hover:bg-primary hover:text-primary-foreground"
+              >
+                <Trash2 className="mr-1.5 h-4 w-4" />
+                Remove
+              </Button>
+            </div>
+          )}
+
+          {/* Profile details — single flowing card (no separate boxes) */}
+          <div className="mt-6 divide-y divide-border/50 pb-6">
             <DetailRow label="Location" value={
               <span className="inline-flex items-center gap-2">
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/8 text-primary">
@@ -158,18 +199,6 @@ export default function Profile() {
               ) : <span className="text-muted-foreground">No hobbies added.</span>
             } />
           </div>
-
-          {isOwn && (
-            <div className="mt-7 pb-7">
-              <Button
-                onClick={() => navigate("/settings/edit-profile")}
-                className="rounded-full px-5 shadow-soft"
-              >
-                <Edit2 className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.75} />
-                Edit profile
-              </Button>
-            </div>
-          )}
         </div>
       </Card>
 
