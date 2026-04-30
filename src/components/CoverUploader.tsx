@@ -12,11 +12,13 @@ interface Props {
   className?: string;
   /** Hide the inline top-right buttons; rely on hidden triggers driven from outside. */
   compact?: boolean;
+  /** Called when the user taps the cover image to view it full-size. */
+  onView?: () => void;
 }
 
 const MAX_BYTES = 25 * 1024 * 1024;
 
-export function CoverUploader({ userId, currentUrl, onChange, className, compact = false }: Props) {
+export function CoverUploader({ userId, currentUrl, onChange, className, compact = false, onView }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [editorSrc, setEditorSrc] = useState<string | null>(null);
@@ -70,7 +72,14 @@ export function CoverUploader({ userId, currentUrl, onChange, className, compact
   return (
     <div className={`relative ${className || ""}`}>
       {currentUrl ? (
-        <img src={currentUrl} alt="Profile background" className="h-full w-full object-cover" />
+        <button
+          type="button"
+          onClick={onView}
+          className="block h-full w-full focus:outline-none"
+          aria-label="View cover photo"
+        >
+          <img src={currentUrl} alt="Profile background" className="h-full w-full object-cover" draggable={false} />
+        </button>
       ) : (
         <div className="h-full w-full bg-primary bg-texture-hero" />
       )}

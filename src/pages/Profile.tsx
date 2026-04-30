@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Edit2, MapPin, Settings, LogOut, Heart, Bell, Lock, FileText, ChevronRight, Trash2, UserCircle2, Camera } from "lucide-react";
 import { CoverUploader } from "@/components/CoverUploader";
+import { CoverViewerDialog } from "@/components/CoverViewerDialog";
 
 
 interface Profile {
@@ -38,6 +39,7 @@ export default function Profile() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [coverViewerOpen, setCoverViewerOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const targetId = userId || user?.id;
@@ -67,19 +69,29 @@ export default function Profile() {
           110-130px avatar overlapping cover (~40/60), name+@handle to the right of avatar (centered with it),
           action buttons row below, then Remove below that. */}
       <Card className="mx-auto max-w-3xl overflow-hidden rounded-3xl border-border/40 bg-card shadow-elegant">
-        {/* Cover banner — fixed height per spec (160-180px) */}
-        <div className="relative h-[170px] w-full md:h-[200px]">
+        {/* Cover banner — slim 4:1 (LinkedIn-style). Tap to view full cover. */}
+        <div className="relative aspect-[4/1] w-full">
           {isOwn ? (
             <CoverUploader
               userId={user!.id}
               currentUrl={profile.cover_url}
               onChange={(url) => setProfile({ ...profile, cover_url: url })}
               className="absolute inset-0 h-full w-full"
+              onView={() => profile.cover_url && setCoverViewerOpen(true)}
             />
-          ) : profile.cover_url ? (
-            <img src={profile.cover_url} alt="Profile background" className="h-full w-full object-cover" />
           ) : (
-            <div className="h-full w-full bg-primary bg-texture-hero" />
+            <button
+              type="button"
+              onClick={() => profile.cover_url && setCoverViewerOpen(true)}
+              className="block h-full w-full focus:outline-none"
+              aria-label="View cover photo"
+            >
+              {profile.cover_url ? (
+                <img src={profile.cover_url} alt="Profile background" className="h-full w-full object-cover" />
+              ) : (
+                <div className="h-full w-full bg-primary bg-texture-hero" />
+              )}
+            </button>
           )}
         </div>
 
@@ -280,6 +292,7 @@ export default function Profile() {
       )}
 
       <AvatarViewerDialog open={viewerOpen} onOpenChange={setViewerOpen} url={profile.avatar_url} name={profile.full_name} />
+      <CoverViewerDialog open={coverViewerOpen} onOpenChange={setCoverViewerOpen} url={profile.cover_url} name={profile.full_name} />
       <DeleteAccountDialog open={deleteOpen} onOpenChange={setDeleteOpen} />
     </div>
   );
