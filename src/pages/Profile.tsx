@@ -63,11 +63,12 @@ export default function Profile() {
 
   return (
     <div className="min-w-0 overflow-x-hidden bg-texture-paper px-4 pt-4 md:px-8 md:pt-8">
-      {/* Header card — matches reference: 11:4 banner, avatar overlapping bottom-left,
-          name + action buttons to the right, Remove sits below the avatar. */}
+      {/* Header card — pixel-spec: rounded-3xl card, ~170px cover with maroon "Change cover" pill,
+          110-130px avatar overlapping cover (~40/60), name+@handle to the right of avatar (centered with it),
+          action buttons row below, then Remove below that. */}
       <Card className="mx-auto max-w-3xl overflow-hidden rounded-3xl border-border/40 bg-card shadow-elegant">
-        {/* 11:4 cover banner */}
-        <div className="relative aspect-[11/4] w-full">
+        {/* Cover banner — fixed height per spec (160-180px) */}
+        <div className="relative h-[170px] w-full md:h-[200px]">
           {isOwn ? (
             <CoverUploader
               userId={user!.id}
@@ -82,18 +83,18 @@ export default function Profile() {
           )}
         </div>
 
-        {/* Avatar + name + action buttons row */}
-        <div className="px-5 md:px-8">
-          <div className="flex items-start gap-4 md:gap-5 -mt-14 md:-mt-16">
-            {/* Avatar overlaps the banner */}
-            <div className="shrink-0 rounded-full ring-4 ring-background">
+        {/* Body */}
+        <div className="px-5 pb-6 md:px-6">
+          {/* Avatar + name row — avatar overlaps cover (~40% above / 60% below) */}
+          <div className="flex items-center gap-4">
+            <div className="-mt-12 shrink-0 md:-mt-14">
               {isOwn ? (
                 <AvatarUploader
                   userId={user!.id}
                   currentUrl={profile.avatar_url}
                   fullName={profile.full_name}
                   onChange={(url) => setProfile({ ...profile, avatar_url: url })}
-                  size={112}
+                  size={120}
                   onView={() => profile.avatar_url && setViewerOpen(true)}
                   compact
                 />
@@ -101,65 +102,68 @@ export default function Profile() {
                 <button
                   type="button"
                   onClick={() => profile.avatar_url && setViewerOpen(true)}
-                  className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="block rounded-full ring-[5px] ring-background shadow-elegant focus:outline-none focus:ring-primary"
                   aria-label="View profile photo"
                 >
-                  <UserAvatar url={profile.avatar_url} name={profile.full_name} size={112} />
+                  <UserAvatar url={profile.avatar_url} name={profile.full_name} size={120} />
                 </button>
               )}
             </div>
 
-            {/* Name + handle + action buttons */}
-            <div className="min-w-0 flex-1 pt-16 md:pt-20">
+            {/* Name + handle, vertically centered with avatar */}
+            <div className="min-w-0 flex-1 pt-4">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-3xl font-bold tracking-tight text-primary md:text-4xl break-words leading-none">
+                <h1 className="font-display text-[28px] font-bold leading-none tracking-tight text-primary md:text-[32px] break-words">
                   {profile.full_name || "Unnamed traveler"}
                 </h1>
                 {profile.is_verified && (
                   <Badge className="rounded-full bg-accent text-accent-foreground">✓ Verified</Badge>
                 )}
               </div>
-              <p className="mt-1 text-sm text-muted-foreground break-all">
+              <p className="mt-1.5 text-[15px] text-muted-foreground break-all">
                 @{profile.username || "user"}
               </p>
-
-              {isOwn && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    onClick={() => document.getElementById("avatar-change-trigger")?.click()}
-                    className="rounded-full px-5 shadow-soft"
-                  >
-                    <Camera className="mr-1.5 h-4 w-4" />
-                    Change photo
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => navigate("/settings/edit-profile")}
-                    className="rounded-full border-primary px-5 text-primary hover:bg-primary hover:text-primary-foreground"
-                  >
-                    <Edit2 className="mr-1.5 h-4 w-4" />
-                    Edit
-                  </Button>
-                </div>
-              )}
             </div>
           </div>
 
-          {/* Remove button below avatar (mockup) */}
-          {isOwn && profile.avatar_url && (
-            <div className="mt-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => document.getElementById("avatar-remove-trigger")?.click()}
-                className="rounded-full border-primary px-5 text-primary hover:bg-primary hover:text-primary-foreground"
-              >
-                <Trash2 className="mr-1.5 h-4 w-4" />
-                Remove
-              </Button>
-            </div>
+          {/* Buttons row — Change photo (primary) + Edit (outline) */}
+          {isOwn && (
+            <>
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <Button
+                  type="button"
+                  onClick={() => document.getElementById("avatar-change-trigger")?.click()}
+                  className="h-12 rounded-full bg-gradient-to-r from-primary to-primary/85 px-6 text-primary-foreground shadow-elegant hover:opacity-95"
+                >
+                  <Camera className="mr-2 h-4 w-4" />
+                  Change photo
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate("/settings/edit-profile")}
+                  className="h-12 rounded-full border-primary px-6 text-primary hover:bg-primary hover:text-primary-foreground"
+                >
+                  <Edit2 className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
+              </div>
+
+              {/* Remove — separate row below, left-aligned, with extra spacing */}
+              {profile.avatar_url && (
+                <div className="mt-5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById("avatar-remove-trigger")?.click()}
+                    className="h-12 rounded-full border-primary px-6 text-primary hover:bg-primary hover:text-primary-foreground"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Remove
+                  </Button>
+                </div>
+              )}
+            </>
           )}
 
           {/* Profile details — single flowing card (no separate boxes) */}
