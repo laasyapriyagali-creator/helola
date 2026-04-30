@@ -144,7 +144,7 @@ export default function BookTickets() {
       </Card>
 
       {/* Mode tabs */}
-      <div className="mt-5 flex flex-wrap gap-2">
+      <div ref={resultsRef} className="mt-5 flex flex-wrap gap-2 scroll-mt-4">
         {(Object.keys(MODE_META) as Mode[]).map((m) => {
           const M = MODE_META[m];
           const Icon = M.icon;
