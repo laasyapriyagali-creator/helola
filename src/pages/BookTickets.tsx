@@ -130,8 +130,14 @@ export default function BookTickets() {
 
       <Card className="mt-5 border-border/60 shadow-elegant">
         <CardContent className="grid gap-3 p-5 md:grid-cols-4">
-          <div className="space-y-1.5"><Label>From</Label><Input value={from} onChange={(e) => setFrom(e.target.value)} placeholder="Mumbai" /></div>
-          <div className="space-y-1.5"><Label>To</Label><Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="Goa" /></div>
+          <div className="space-y-1.5">
+            <Label>From</Label>
+            <PlaceSearchInput value={from} onChange={setFrom} onSelect={(p) => setFrom(p.name)} placeholder="Mumbai" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>To</Label>
+            <PlaceSearchInput value={to} onChange={setTo} onSelect={(p) => setTo(p.name)} placeholder="Goa" />
+          </div>
           <div className="space-y-1.5"><Label>Date</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
           <div className="flex items-end"><Button onClick={() => compare()} className="w-full rounded-xl">Compare prices</Button></div>
         </CardContent>
