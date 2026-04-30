@@ -81,6 +81,7 @@ export default function BookTickets() {
   const [results, setResults] = useState<Result[]>([]);
   const [unavailable, setUnavailable] = useState(false);
   const [searched, setSearched] = useState(false);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { document.title = "Compare ticket prices · HELOLA"; }, []);
 
@@ -91,16 +92,20 @@ export default function BookTickets() {
     if (!isAvailable(m, from, to)) {
       setUnavailable(true);
       setResults([]);
-      return;
+    } else {
+      setUnavailable(false);
+      const meta = MODE_META[m];
+      const base = meta.basePrice + Math.floor(Math.random() * meta.spread);
+      const list: Result[] = PROVIDERS[m].map(p => ({
+        ...p,
+        price: base + Math.floor((Math.random() - 0.5) * meta.spread),
+      })).sort((a, b) => a.price - b.price);
+      setResults(list);
     }
-    setUnavailable(false);
-    const meta = MODE_META[m];
-    const base = meta.basePrice + Math.floor(Math.random() * meta.spread);
-    const list: Result[] = PROVIDERS[m].map(p => ({
-      ...p,
-      price: base + Math.floor((Math.random() - 0.5) * meta.spread),
-    })).sort((a, b) => a.price - b.price);
-    setResults(list);
+    // Scroll results into view so users see them immediately
+    setTimeout(() => {
+      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
   };
 
   const switchMode = (m: Mode) => {
