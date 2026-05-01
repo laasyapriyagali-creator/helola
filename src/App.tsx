@@ -22,6 +22,7 @@ import {
   EditProfilePage, AccountInfoPage, VisibilityPage, MessagePermissionPage,
   BlockedUsersPage, ReportIssuePage, NotificationsPage, PreferencesPage,
 } from "./pages/settings/SettingsPages";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -52,7 +53,8 @@ const App = () => (
             <Route path="/legal/community" element={<AppShell><CommunityGuidelines /></AppShell>} />
             <Route path="/support" element={<AppShell><Support /></AppShell>} />
 
-            {/* Settings sub-pages — full-screen white pages */}
+            {/* Settings — full-screen */}
+            <Route path="/settings" element={<Settings />} />
             <Route path="/settings/edit-profile" element={<EditProfilePage />} />
             <Route path="/settings/account" element={<AccountInfoPage />} />
             <Route path="/settings/visibility" element={<VisibilityPage />} />
