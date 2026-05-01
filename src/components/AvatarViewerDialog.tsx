@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { toast } from "@/hooks/use-toast";
+
 
 interface Props {
   open: boolean;
@@ -70,22 +70,12 @@ export function AvatarViewerDialog({ open, onOpenChange, url, name }: Props) {
             className={`h-full w-full select-none object-cover pointer-events-none transition-opacity duration-100 ${hidden ? "opacity-0" : "opacity-100"}`}
             style={{ WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}
           />
-          {hidden && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black text-center text-white/95 px-6">
-              <div>
-                <p className="text-base font-semibold">🔒 Screenshots are privacy restricted</p>
-                <p className="mt-1 text-xs text-white/70">Profile photos are private to their owner.</p>
-              </div>
-            </div>
-          )}
+          {hidden && <div className="absolute inset-0 bg-black" />}
           <div
             className="absolute inset-0"
             onContextMenu={(e) => e.preventDefault()}
             style={{ WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}
           />
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 bg-black/60 px-4 py-2 text-center text-xs text-white/90">
-            🔒 Screenshots are privacy restricted
-          </div>
         </div>
       </DialogContent>
     </Dialog>
