@@ -1,4 +1,4 @@
-import { Plane, Home, MessageCircle, Heart, Search } from "lucide-react";
+import { Plane, Home, MessageCircle, Heart, Search, Camera } from "lucide-react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 const items = [
   { to: "/", icon: Home, label: "Discover" },
   { to: "/trips", icon: Plane, label: "My Trips" },
+  { to: "/moments", icon: Camera, label: "Moments" },
   { to: "/chats", icon: MessageCircle, label: "Chats" },
   { to: "/wishlist", icon: Heart, label: "Wishlist" },
 ];
