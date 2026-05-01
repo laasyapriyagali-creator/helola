@@ -22,19 +22,17 @@ export function AvatarViewerDialog({ open, onOpenChange, url, name }: Props) {
 
   useEffect(() => {
     if (!open) { setHidden(false); return; }
-    const warn = () =>
-      toast({ title: "Screenshots are privacy restricted", description: "Profile photos are private.", variant: "destructive" });
 
     const onKey = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
-      if (e.key === "PrintScreen") { warn(); navigator.clipboard?.writeText(""); setHidden(true); setTimeout(() => setHidden(false), 1500); return; }
+      if (e.key === "PrintScreen") { navigator.clipboard?.writeText(""); setHidden(true); setTimeout(() => setHidden(false), 1500); return; }
       if ((e.shiftKey && (e.metaKey || e.ctrlKey) && (k === "s" || k === "3" || k === "4" || k === "5"))
           || ((e.ctrlKey || e.metaKey) && (k === "p" || k === "s"))) {
-        e.preventDefault(); warn(); setHidden(true); setTimeout(() => setHidden(false), 1500);
+        e.preventDefault(); setHidden(true); setTimeout(() => setHidden(false), 1500);
       }
     };
-    const onCtx = (e: MouseEvent) => { e.preventDefault(); warn(); };
-    const onCopy = (e: ClipboardEvent) => { e.preventDefault(); warn(); };
+    const onCtx = (e: MouseEvent) => { e.preventDefault(); };
+    const onCopy = (e: ClipboardEvent) => { e.preventDefault(); };
     const onBlurOrHide = () => { setHidden(true); };
     const onFocus = () => { setHidden(false); };
 
