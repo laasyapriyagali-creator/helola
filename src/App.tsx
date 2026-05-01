@@ -23,6 +23,7 @@ import {
   BlockedUsersPage, ReportIssuePage, NotificationsPage, PreferencesPage,
 } from "./pages/settings/SettingsPages";
 import Settings from "./pages/Settings";
+import Moments from "./pages/Moments";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/trips/:id" element={<AppShell><TripDetails /></AppShell>} />
             <Route path="/chats" element={<AppShell><Chats /></AppShell>} />
             <Route path="/wishlist" element={<AppShell><Wishlist /></AppShell>} />
+            <Route path="/moments" element={<AppShell><Moments /></AppShell>} />
             <Route path="/profile" element={<AppShell><Profile /></AppShell>} />
             <Route path="/u/:userId" element={<AppShell><Profile /></AppShell>} />
             <Route path="/book-tickets" element={<AppShell><BookTickets /></AppShell>} />
