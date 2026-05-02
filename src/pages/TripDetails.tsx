@@ -136,6 +136,8 @@ export default function TripDetails() {
   const dateLabel = `${start.toLocaleDateString("en-IN", { month: "long", day: "numeric" })} – ${end.toLocaleDateString("en-IN", { month: "long", day: "numeric", year: "numeric" })}`;
   const total = Number(trip.cost_stay) + Number(trip.cost_travel) + Number(trip.cost_food) + Number(trip.cost_other);
   const itinerary = (Array.isArray(trip.itinerary) && trip.itinerary.length ? trip.itinerary : DEFAULT_ITINERARY);
+  const liveStatus = computeLiveStatus(trip);
+  const banner = transportBanner(trip);
 
   return (
     <div className="pb-8">
@@ -152,7 +154,7 @@ export default function TripDetails() {
           <Share2 className="h-4 w-4" />
         </button>
         <div className="absolute bottom-5 left-5 right-5 text-primary-foreground">
-          <Badge className="rounded-full bg-background/20 text-primary-foreground backdrop-blur">{trip.status}</Badge>
+          <Badge className={`rounded-full backdrop-blur ${statusToneClass(liveStatus)}`}>{statusLabel(liveStatus)}</Badge>
           <h1 className="mt-2 font-display text-4xl font-bold leading-tight md:text-5xl">{trip.destination}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
             <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" />{dateLabel}</span>
@@ -182,6 +184,16 @@ export default function TripDetails() {
         </div>
         {isCreator && otherMembersCount > 0 && (
           <p className="mb-4 text-xs text-muted-foreground">You can delete this trip once everyone else has left.</p>
+        )}
+
+        {banner && (
+          <div className={`mb-5 flex items-start gap-3 rounded-2xl border p-3 ${banner.tone === "danger" ? "border-destructive/40 bg-destructive/10 text-destructive" : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"}`}>
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+            <div className="text-sm">
+              <p className="font-semibold">{banner.title}</p>
+              {banner.detail && <p className="opacity-80">{banner.detail}</p>}
+            </div>
+          </div>
         )}
 
         {trip.description && <p className="mb-6 text-base leading-relaxed text-foreground/80">{trip.description}</p>}
@@ -234,14 +246,41 @@ export default function TripDetails() {
         </Section>
 
         {/* Itinerary */}
-        <Section title="Itinerary" icon={<Calendar className="h-4 w-4" />}>
+        <Section
+          title="Itinerary"
+          icon={<Calendar className="h-4 w-4" />}
+          action={isCreator && (
+            <Button size="sm" variant="outline" className="rounded-full" onClick={() => setEditItinOpen(true)}>
+              <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+            </Button>
+          )}
+        >
           <ol className="space-y-3">
             {itinerary.map((d, i) => (
               <li key={i} className="flex gap-3 rounded-xl bg-card p-3 shadow-soft">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">{i + 1}</div>
-                <div>
-                  <p className="font-semibold">{d.day}</p>
-                  <p className="text-sm text-muted-foreground">{d.plan}</p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-baseline gap-x-2">
+                    <p className="font-semibold">{d.day}</p>
+                    {(d as ItineraryItem).city && <span className="text-xs text-muted-foreground">· {(d as ItineraryItem).city}</span>}
+                  </div>
+                  {d.plan && <p className="text-sm text-muted-foreground">{d.plan}</p>}
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {(d as ItineraryItem).place && (
+                      <button
+                        type="button"
+                        onClick={() => setGalleryPlace((d as ItineraryItem).place!)}
+                        className="inline-flex items-center gap-1 rounded-full bg-rose px-2.5 py-1 text-xs text-rose-foreground hover:opacity-90"
+                      >
+                        <ImageIcon className="h-3 w-3" /> {(d as ItineraryItem).place} · View more
+                      </button>
+                    )}
+                    {(d as ItineraryItem).transport && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs text-foreground/80">
+                        <Plane className="h-3 w-3" /> {(d as ItineraryItem).transport}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </li>
             ))}
