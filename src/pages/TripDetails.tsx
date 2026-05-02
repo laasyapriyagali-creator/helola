@@ -8,7 +8,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Calendar, MapPin, Users, MessageCircle, Heart, Share2, Phone, Plane, Hotel, Cloud, ListChecks, ShieldAlert, Download, X, IndianRupee, Trash2 } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Users, MessageCircle, Heart, Share2, Phone, Plane, Hotel, Cloud, ListChecks, ShieldAlert, Download, X, IndianRupee, Trash2, Pencil, AlertTriangle, ImageIcon } from "lucide-react";
+import { computeLiveStatus, statusLabel, statusToneClass, transportBanner } from "@/lib/tripStatus";
+import { EditItineraryDialog, type ItineraryItem } from "@/components/EditItineraryDialog";
+import { PlaceGalleryDialog } from "@/components/PlaceGalleryDialog";
 
 interface Trip {
   id: string;
@@ -20,9 +23,9 @@ interface Trip {
   price_per_person: number;
   cost_stay: number; cost_travel: number; cost_food: number; cost_other: number;
   interests: string[];
-  itinerary: { day: string; plan: string }[] | null;
+  itinerary: ItineraryItem[] | null;
   stay_details: { hotel?: string; room?: string; checkin?: string; checkout?: string } | null;
-  travel_details: { mode?: string; timing?: string; pickup?: string } | null;
+  travel_details: { mode?: string; timing?: string; pickup?: string; state?: "on_time" | "delayed" | "cancelled"; note?: string } | null;
   important_notes: { carry?: string; rules?: string; weather?: string } | null;
   coordinator_name: string | null;
   coordinator_contact: string | null;
@@ -47,6 +50,8 @@ export default function TripDetails() {
   const [isMember, setIsMember] = useState(false);
   const [inWishlist, setInWishlist] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [editItinOpen, setEditItinOpen] = useState(false);
+  const [galleryPlace, setGalleryPlace] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
