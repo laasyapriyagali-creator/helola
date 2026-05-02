@@ -331,17 +331,34 @@ export default function TripDetails() {
           {isMember && <Button variant="ghost" className="rounded-xl text-destructive" onClick={leave}>Cancel</Button>}
         </div>
       </div>
+
+      {/* Dialogs */}
+      <EditItineraryDialog
+        open={editItinOpen}
+        onOpenChange={setEditItinOpen}
+        tripId={trip.id}
+        initial={(trip.itinerary ?? []) as ItineraryItem[]}
+        onSaved={(items) => setTrip({ ...trip, itinerary: items })}
+      />
+      <PlaceGalleryDialog
+        open={!!galleryPlace}
+        onOpenChange={(v) => { if (!v) setGalleryPlace(null); }}
+        place={galleryPlace ?? ""}
+      />
     </div>
   );
 }
 
-function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+function Section({ title, icon, children, action }: { title: string; icon: React.ReactNode; children: React.ReactNode; action?: React.ReactNode }) {
   return (
     <section className="mb-6">
-      <h2 className="mb-3 flex items-center gap-2 font-display text-xl font-semibold text-foreground">
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose text-rose-foreground">{icon}</span>
-        {title}
-      </h2>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="flex items-center gap-2 font-display text-xl font-semibold text-foreground">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose text-rose-foreground">{icon}</span>
+          {title}
+        </h2>
+        {action}
+      </div>
       <Card className="border-border/60 shadow-soft"><CardContent className="p-4">{children}</CardContent></Card>
     </section>
   );
