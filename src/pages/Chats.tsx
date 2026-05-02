@@ -107,7 +107,7 @@ export function ChatRoom() {
       document.title = `${t?.destination ?? "Chat"} · HELOLA`;
 
       const { data: msgs } = await supabase.from("messages").select("*").eq("trip_id", tripId).order("created_at");
-      setMessages((msgs ?? []) as Message[]);
+      setMessages((msgs ?? []) as unknown as Message[]);
 
       const senderIds = Array.from(new Set((msgs ?? []).map(m => m.sender_id)));
       if (senderIds.length) {
