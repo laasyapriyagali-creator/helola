@@ -17,25 +17,11 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background/95 backdrop-blur-lg md:hidden">
-      <div className="relative mx-auto flex max-w-md items-end justify-around px-2 pb-[env(safe-area-inset-bottom)] pt-2">
+      <div className="relative mx-auto flex max-w-md items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)] pt-2">
         {leftItems.map(({ to, icon: Icon, label }) => (
           <TabLink key={to} to={to} Icon={Icon} label={label} />
         ))}
-
-        {/* Raised center FAB — Moments */}
-        <NavLink
-          to="/moments"
-          aria-label="Moments"
-          className={({ isActive }) =>
-            cn(
-              "relative -mt-7 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-background transition-transform active:scale-95",
-              isActive && "ring-primary/30",
-            )
-          }
-        >
-          <Camera className="h-6 w-6" strokeWidth={2.2} />
-        </NavLink>
-
+        <TabLink to="/moments" Icon={Camera} label="Moments" />
         {rightItems.map(({ to, icon: Icon, label }) => (
           <TabLink key={to} to={to} Icon={Icon} label={label} />
         ))}
