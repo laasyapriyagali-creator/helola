@@ -141,47 +141,30 @@ export function ChatRoom() {
     setPendingFiles(prev => [...prev, ...arr].slice(0, 6));
   }
 
-  async function uploadAttachments(): Promise<Attachment[]> {
-    if (!user || pendingFiles.length === 0) return [];
-    setUploading(true);
-    const out: Attachment[] = [];
-    try {
-      for (const f of pendingFiles) {
-        const ext = (f.name.split(".").pop() || "bin").toLowerCase();
-        const path = `${user.id}/${tripId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
-        const { error } = await supabase.storage.from("chat-media").upload(path, f, { contentType: f.type, upsert: false });
-        if (error) throw error;
-        const { data: pub } = supabase.storage.from("chat-media").getPublicUrl(path);
-        out.push({ type: f.type.startsWith("video/") ? "video" : "image", url: pub.publicUrl });
-      }
-    } finally { setUploading(false); }
-    return out;
-  }
-
   const send = async () => {
     if ((!input.trim() && pendingFiles.length === 0) || !user || !tripId) return;
     setSending(true);
     const text = input.trim();
     const files = pendingFiles;
     setInput(""); setPendingFiles([]);
-    try {
-      const attachments = await uploadAttachments.call({ user, tripId, pendingFiles: files } as any) as Attachment[];
-      // Re-run with proper closure (above call used wrong this binding, replace with simple loop)
-    } catch {}
-    // Proper upload using local files
-    let attachments: Attachment[] = [];
-    try {
-      for (const f of files) {
-        const ext = (f.name.split(".").pop() || "bin").toLowerCase();
-        const path = `${user.id}/${tripId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
-        const { error } = await supabase.storage.from("chat-media").upload(path, f, { contentType: f.type, upsert: false });
-        if (error) throw error;
-        const { data: pub } = supabase.storage.from("chat-media").getPublicUrl(path);
-        attachments.push({ type: f.type.startsWith("video/") ? "video" : "image", url: pub.publicUrl });
+
+    const attachments: Attachment[] = [];
+    if (files.length > 0) {
+      setUploading(true);
+      try {
+        for (const f of files) {
+          const ext = (f.name.split(".").pop() || "bin").toLowerCase();
+          const path = `${user.id}/${tripId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+          const { error } = await supabase.storage.from("chat-media").upload(path, f, { contentType: f.type, upsert: false });
+          if (error) throw error;
+          const { data: pub } = supabase.storage.from("chat-media").getPublicUrl(path);
+          attachments.push({ type: f.type.startsWith("video/") ? "video" : "image", url: pub.publicUrl });
+        }
+      } catch (e: any) {
+        toast({ title: "Upload failed", description: e.message, variant: "destructive" });
+        setInput(text); setPendingFiles(files); setSending(false); setUploading(false); return;
       }
-    } catch (e: any) {
-      toast({ title: "Upload failed", description: e.message, variant: "destructive" });
-      setInput(text); setPendingFiles(files); setSending(false); return;
+      setUploading(false);
     }
 
     const { error } = await supabase.from("messages").insert({
