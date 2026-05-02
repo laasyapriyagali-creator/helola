@@ -42,6 +42,7 @@ export type Database = {
           id: string
           image_url: string
           like_count: number
+          media: Json
           story: string | null
           trip_id: string | null
           updated_at: string
@@ -53,6 +54,7 @@ export type Database = {
           id?: string
           image_url: string
           like_count?: number
+          media?: Json
           story?: string | null
           trip_id?: string | null
           updated_at?: string
@@ -64,6 +66,7 @@ export type Database = {
           id?: string
           image_url?: string
           like_count?: number
+          media?: Json
           story?: string | null
           trip_id?: string | null
           updated_at?: string
@@ -102,21 +105,24 @@ export type Database = {
       }
       messages: {
         Row: {
-          content: string
+          attachments: Json
+          content: string | null
           created_at: string
           id: string
           sender_id: string
           trip_id: string
         }
         Insert: {
-          content: string
+          attachments?: Json
+          content?: string | null
           created_at?: string
           id?: string
           sender_id: string
           trip_id: string
         }
         Update: {
-          content?: string
+          attachments?: Json
+          content?: string | null
           created_at?: string
           id?: string
           sender_id?: string
