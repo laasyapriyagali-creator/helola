@@ -88,6 +88,8 @@ export function ChatRoom() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [tripName, setTripName] = useState<string>("");
+  const [tripCover, setTripCover] = useState<string | null>(null);
+  const [groupOpen, setGroupOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [profiles, setProfiles] = useState<Record<string, { full_name: string | null; avatar_url: string | null }>>({});
   const [input, setInput] = useState("");
