@@ -3,14 +3,16 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserAvatar } from "@/components/UserAvatar";
+import { TripImage } from "@/components/TripImage";
+import { TripGroupSheet } from "@/components/TripGroupSheet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Send, Lock, MessageCircle, Users, Paperclip, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Lock, Users, Paperclip, X, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
-interface ChatThread { trip_id: string; destination: string; start_date: string; max_members: number; member_count: number; }
+interface ChatThread { trip_id: string; destination: string; start_date: string; max_members: number; member_count: number; cover_image_url: string | null }
 
 export default function Chats() {
   const { user, loading: authLoading } = useAuth();
@@ -28,13 +30,13 @@ export default function Chats() {
       const { data: tm } = await supabase.from("trip_members").select("trip_id").eq("user_id", user.id);
       const ids = (tm ?? []).map(m => m.trip_id);
       if (ids.length === 0) { setThreads([]); setLoading(false); return; }
-      const { data: ts } = await supabase.from("trips").select("id,destination,start_date,max_members").in("id", ids);
+      const { data: ts } = await supabase.from("trips").select("id,destination,start_date,max_members,cover_image_url").in("id", ids);
       const { data: counts } = await supabase.from("trip_members").select("trip_id").in("trip_id", ids);
       const cMap: Record<string, number> = {};
       (counts ?? []).forEach(c => { cMap[c.trip_id] = (cMap[c.trip_id] || 0) + 1; });
       setThreads((ts ?? []).map(t => ({
         trip_id: t.id, destination: t.destination, start_date: t.start_date, max_members: t.max_members,
-        member_count: cMap[t.id] || 0,
+        member_count: cMap[t.id] || 0, cover_image_url: t.cover_image_url ?? null,
       })));
       setLoading(false);
     })();
@@ -61,9 +63,7 @@ export default function Chats() {
               <Link key={t.trip_id} to={`/chats/${t.trip_id}`}>
                 <Card className="border-border/60 shadow-soft transition-all hover:shadow-elegant">
                   <CardContent className="flex items-center gap-3 p-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-warm text-primary-foreground">
-                      <MessageCircle className="h-5 w-5" />
-                    </div>
+                    <TripImage destination={t.destination} coverUrl={t.cover_image_url} rounded="xl" className="h-14 w-14 shrink-0" />
                     <div className="min-w-0 flex-1">
                       <p className="font-display text-lg font-bold">{t.destination.toUpperCase()} TRIP</p>
                       <p className="text-xs text-muted-foreground">{start.toLocaleDateString("en-IN", { month: "long", day: "numeric", year: "numeric" })} · <Users className="inline h-3 w-3" /> {t.member_count}/{t.max_members}</p>
@@ -88,6 +88,8 @@ export function ChatRoom() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [tripName, setTripName] = useState<string>("");
+  const [tripCover, setTripCover] = useState<string | null>(null);
+  const [groupOpen, setGroupOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [profiles, setProfiles] = useState<Record<string, { full_name: string | null; avatar_url: string | null }>>({});
   const [input, setInput] = useState("");
@@ -102,8 +104,9 @@ export function ChatRoom() {
   useEffect(() => {
     if (!tripId || !user) return;
     (async () => {
-      const { data: t } = await supabase.from("trips").select("destination").eq("id", tripId).maybeSingle();
+      const { data: t } = await supabase.from("trips").select("destination,cover_image_url").eq("id", tripId).maybeSingle();
       setTripName(t?.destination ?? "Trip");
+      setTripCover(t?.cover_image_url ?? null);
       document.title = `${t?.destination ?? "Chat"} · HELOLA`;
 
       const { data: msgs } = await supabase.from("messages").select("*").eq("trip_id", tripId).order("created_at");
@@ -180,14 +183,16 @@ export function ChatRoom() {
         <button onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted">
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-warm text-primary-foreground">
-          <MessageCircle className="h-4 w-4" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="font-display text-base font-bold uppercase">{tripName} Trip</p>
-          <p className="text-xs text-muted-foreground">Group chat · {messages.length} messages</p>
-        </div>
+        <button onClick={() => setGroupOpen(true)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+          <TripImage destination={tripName} coverUrl={tripCover} rounded="full" className="h-10 w-10 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-base font-bold uppercase">{tripName} Trip</p>
+            <p className="text-xs text-muted-foreground">Group chat · {messages.length} messages</p>
+          </div>
+        </button>
       </div>
+
+      <TripGroupSheet open={groupOpen} onOpenChange={setGroupOpen} tripId={tripId ?? null} />
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-4">
         {messages.length === 0 ? (

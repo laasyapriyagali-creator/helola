@@ -48,7 +48,7 @@ export function PhotoEditorDialog({ open, imageSrc, onCancel, onReplace, onSave 
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
-  const [aspect, setAspect] = useState<number | undefined>(undefined); // undefined = original
+  const [naturalAspect, setNaturalAspect] = useState<number>(1);
   const [filter, setFilter] = useState("none");
   const [intensity, setIntensity] = useState(0.6);
   const [brightness, setBrightness] = useState(0);
@@ -61,8 +61,13 @@ export function PhotoEditorDialog({ open, imageSrc, onCancel, onReplace, onSave 
   useEffect(() => {
     if (open) {
       setTab("crop"); setCrop({ x:0, y:0 }); setZoom(1); setRotation(0);
-      setAspect(undefined); setFilter("none"); setIntensity(0.6);
+      setFilter("none"); setIntensity(0.6);
       setBrightness(0); setContrast(0); setWarmth(0); setCaption("");
+    }
+    if (open && imageSrc) {
+      const i = new Image();
+      i.onload = () => setNaturalAspect(i.width / i.height);
+      i.src = imageSrc;
     }
   }, [open, imageSrc]);
 
@@ -81,10 +86,10 @@ export function PhotoEditorDialog({ open, imageSrc, onCancel, onReplace, onSave 
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onCancel(); }}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader><DialogTitle>Edit photo</DialogTitle></DialogHeader>
+      <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col gap-3 rounded-none border-0 p-4 sm:max-w-none">
+        <DialogHeader><DialogTitle className="text-center">Edit photo</DialogTitle></DialogHeader>
 
-        <div className="relative h-72 w-full overflow-hidden rounded-2xl bg-black">
+        <div className="relative w-full flex-1 min-h-[260px] overflow-hidden rounded-2xl bg-black">
           {imageSrc && (
             <div className="absolute inset-0" style={{ filter: cssFilter }}>
               <Cropper
@@ -92,7 +97,8 @@ export function PhotoEditorDialog({ open, imageSrc, onCancel, onReplace, onSave 
                 crop={crop}
                 zoom={zoom}
                 rotation={rotation}
-                aspect={aspect}
+                aspect={naturalAspect}
+                objectFit="contain"
                 showGrid={tab === "crop"}
                 restrictPosition={false}
                 onCropChange={setCrop}
@@ -127,18 +133,7 @@ export function PhotoEditorDialog({ open, imageSrc, onCancel, onReplace, onSave 
         {/* Panels */}
         {tab === "crop" && (
           <div className="space-y-3">
-            <div className="flex gap-2">
-              {[
-                { label: "Original", val: undefined },
-                { label: "1:1", val: 1 },
-              ].map(o => (
-                <button key={o.label} onClick={() => setAspect(o.val)}
-                  className={cn("rounded-full border px-3 py-1 text-xs font-medium",
-                    aspect === o.val ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground")}>
-                  {o.label}
-                </button>
-              ))}
-            </div>
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Drag image to reposition · pinch / zoom slider to zoom</p>
             <div>
               <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Zoom</Label>
               <Slider value={[zoom]} min={1} max={3} step={0.05} onValueChange={(v) => setZoom(v[0])} className="mt-2" />
