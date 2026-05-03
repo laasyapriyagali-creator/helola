@@ -89,7 +89,7 @@ export function PhotoEditorDialog({ open, imageSrc, onCancel, onReplace, onSave 
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>Edit photo</DialogTitle></DialogHeader>
 
-        <div className="relative h-72 w-full overflow-hidden rounded-2xl bg-black">
+        <div className="relative h-80 w-full overflow-hidden rounded-2xl bg-black">
           {imageSrc && (
             <div className="absolute inset-0" style={{ filter: cssFilter }}>
               <Cropper
@@ -98,6 +98,7 @@ export function PhotoEditorDialog({ open, imageSrc, onCancel, onReplace, onSave 
                 zoom={zoom}
                 rotation={rotation}
                 aspect={naturalAspect}
+                objectFit="contain"
                 showGrid={tab === "crop"}
                 restrictPosition={false}
                 onCropChange={setCrop}
