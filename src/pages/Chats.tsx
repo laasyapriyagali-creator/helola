@@ -63,9 +63,7 @@ export default function Chats() {
               <Link key={t.trip_id} to={`/chats/${t.trip_id}`}>
                 <Card className="border-border/60 shadow-soft transition-all hover:shadow-elegant">
                   <CardContent className="flex items-center gap-3 p-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-warm text-primary-foreground">
-                      <MessageCircle className="h-5 w-5" />
-                    </div>
+                    <TripImage destination={t.destination} coverUrl={t.cover_image_url} rounded="xl" className="h-14 w-14 shrink-0" />
                     <div className="min-w-0 flex-1">
                       <p className="font-display text-lg font-bold">{t.destination.toUpperCase()} TRIP</p>
                       <p className="text-xs text-muted-foreground">{start.toLocaleDateString("en-IN", { month: "long", day: "numeric", year: "numeric" })} · <Users className="inline h-3 w-3" /> {t.member_count}/{t.max_members}</p>
