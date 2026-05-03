@@ -183,14 +183,16 @@ export function ChatRoom() {
         <button onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted">
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-warm text-primary-foreground">
-          <MessageCircle className="h-4 w-4" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="font-display text-base font-bold uppercase">{tripName} Trip</p>
-          <p className="text-xs text-muted-foreground">Group chat · {messages.length} messages</p>
-        </div>
+        <button onClick={() => setGroupOpen(true)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+          <TripImage destination={tripName} coverUrl={tripCover} rounded="full" className="h-10 w-10 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-base font-bold uppercase">{tripName} Trip</p>
+            <p className="text-xs text-muted-foreground">Group chat · {messages.length} messages</p>
+          </div>
+        </button>
       </div>
+
+      <TripGroupSheet open={groupOpen} onOpenChange={setGroupOpen} tripId={tripId ?? null} />
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-4">
         {messages.length === 0 ? (
