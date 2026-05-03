@@ -48,7 +48,7 @@ export function PhotoEditorDialog({ open, imageSrc, onCancel, onReplace, onSave 
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
-  const [aspect, setAspect] = useState<number | undefined>(undefined); // undefined = original
+  const [naturalAspect, setNaturalAspect] = useState<number>(1);
   const [filter, setFilter] = useState("none");
   const [intensity, setIntensity] = useState(0.6);
   const [brightness, setBrightness] = useState(0);
