@@ -139,20 +139,22 @@ export function CreateMemoryDialog({ open, onOpenChange, onCreated }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
-      <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle>Share a moment</DialogTitle></DialogHeader>
+      <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col gap-0 rounded-none border-0 p-0 sm:max-w-none">
+        <DialogHeader className="border-b border-border px-4 py-3">
+          <DialogTitle className="text-center font-display text-xl">Share a moment</DialogTitle>
+        </DialogHeader>
 
-        {photos.length === 0 ? (
-          <label className="flex aspect-square w-full cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-border bg-muted/30">
-            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-              <ImagePlus className="h-8 w-8" />
-              <span className="text-sm">Tap to add photos (up to {MAX_PHOTOS})</span>
-            </div>
-            <input ref={fileInputRef} type="file" accept="image/*" multiple hidden
-              onChange={e => { handleAddFiles(e.target.files); e.target.value = ""; }} />
-          </label>
-        ) : (
-          <div>
+        <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4 pb-32">
+          {photos.length === 0 ? (
+            <label className="flex aspect-square w-full cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-border bg-muted/30">
+              <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                <ImagePlus className="h-8 w-8" />
+                <span className="text-sm">Tap to add photos (up to {MAX_PHOTOS})</span>
+              </div>
+              <input ref={fileInputRef} type="file" accept="image/*" multiple hidden
+                onChange={e => { handleAddFiles(e.target.files); e.target.value = ""; }} />
+            </label>
+          ) : (
             <div className="flex gap-2 overflow-x-auto pb-2">
               {photos.map((p, i) => (
                 <div key={p.id} className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl border border-border">
@@ -175,14 +177,14 @@ export function CreateMemoryDialog({ open, onOpenChange, onCreated }: Props) {
                 </label>
               )}
             </div>
-          </div>
-        )}
+          )}
 
-        <Input placeholder="Caption (one line)" value={caption} onChange={e => setCaption(e.target.value)} maxLength={140} />
-        <Textarea placeholder="Write a story… (optional)" value={story} onChange={e => setStory(e.target.value)} rows={4} maxLength={2000} />
+          <Input placeholder="Caption (one line)" value={caption} onChange={e => setCaption(e.target.value)} maxLength={140} />
+          <Textarea placeholder="Write a story… (optional)" value={story} onChange={e => setStory(e.target.value)} rows={6} maxLength={2000} />
+        </div>
 
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => { reset(); onOpenChange(false); }} disabled={busy}>Cancel</Button>
+        <div className="sticky bottom-0 flex justify-end gap-2 border-t border-border bg-background px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+          <Button variant="outline" onClick={() => { reset(); onOpenChange(false); }} disabled={busy} className="rounded-full">Cancel</Button>
           <Button onClick={submit} disabled={busy || photos.length === 0} className="rounded-full">
             {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
             Post
