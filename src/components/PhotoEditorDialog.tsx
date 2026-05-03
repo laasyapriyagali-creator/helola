@@ -89,7 +89,7 @@ export function PhotoEditorDialog({ open, imageSrc, onCancel, onReplace, onSave 
       <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col gap-3 rounded-none border-0 p-4 sm:max-w-none">
         <DialogHeader><DialogTitle className="text-center">Edit photo</DialogTitle></DialogHeader>
 
-        <div className="relative h-80 w-full overflow-hidden rounded-2xl bg-black">
+        <div className="relative w-full flex-1 min-h-[260px] overflow-hidden rounded-2xl bg-black">
           {imageSrc && (
             <div className="absolute inset-0" style={{ filter: cssFilter }}>
               <Cropper
