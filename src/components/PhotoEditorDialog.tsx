@@ -61,8 +61,13 @@ export function PhotoEditorDialog({ open, imageSrc, onCancel, onReplace, onSave 
   useEffect(() => {
     if (open) {
       setTab("crop"); setCrop({ x:0, y:0 }); setZoom(1); setRotation(0);
-      setAspect(undefined); setFilter("none"); setIntensity(0.6);
+      setFilter("none"); setIntensity(0.6);
       setBrightness(0); setContrast(0); setWarmth(0); setCaption("");
+    }
+    if (open && imageSrc) {
+      const i = new Image();
+      i.onload = () => setNaturalAspect(i.width / i.height);
+      i.src = imageSrc;
     }
   }, [open, imageSrc]);
 
