@@ -104,8 +104,9 @@ export function ChatRoom() {
   useEffect(() => {
     if (!tripId || !user) return;
     (async () => {
-      const { data: t } = await supabase.from("trips").select("destination").eq("id", tripId).maybeSingle();
+      const { data: t } = await supabase.from("trips").select("destination,cover_image_url").eq("id", tripId).maybeSingle();
       setTripName(t?.destination ?? "Trip");
+      setTripCover(t?.cover_image_url ?? null);
       document.title = `${t?.destination ?? "Chat"} · HELOLA`;
 
       const { data: msgs } = await supabase.from("messages").select("*").eq("trip_id", tripId).order("created_at");
