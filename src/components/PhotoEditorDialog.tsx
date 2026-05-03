@@ -97,7 +97,7 @@ export function PhotoEditorDialog({ open, imageSrc, onCancel, onReplace, onSave 
                 crop={crop}
                 zoom={zoom}
                 rotation={rotation}
-                aspect={aspect}
+                aspect={naturalAspect}
                 showGrid={tab === "crop"}
                 restrictPosition={false}
                 onCropChange={setCrop}
