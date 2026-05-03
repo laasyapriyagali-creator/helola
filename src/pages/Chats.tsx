@@ -3,14 +3,16 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserAvatar } from "@/components/UserAvatar";
+import { TripImage } from "@/components/TripImage";
+import { TripGroupSheet } from "@/components/TripGroupSheet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Send, Lock, MessageCircle, Users, Paperclip, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Lock, Users, Paperclip, X, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
-interface ChatThread { trip_id: string; destination: string; start_date: string; max_members: number; member_count: number; }
+interface ChatThread { trip_id: string; destination: string; start_date: string; max_members: number; member_count: number; cover_image_url: string | null }
 
 export default function Chats() {
   const { user, loading: authLoading } = useAuth();
