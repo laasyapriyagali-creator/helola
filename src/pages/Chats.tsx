@@ -30,13 +30,13 @@ export default function Chats() {
       const { data: tm } = await supabase.from("trip_members").select("trip_id").eq("user_id", user.id);
       const ids = (tm ?? []).map(m => m.trip_id);
       if (ids.length === 0) { setThreads([]); setLoading(false); return; }
-      const { data: ts } = await supabase.from("trips").select("id,destination,start_date,max_members").in("id", ids);
+      const { data: ts } = await supabase.from("trips").select("id,destination,start_date,max_members,cover_image_url").in("id", ids);
       const { data: counts } = await supabase.from("trip_members").select("trip_id").in("trip_id", ids);
       const cMap: Record<string, number> = {};
       (counts ?? []).forEach(c => { cMap[c.trip_id] = (cMap[c.trip_id] || 0) + 1; });
       setThreads((ts ?? []).map(t => ({
         trip_id: t.id, destination: t.destination, start_date: t.start_date, max_members: t.max_members,
-        member_count: cMap[t.id] || 0,
+        member_count: cMap[t.id] || 0, cover_image_url: t.cover_image_url ?? null,
       })));
       setLoading(false);
     })();
