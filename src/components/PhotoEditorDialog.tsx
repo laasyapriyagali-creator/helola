@@ -132,18 +132,7 @@ export function PhotoEditorDialog({ open, imageSrc, onCancel, onReplace, onSave 
         {/* Panels */}
         {tab === "crop" && (
           <div className="space-y-3">
-            <div className="flex gap-2">
-              {[
-                { label: "Original", val: undefined },
-                { label: "1:1", val: 1 },
-              ].map(o => (
-                <button key={o.label} onClick={() => setAspect(o.val)}
-                  className={cn("rounded-full border px-3 py-1 text-xs font-medium",
-                    aspect === o.val ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground")}>
-                  {o.label}
-                </button>
-              ))}
-            </div>
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Drag image to reposition · pinch / zoom slider to zoom</p>
             <div>
               <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Zoom</Label>
               <Slider value={[zoom]} min={1} max={3} step={0.05} onValueChange={(v) => setZoom(v[0])} className="mt-2" />
