@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Plus, MapPin, Calendar, Users, IndianRupee, Sparkles, TrendingUp, Plane } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DestinationsExplorer } from "@/components/DestinationsExplorer";
+import { TripImage } from "@/components/TripImage";
 
 interface Trip {
   id: string;
@@ -179,10 +180,11 @@ function TripCard({ trip, memberCount, creator }: {
     <Card className="overflow-hidden border-border/60 shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:shadow-elegant">
       {/* Wide rectangular hero band */}
       <Link to={`/trips/${trip.id}`} className="block">
-        <div className="relative h-40 bg-gradient-warm md:h-48">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/50 via-primary/25 to-accent/30" />
+        <div className="relative h-44 overflow-hidden md:h-56">
+          <TripImage destination={trip.destination} className="absolute inset-0 h-full w-full" rounded="lg" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-black/35" />
           <div className="absolute inset-0 flex items-center justify-center px-4">
-            <h3 className="font-display text-4xl font-bold uppercase tracking-wide text-primary-foreground drop-shadow-md md:text-5xl">
+            <h3 className="text-center font-display text-4xl font-bold uppercase tracking-wide text-white drop-shadow-lg md:text-5xl">
               {trip.destination}
             </h3>
           </div>
