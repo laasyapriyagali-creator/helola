@@ -87,28 +87,23 @@ export function PlaceGalleryDialog({ open, onOpenChange, place }: Props) {
               </Button>
 
               <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Photos</h3>
-              {images.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border p-6 text-center">
-                  <p className="text-sm text-muted-foreground">No photos found for this place yet.</p>
-                  <Button asChild variant="link" className="mt-1">
-                    <a href={`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(place)}`} target="_blank" rel="noreferrer">
-                      Search photos online <ExternalLink className="ml-1 inline h-3 w-3" />
-                    </a>
-                  </Button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-                  {images.map(img => (
-                    <a key={img.url} href={img.source} target="_blank" rel="noreferrer" className="group relative block overflow-hidden rounded-xl bg-muted shadow-soft">
-                      <img src={img.thumb} alt={img.title} loading="lazy" className="h-36 w-full object-cover transition-transform duration-500 group-hover:scale-105 md:h-44" />
-                      <span className="absolute bottom-1 right-1 rounded-full bg-background/80 p-1 opacity-0 transition group-hover:opacity-100">
-                        <ExternalLink className="h-3 w-3" />
-                      </span>
-                    </a>
-                  ))}
-                </div>
-              )}
-              <p className="mt-3 text-[11px] text-muted-foreground">Photos via Wikimedia Commons & Wikipedia.</p>
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                {images.map((img, idx) => (
+                  <a key={img.url + idx} href={img.source} target="_blank" rel="noreferrer" className="group relative block overflow-hidden rounded-xl bg-muted shadow-soft">
+                    <img
+                      src={img.thumb}
+                      alt={img.title}
+                      loading="lazy"
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = `https://source.unsplash.com/600x400/?${encodeURIComponent(place)}&sig=${idx}`; }}
+                      className="h-36 w-full object-cover transition-transform duration-500 group-hover:scale-105 md:h-44"
+                    />
+                    <span className="absolute bottom-1 right-1 rounded-full bg-background/80 p-1 opacity-0 transition group-hover:opacity-100">
+                      <ExternalLink className="h-3 w-3" />
+                    </span>
+                  </a>
+                ))}
+              </div>
+              <p className="mt-3 text-[11px] text-muted-foreground">Photos via Wikimedia Commons, Wikipedia & Unsplash.</p>
             </>
           )}
         </div>
