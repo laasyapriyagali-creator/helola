@@ -12,6 +12,7 @@ import { ArrowLeft, Calendar, MapPin, Users, MessageCircle, Heart, Share2, Phone
 import { computeLiveStatus, statusLabel, statusToneClass, transportBanner } from "@/lib/tripStatus";
 import { EditItineraryDialog, type ItineraryItem } from "@/components/EditItineraryDialog";
 import { PlaceGalleryDialog } from "@/components/PlaceGalleryDialog";
+import { PlaceAboutSection } from "@/components/PlaceAboutSection";
 
 interface Trip {
   id: string;
@@ -197,6 +198,9 @@ export default function TripDetails() {
         )}
 
         {trip.description && <p className="mb-6 text-base leading-relaxed text-foreground/80">{trip.description}</p>}
+
+        {/* About the destination — photos + description */}
+        <PlaceAboutSection place={trip.destination} />
 
         {/* Members */}
         <Section title="Members" icon={<Users className="h-4 w-4" />}>
