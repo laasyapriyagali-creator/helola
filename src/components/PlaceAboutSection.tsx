@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { ImageIcon, MapPin } from "lucide-react";
+import { ImageIcon, MapPin, AlertCircle, RefreshCw, Loader2 } from "lucide-react";
 import { getPlaceImages, getPlaceSummary, type PlaceImage } from "@/lib/places";
+import { filterLoadable } from "@/lib/imagePreload";
 import { PlaceGalleryDialog } from "@/components/PlaceGalleryDialog";
 
 interface Props { place: string; }
@@ -12,26 +13,42 @@ export function PlaceAboutSection({ place }: Props) {
   const [images, setImages] = useState<PlaceImage[]>([]);
   const [summary, setSummary] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showFull, setShowFull] = useState(false);
   const [openGallery, setOpenGallery] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!place) return;
-    let cancelled = false;
     setLoading(true);
-    (async () => {
-      try {
-        const [imgs, sum] = await Promise.all([
-          getPlaceImages(place, 8).catch(() => []),
-          getPlaceSummary(place).catch(() => null),
-        ]);
-        if (cancelled) return;
-        setImages(imgs);
-        setSummary(sum?.extract || "");
-      } finally { if (!cancelled) setLoading(false); }
-    })();
-    return () => { cancelled = true; };
+    setError(null);
+    try {
+      const [rawImgs, sum] = await Promise.all([
+        getPlaceImages(place, 16).catch(() => [] as PlaceImage[]),
+        getPlaceSummary(place).catch(() => null),
+      ]);
+      // Only keep images we can actually display, top-up with Unsplash fallbacks if needed.
+      const verified = await filterLoadable(rawImgs, 6);
+      let final = verified;
+      if (final.length < 6) {
+        const fallbacks: PlaceImage[] = Array.from({ length: 12 }).map((_, i) => {
+          const u = `https://source.unsplash.com/600x400/?${encodeURIComponent(place)}&sig=${i + 50}`;
+          return { url: u, thumb: u, source: u, title: place };
+        });
+        const extra = await filterLoadable(fallbacks, 6 - final.length);
+        final = [...final, ...extra];
+      }
+      setImages(final.slice(0, 6));
+      setSummary(sum?.extract || "");
+      if (final.length === 0) setError("Couldn't load photos. Tap retry.");
+    } catch (e: any) {
+      setError(e?.message || "Couldn't load place info.");
+    } finally {
+      setLoading(false);
+    }
   }, [place]);
+
+  useEffect(() => { load(); }, [load, attempt]);
 
   const short = summary.length > 220 ? summary.slice(0, 220).trimEnd() + "…" : summary;
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
@@ -52,7 +69,12 @@ export function PlaceAboutSection({ place }: Props) {
             <>
               <Skeleton className="mb-3 h-16 w-full rounded-md" />
               <div className="grid grid-cols-3 gap-2">
-                {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="relative h-24 overflow-hidden rounded-lg bg-muted">
+                    <Skeleton className="h-full w-full" />
+                    <Loader2 className="absolute inset-0 m-auto h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                ))}
               </div>
             </>
           ) : (
@@ -67,23 +89,35 @@ export function PlaceAboutSection({ place }: Props) {
                   )}
                 </p>
               )}
-              <div className="grid grid-cols-3 gap-2">
-                {images.slice(0, 6).map((img, idx) => (
-                  <button
-                    key={img.url + idx}
-                    onClick={() => setOpenGallery(true)}
-                    className="group relative block overflow-hidden rounded-lg bg-muted shadow-soft"
-                  >
-                    <img
-                      src={img.thumb}
-                      alt={img.title}
-                      loading="lazy"
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = `https://source.unsplash.com/600x400/?${encodeURIComponent(place)}&sig=${idx}`; }}
-                      className="h-24 w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </button>
-                ))}
-              </div>
+
+              {error && images.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center">
+                  <AlertCircle className="h-5 w-5 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">{error}</p>
+                  <Button size="sm" variant="outline" className="rounded-full" onClick={() => setAttempt(a => a + 1)}>
+                    <RefreshCw className="mr-1 h-3.5 w-3.5" /> Retry
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {images.map((img, idx) => (
+                    <button
+                      key={img.url + idx}
+                      onClick={() => setOpenGallery(true)}
+                      className="group relative block h-24 overflow-hidden rounded-lg bg-muted shadow-soft"
+                    >
+                      <img
+                        src={img.thumb}
+                        alt={img.title}
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <Button size="sm" className="rounded-full" onClick={() => setOpenGallery(true)}>
                   <ImageIcon className="mr-1 h-3.5 w-3.5" /> More photos
@@ -93,6 +127,11 @@ export function PlaceAboutSection({ place }: Props) {
                     <MapPin className="mr-1 h-3.5 w-3.5" /> View on map
                   </a>
                 </Button>
+                {error && images.length > 0 && (
+                  <Button size="sm" variant="ghost" className="rounded-full" onClick={() => setAttempt(a => a + 1)}>
+                    <RefreshCw className="mr-1 h-3.5 w-3.5" /> Retry
+                  </Button>
+                )}
               </div>
             </>
           )}
