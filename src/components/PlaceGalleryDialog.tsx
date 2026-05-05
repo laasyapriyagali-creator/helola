@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { getPlaceImages, getPlaceSummary, type PlaceImage } from "@/lib/places";
-import { ExternalLink, MapPin } from "lucide-react";
+import { filterLoadable } from "@/lib/imagePreload";
+import { ExternalLink, MapPin, AlertCircle, RefreshCw, Loader2 } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -16,32 +17,49 @@ export function PlaceGalleryDialog({ open, onOpenChange, place }: Props) {
   const [summary, setSummary] = useState<string>("");
   const [showFull, setShowFull] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+
+  const load = useCallback(async () => {
+    if (!place) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const [rawImgs, sum] = await Promise.all([
+        getPlaceImages(place, 32).catch(() => [] as PlaceImage[]),
+        getPlaceSummary(place).catch(() => null),
+      ]);
+      const candidates: PlaceImage[] = [];
+      if (sum?.image) candidates.push({ url: sum.image, thumb: sum.image, source: `https://en.wikipedia.org/wiki/${encodeURIComponent(place)}`, title: place });
+      for (const i of rawImgs) if (!candidates.find(c => c.url === i.url)) candidates.push(i);
+
+      let verified = await filterLoadable(candidates, 12);
+      if (verified.length < 8) {
+        const fallbacks: PlaceImage[] = Array.from({ length: 16 }).map((_, i) => {
+          const u = `https://source.unsplash.com/800x600/?${encodeURIComponent(place)}&sig=${i + 100}`;
+          return { url: u, thumb: u, source: u, title: `${place} photo` };
+        });
+        const extra = await filterLoadable(fallbacks, 12 - verified.length);
+        verified = [...verified, ...extra];
+      }
+
+      setImages(verified);
+      setSummary(sum?.extract || "");
+      if (verified.length === 0) setError("Couldn't load any photos. Tap retry.");
+    } catch (e: any) {
+      setError(e?.message || "Couldn't load photos.");
+    } finally {
+      setLoading(false);
+    }
+  }, [place]);
 
   useEffect(() => {
-    if (!open || !place) return;
-    let cancelled = false;
+    if (!open) return;
     setShowFull(false);
     setImages([]);
     setSummary("");
-    (async () => {
-      setLoading(true);
-      try {
-        const [imgs, sum] = await Promise.all([
-          getPlaceImages(place, 24).catch(() => []),
-          getPlaceSummary(place).catch(() => null),
-        ]);
-        if (cancelled) return;
-        const combined: PlaceImage[] = [];
-        if (sum?.image) combined.push({ url: sum.image, thumb: sum.image, source: `https://en.wikipedia.org/wiki/${encodeURIComponent(place)}`, title: place });
-        for (const i of imgs) if (!combined.find(c => c.url === i.url)) combined.push(i);
-        setImages(combined);
-        setSummary(sum?.extract || "");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [open, place]);
+    load();
+  }, [open, load, attempt]);
 
   const short = summary.length > 220 ? summary.slice(0, 220).trimEnd() + "…" : summary;
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
@@ -50,7 +68,7 @@ export function PlaceGalleryDialog({ open, onOpenChange, place }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col gap-0 rounded-none border-0 p-0 sm:max-w-none">
         <DialogHeader className="border-b border-border px-4 py-3">
-          <DialogTitle className="font-display text-2xl">{place}</DialogTitle>
+          <DialogTitle className="font-sans text-2xl font-semibold tracking-tight">{place}</DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 pb-24">
@@ -58,7 +76,12 @@ export function PlaceGalleryDialog({ open, onOpenChange, place }: Props) {
             <>
               <Skeleton className="mb-3 h-20 w-full rounded-xl" />
               <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-                {Array.from({ length: 9 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
+                {Array.from({ length: 9 }).map((_, i) => (
+                  <div key={i} className="relative h-32 overflow-hidden rounded-xl bg-muted md:h-44">
+                    <Skeleton className="h-full w-full" />
+                    <Loader2 className="absolute inset-0 m-auto h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                ))}
               </div>
             </>
           ) : (
@@ -80,29 +103,52 @@ export function PlaceGalleryDialog({ open, onOpenChange, place }: Props) {
                 </div>
               )}
 
-              <Button asChild variant="outline" size="sm" className="mb-4 rounded-full">
-                <a href={mapsUrl} target="_blank" rel="noreferrer">
-                  <MapPin className="mr-1 h-4 w-4" /> Open in Maps
-                </a>
-              </Button>
-
-              <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Photos</h3>
-              <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-                {images.map((img, idx) => (
-                  <a key={img.url + idx} href={img.source} target="_blank" rel="noreferrer" className="group relative block overflow-hidden rounded-xl bg-muted shadow-soft">
-                    <img
-                      src={img.thumb}
-                      alt={img.title}
-                      loading="lazy"
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = `https://source.unsplash.com/600x400/?${encodeURIComponent(place)}&sig=${idx}`; }}
-                      className="h-36 w-full object-cover transition-transform duration-500 group-hover:scale-105 md:h-44"
-                    />
-                    <span className="absolute bottom-1 right-1 rounded-full bg-background/80 p-1 opacity-0 transition group-hover:opacity-100">
-                      <ExternalLink className="h-3 w-3" />
-                    </span>
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                <Button asChild variant="outline" size="sm" className="rounded-full">
+                  <a href={mapsUrl} target="_blank" rel="noreferrer">
+                    <MapPin className="mr-1 h-4 w-4" /> Open in Maps
                   </a>
-                ))}
+                </Button>
+                <Button size="sm" variant="ghost" className="rounded-full" onClick={() => setAttempt(a => a + 1)}>
+                  <RefreshCw className="mr-1 h-4 w-4" /> Refresh photos
+                </Button>
               </div>
+
+              {error && images.length === 0 ? (
+                <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-muted/30 p-10 text-center">
+                  <AlertCircle className="h-6 w-6 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">{error}</p>
+                  <Button size="sm" variant="outline" className="rounded-full" onClick={() => setAttempt(a => a + 1)}>
+                    <RefreshCw className="mr-1 h-4 w-4" /> Retry
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Photos</h3>
+                  <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                    {images.map((img, idx) => (
+                      <a
+                        key={img.url + idx}
+                        href={img.source}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="group relative block h-36 overflow-hidden rounded-xl bg-muted shadow-soft md:h-44"
+                      >
+                        <img
+                          src={img.thumb}
+                          alt={img.title}
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <span className="absolute bottom-1 right-1 rounded-full bg-background/80 p-1 opacity-0 transition group-hover:opacity-100">
+                          <ExternalLink className="h-3 w-3" />
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                </>
+              )}
               <p className="mt-3 text-[11px] text-muted-foreground">Photos via Wikimedia Commons, Wikipedia & Unsplash.</p>
             </>
           )}

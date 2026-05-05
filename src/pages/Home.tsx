@@ -182,12 +182,7 @@ function TripCard({ trip, memberCount, creator }: {
       <Link to={`/trips/${trip.id}`} className="block">
         <div className="relative h-44 overflow-hidden md:h-56">
           <TripImage destination={trip.destination} className="absolute inset-0 h-full w-full" rounded="lg" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-black/35" />
-          <div className="absolute inset-0 flex items-center justify-center px-4">
-            <h3 className="text-center font-display text-4xl font-bold uppercase tracking-wide text-white drop-shadow-lg md:text-5xl">
-              {trip.destination}
-            </h3>
-          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/20" />
           <div className="absolute left-4 top-3 flex items-center gap-1.5 rounded-full bg-background/90 px-3 py-1 text-xs font-semibold text-foreground shadow-soft">
             <Calendar className="h-3 w-3 text-primary" /> {dateLabel}
           </div>
@@ -196,6 +191,11 @@ function TripCard({ trip, memberCount, creator }: {
               {trip.interests[0]}
             </div>
           )}
+          <div className="absolute bottom-3 left-4 right-4">
+            <h3 className="font-sans text-2xl font-semibold tracking-tight text-white drop-shadow-md md:text-3xl">
+              {trip.destination}
+            </h3>
+          </div>
         </div>
       </Link>
 
