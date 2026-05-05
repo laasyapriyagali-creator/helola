@@ -142,9 +142,10 @@ export default function TripDetails() {
 
   return (
     <div className="pb-8">
-      {/* Hero */}
-      <div className="relative h-56 overflow-hidden bg-gradient-warm md:h-72 md:rounded-b-3xl">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-primary/40 to-primary/70" />
+      {/* Hero — real destination photo with clean sans-serif title at bottom-left */}
+      <div className="relative h-64 overflow-hidden bg-gradient-warm md:h-80 md:rounded-b-3xl">
+        <TripImage destination={trip.destination} className="absolute inset-0 h-full w-full" rounded="lg" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-black/30" />
         <button onClick={() => navigate(-1)} className="absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-background/90 shadow-soft backdrop-blur">
           <ArrowLeft className="h-4 w-4" />
         </button>
@@ -154,10 +155,10 @@ export default function TripDetails() {
         <button onClick={() => navigator.share?.({ title: `${trip.destination} trip`, url: window.location.href }).catch(()=>{})} className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-background/90 shadow-soft backdrop-blur">
           <Share2 className="h-4 w-4" />
         </button>
-        <div className="absolute bottom-5 left-5 right-5 text-primary-foreground">
+        <div className="absolute bottom-5 left-5 right-5 text-white">
           <Badge className={`rounded-full backdrop-blur ${statusToneClass(liveStatus)}`}>{statusLabel(liveStatus)}</Badge>
-          <h1 className="mt-2 font-display text-4xl font-bold leading-tight md:text-5xl">{trip.destination}</h1>
-          <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          <h1 className="mt-2 font-sans text-3xl font-semibold tracking-tight leading-tight drop-shadow md:text-4xl">{trip.destination}</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-white/90">
             <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" />{dateLabel}</span>
             <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" />{members.length}/{trip.max_members}</span>
           </div>
