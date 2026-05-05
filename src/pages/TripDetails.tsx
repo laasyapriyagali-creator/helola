@@ -13,6 +13,7 @@ import { computeLiveStatus, statusLabel, statusToneClass, transportBanner } from
 import { EditItineraryDialog, type ItineraryItem } from "@/components/EditItineraryDialog";
 import { PlaceGalleryDialog } from "@/components/PlaceGalleryDialog";
 import { PlaceAboutSection } from "@/components/PlaceAboutSection";
+import { TripImage } from "@/components/TripImage";
 
 interface Trip {
   id: string;
