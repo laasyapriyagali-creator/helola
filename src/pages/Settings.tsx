@@ -42,6 +42,8 @@ export default function Settings() {
           <NavRow to="/settings/blocked" label="Blocked users" />
           <Divider />
           <NavRow to="/settings/report" label="Report issues" />
+          <Divider />
+          <NavRow to="/settings/security" label="Security checklist" hint="See which scan findings apply to this app" />
         </Section>
 
         <Section title="Notifications" icon={<Bell className="h-4 w-4" />}>
