@@ -3,6 +3,8 @@
 // - Images: Wikipedia REST + Wikimedia Commons + Unsplash Source fallback
 // No API keys required.
 
+export type PlaceKind = "airport" | "city" | "landmark" | "area";
+
 export interface PlaceSuggestion {
   display_name: string;
   name: string;
@@ -12,6 +14,41 @@ export interface PlaceSuggestion {
   country?: string;
   city?: string;
   osm_id?: number;
+  kind?: PlaceKind;
+  iata?: string;
+}
+
+const CITY_TO_IATA: Record<string, string> = {
+  mumbai: "BOM", delhi: "DEL", "new delhi": "DEL", bengaluru: "BLR", bangalore: "BLR",
+  kolkata: "CCU", chennai: "MAA", hyderabad: "HYD", goa: "GOI", kochi: "COK",
+  ahmedabad: "AMD", pune: "PNQ", jaipur: "JAI", lucknow: "LKO", "port blair": "IXZ",
+  leh: "IXL", srinagar: "SXR", guwahati: "GAU", varanasi: "VNS", thiruvananthapuram: "TRV",
+  london: "LHR", paris: "CDG", "new york": "JFK", dubai: "DXB", singapore: "SIN",
+  bangkok: "BKK", tokyo: "HND", bali: "DPS", denpasar: "DPS", madrid: "MAD",
+  sydney: "SYD", "los angeles": "LAX", "san francisco": "SFO", istanbul: "IST",
+  rome: "FCO", barcelona: "BCN", amsterdam: "AMS", "kuala lumpur": "KUL", "hong kong": "HKG",
+};
+
+export function resolveIata(name?: string): string | undefined {
+  if (!name) return;
+  const key = name.toLowerCase().split(",")[0].trim();
+  return CITY_TO_IATA[key];
+}
+
+function classifyKind(d: any): PlaceKind {
+  const t: string = (d.type || "").toLowerCase();
+  const cls: string = (d.class || "").toLowerCase();
+  if (t === "aerodrome" || t === "airport" || cls === "aeroway") return "airport";
+  if (["city", "town", "village", "municipality", "state", "country", "administrative"].includes(t)) return "city";
+  if (["suburb", "neighbourhood", "quarter", "hamlet"].includes(t)) return "area";
+  return "landmark";
+}
+
+const INTL_HINTS = ["india", "indian"];
+export function isInternationalRoute(from?: string, to?: string): boolean {
+  if (!from || !to) return false;
+  const inIndia = (s: string) => /,\s*india\b|\bindia$/i.test(s);
+  return inIndia(from) !== inIndia(to);
 }
 
 export interface PlaceImage {
@@ -36,16 +73,22 @@ export async function searchPlaces(query: string, limit = 6): Promise<PlaceSugge
     const res = await fetch(url, { headers: { "Accept-Language": "en" } });
     if (!res.ok) return [];
     const data = await res.json();
-    return (data || []).map((d: any) => ({
-      display_name: d.display_name,
-      name: d.name || d.display_name?.split(",")[0] || query,
-      lat: parseFloat(d.lat),
-      lon: parseFloat(d.lon),
-      type: d.type,
-      country: d.address?.country,
-      city: d.address?.city || d.address?.town || d.address?.village || d.address?.state,
-      osm_id: d.osm_id,
-    }));
+    return (data || []).map((d: any) => {
+      const name = d.name || d.display_name?.split(",")[0] || query;
+      const kind = classifyKind(d);
+      return {
+        display_name: d.display_name,
+        name,
+        lat: parseFloat(d.lat),
+        lon: parseFloat(d.lon),
+        type: d.type,
+        country: d.address?.country,
+        city: d.address?.city || d.address?.town || d.address?.village || d.address?.state,
+        osm_id: d.osm_id,
+        kind,
+        iata: kind === "city" ? CITY_TO_IATA[name.toLowerCase()] : undefined,
+      } as PlaceSuggestion;
+    });
   } catch { return []; }
 }
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { MapPin, Loader2, Search } from "lucide-react";
-import { searchPlaces, type PlaceSuggestion } from "@/lib/places";
+import { MapPin, Loader2, Search, Plane, Landmark, Building2 } from "lucide-react";
+import { searchPlaces, type PlaceSuggestion, type PlaceKind } from "@/lib/places";
 import { cn } from "@/lib/utils";
 
 interface PlaceSearchInputProps {
@@ -11,9 +11,26 @@ interface PlaceSearchInputProps {
   placeholder?: string;
   required?: boolean;
   className?: string;
+  selectedKind?: PlaceKind;
 }
 
-export function PlaceSearchInput({ value, onChange, onSelect, placeholder, required, className }: PlaceSearchInputProps) {
+function KindIcon({ kind, className }: { kind?: PlaceKind; className?: string }) {
+  const cls = cn("h-4 w-4 shrink-0", className);
+  if (kind === "airport") return <Plane className={cls} />;
+  if (kind === "landmark") return <Landmark className={cls} />;
+  if (kind === "area") return <Building2 className={cls} />;
+  return <MapPin className={cls} />;
+}
+
+function kindLabel(k?: PlaceKind) {
+  if (k === "airport") return "Airport";
+  if (k === "city") return "City";
+  if (k === "landmark") return "Landmark";
+  if (k === "area") return "Area";
+  return "Place";
+}
+
+export function PlaceSearchInput({ value, onChange, onSelect, placeholder, required, className, selectedKind }: PlaceSearchInputProps) {
   const [results, setResults] = useState<PlaceSuggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -28,11 +45,14 @@ export function PlaceSearchInput({ value, onChange, onSelect, placeholder, requi
     debounceRef.current = window.setTimeout(async () => {
       setLoading(true);
       try {
-        const r = await searchPlaces(value, 6);
+        const r = await searchPlaces(value, 8);
+        // Prioritize cities & airports
+        const order: Record<string, number> = { city: 0, airport: 1, area: 2, landmark: 3 };
+        r.sort((a, b) => (order[a.kind ?? "landmark"] ?? 9) - (order[b.kind ?? "landmark"] ?? 9));
         setResults(r);
         setOpen(true);
       } finally { setLoading(false); }
-    }, 350);
+    }, 300);
     return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current); };
   }, [value]);
 
@@ -47,13 +67,17 @@ export function PlaceSearchInput({ value, onChange, onSelect, placeholder, requi
   return (
     <div ref={wrapRef} className={cn("relative", className)}>
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        {selectedKind ? (
+          <KindIcon kind={selectedKind} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary" />
+        ) : (
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        )}
         <Input
           required={required}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => results.length && setOpen(true)}
-          placeholder={placeholder ?? "Search any place in the world…"}
+          placeholder={placeholder ?? "Search city, airport or landmark…"}
           className="pl-9"
         />
         {loading && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />}
@@ -67,11 +91,17 @@ export function PlaceSearchInput({ value, onChange, onSelect, placeholder, requi
               onClick={() => { onSelect(r); onChange(r.name); setOpen(false); }}
               className="flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left hover:bg-muted"
             >
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-foreground">{r.name}</p>
+              <KindIcon kind={r.kind} className="mt-0.5 text-primary" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-foreground">
+                  {r.name}
+                  {r.iata && <span className="ml-1.5 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">{r.iata}</span>}
+                </p>
                 <p className="truncate text-xs text-muted-foreground">{r.display_name}</p>
               </div>
+              <span className="ml-2 shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                {kindLabel(r.kind)}
+              </span>
             </button>
           ))}
         </div>
