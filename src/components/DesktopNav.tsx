@@ -1,4 +1,4 @@
-import { Plane, Home, MessageCircle, Heart, Search, Camera } from "lucide-react";
+import { Plane, Home, MessageCircle, Heart, Search, Camera, Bell } from "lucide-react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 
 const items = [
   { to: "/", icon: Home, label: "Discover" },

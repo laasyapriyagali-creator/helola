@@ -25,6 +25,7 @@ import {
 import Settings from "./pages/Settings";
 import Moments from "./pages/Moments";
 import SecurityChecklist from "./pages/SecurityChecklist";
+import Notifications from "./pages/Notifications";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/legal/community" element={<AppShell><CommunityGuidelines /></AppShell>} />
             <Route path="/support" element={<AppShell><Support /></AppShell>} />
             <Route path="/settings/security" element={<AppShell><SecurityChecklist /></AppShell>} />
+            <Route path="/notifications" element={<AppShell><Notifications /></AppShell>} />
 
             {/* Settings — full-screen */}
             <Route path="/settings" element={<Settings />} />
