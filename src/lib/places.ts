@@ -73,16 +73,22 @@ export async function searchPlaces(query: string, limit = 6): Promise<PlaceSugge
     const res = await fetch(url, { headers: { "Accept-Language": "en" } });
     if (!res.ok) return [];
     const data = await res.json();
-    return (data || []).map((d: any) => ({
-      display_name: d.display_name,
-      name: d.name || d.display_name?.split(",")[0] || query,
-      lat: parseFloat(d.lat),
-      lon: parseFloat(d.lon),
-      type: d.type,
-      country: d.address?.country,
-      city: d.address?.city || d.address?.town || d.address?.village || d.address?.state,
-      osm_id: d.osm_id,
-    }));
+    return (data || []).map((d: any) => {
+      const name = d.name || d.display_name?.split(",")[0] || query;
+      const kind = classifyKind(d);
+      return {
+        display_name: d.display_name,
+        name,
+        lat: parseFloat(d.lat),
+        lon: parseFloat(d.lon),
+        type: d.type,
+        country: d.address?.country,
+        city: d.address?.city || d.address?.town || d.address?.village || d.address?.state,
+        osm_id: d.osm_id,
+        kind,
+        iata: kind === "city" ? CITY_TO_IATA[name.toLowerCase()] : undefined,
+      } as PlaceSuggestion;
+    });
   } catch { return []; }
 }
 
