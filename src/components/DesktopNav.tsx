@@ -21,6 +21,7 @@ export function DesktopNav() {
   const { user } = useAuth();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [name, setName] = useState<string | null>(null);
+  const unread = useUnreadNotifications();
 
   useEffect(() => {
     if (!user) { setAvatarUrl(null); setName(null); return; }
@@ -68,6 +69,18 @@ export function DesktopNav() {
               <Search className="h-4 w-4" />
             </Link>
           </Button>
+          {user && (
+            <Button variant="ghost" size="icon" asChild className="relative">
+              <Link to="/notifications" aria-label="Notifications">
+                <Bell className="h-4 w-4" />
+                {unread > 0 && (
+                  <span className="absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
+              </Link>
+            </Button>
+          )}
           {user ? (
             <Link to="/profile" className="flex items-center gap-2 rounded-full border border-border bg-card px-1 py-1 pr-3 transition-colors hover:bg-muted">
               <UserAvatar url={avatarUrl} name={name} size={32} />
