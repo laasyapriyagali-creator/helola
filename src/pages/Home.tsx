@@ -229,6 +229,7 @@ function BookTicketsCard() {
     { name: "ixigo", color: "bg-amber-500" },
     { name: "Yatra", color: "bg-rose-500" },
     { name: "EaseMyTrip", color: "bg-blue-500" },
+    { name: "Cleartrip", color: "bg-primary" },
   ];
   return (
     <Card className="overflow-hidden border-border/60 bg-gradient-to-br from-primary to-primary-glow text-primary-foreground shadow-elegant">
@@ -237,7 +238,7 @@ function BookTicketsCard() {
           <Sparkles className="h-3.5 w-3.5" /> Smart price compare
         </div>
         <h3 className="mt-2 font-display text-2xl font-bold leading-tight md:text-3xl">Book travel tickets at the best price</h3>
-        <p className="mt-1 text-sm text-primary-foreground/80">We compare MakeMyTrip, Goibibo, ixigo, Yatra & more — book the cheapest in one tap.</p>
+        <p className="mt-1 text-sm text-primary-foreground/80">Compare validated routes, realistic fare ranges, and book via trusted travel apps.</p>
         <div className="mt-4 flex flex-wrap gap-2">
           {apps.map(a => (
             <span key={a.name} className="rounded-full bg-background/15 px-3 py-1 text-xs font-medium backdrop-blur-sm">{a.name}</span>
