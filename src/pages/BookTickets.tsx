@@ -250,13 +250,15 @@ export default function BookTickets() {
           const M = MODE_META[m];
           const Icon = M.icon;
           const active = m === mode;
+          const disabled = searched && available ? !available[m] : false;
           return (
             <button
               key={m}
               type="button"
+              disabled={disabled || searching}
               onClick={() => switchMode(m)}
               className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm transition-colors ${
-                active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-foreground hover:bg-muted"
+                active ? "border-primary bg-primary text-primary-foreground" : disabled ? "border-border bg-muted text-muted-foreground opacity-60" : "border-border bg-background text-foreground hover:bg-muted"
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -266,23 +268,32 @@ export default function BookTickets() {
         })}
       </div>
 
-      {searched && unavailable && (
+      {searching && (
+        <Card className="mt-6 border-border/60 shadow-soft">
+          <CardContent className="flex items-center gap-3 p-5 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            Checking route, transport coverage, and realistic fare ranges…
+          </CardContent>
+        </Card>
+      )}
+
+      {searched && unavailable && !searching && (
         <Card className="mt-6 border-border/60 shadow-soft">
           <CardContent className="flex items-start gap-3 p-5">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-              <Ban className="h-5 w-5" />
+              {route?.valid === false ? <AlertTriangle className="h-5 w-5" /> : <Ban className="h-5 w-5" />}
             </div>
             <div>
-              <p className="font-display text-lg font-semibold">{MODE_META[mode].label} aren't available for this route</p>
+              <p className="font-display text-lg font-semibold">{route?.valid === false ? "Transport information currently unavailable" : `${MODE_META[mode].label} aren't available for this route`}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                No {MODE_META[mode].label.toLowerCase()} between <strong>{from}</strong> and <strong>{to}</strong>{intl ? " (international route)" : ""}. Try another mode above.
+                {route?.reason || <>No {MODE_META[mode].label.toLowerCase()} between <strong>{from}</strong> and <strong>{to}</strong>{intl ? " (international route)" : ""}. Try another available mode above.</>}
               </p>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {results.length > 0 && !unavailable && (
+      {results.length > 0 && !unavailable && !searching && (
         <div className="mt-6 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-display text-xl font-semibold flex items-center gap-2">
