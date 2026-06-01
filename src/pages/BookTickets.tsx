@@ -146,12 +146,21 @@ export default function BookTickets() {
   const [results, setResults] = useState<TransportResult[]>([]);
   const [unavailable, setUnavailable] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [route, setRoute] = useState<RouteAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { document.title = "Compare ticket prices · HELOLA"; }, []);
 
-  const intl = useMemo(() => isInternationalRoute(fromPlace?.display_name || from, toPlace?.display_name || to), [from, to, fromPlace, toPlace]);
+  const intl = useMemo(() => route?.intl ?? isInternationalRoute(fromPlace?.display_name || from, toPlace?.display_name || to), [from, to, fromPlace, toPlace, route]);
+
+  useEffect(() => {
+    setResults([]);
+    setUnavailable(false);
+    setSearched(false);
+    setRoute(null);
+  }, [from, to]);
 
   const compare = (m: Mode = mode) => {
     setError(null);
@@ -162,14 +171,24 @@ export default function BookTickets() {
     }
     setMode(m);
     setSearched(true);
-    if (!isAvailable(m, from, to, intl)) {
-      setUnavailable(true);
-      setResults([]);
-    } else {
-      setUnavailable(false);
-      setResults(makeResults(m, intl));
-    }
-    setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+    setSearching(true);
+    window.setTimeout(() => {
+      const nextRoute = analyseRoute(from, to, fromPlace, toPlace);
+      setRoute(nextRoute);
+      if (!nextRoute.valid) {
+        setUnavailable(true);
+        setResults([]);
+        setError(nextRoute.reason || "Transport information currently unavailable.");
+      } else if (!nextRoute.available[m]) {
+        setUnavailable(true);
+        setResults([]);
+      } else {
+        setUnavailable(false);
+        setResults(makeResults(m, nextRoute));
+      }
+      setSearching(false);
+      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+    }, 350);
   };
 
   const switchMode = (m: Mode) => {
@@ -182,6 +201,7 @@ export default function BookTickets() {
   const toIata = toPlace?.iata ?? resolveIata(to);
 
   const params: SearchParams = { from, to, date, mode };
+  const available = route?.available;
 
   return (
     <div className="px-4 pt-4 md:px-8 md:pt-8">
