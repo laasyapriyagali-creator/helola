@@ -42,32 +42,71 @@ interface TransportResult {
   best?: boolean;
 }
 
-function isAvailable(mode: Mode, from: string, to: string, intl: boolean): boolean {
-  const f = (from + " " + to).toLowerCase();
-  const islandsOrRemote = ["andaman", "lakshadweep", "port blair", "leh", "ladakh"];
-  const isRemote = islandsOrRemote.some(k => f.includes(k));
-  if (intl && (mode === "train" || mode === "bus" || mode === "cab")) return false;
-  if (isRemote && mode !== "flight") return false;
-  return true;
+interface RouteAnalysis {
+  valid: boolean;
+  intl: boolean;
+  distanceKm: number | null;
+  available: Record<Mode, boolean>;
+  reason?: string;
 }
 
-function priceRange(mode: Mode, intl: boolean): [number, number] {
-  if (mode === "flight") return intl ? [25000, 65000] : [2500, 12000];
-  if (mode === "train") return [400, 3500];
-  if (mode === "bus")   return [500, 2800];
-  return [3500, 9000]; // cab
+function kmBetween(a: { lat: number; lon: number }, b: { lat: number; lon: number }) {
+  const toRad = (n: number) => n * Math.PI / 180;
+  const R = 6371;
+  const dLat = toRad(b.lat - a.lat);
+  const dLon = toRad(b.lon - a.lon);
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
+  return Math.round(R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s)));
+}
+
+function analyseRoute(fromText: string, toText: string, fromPlace: PlaceSuggestion | null, toPlace: PlaceSuggestion | null): RouteAnalysis {
+  const fromKnown = getKnownIndianCity(fromPlace?.city || fromPlace?.name || fromText) || getKnownIndianCity(normalizePlaceKey(fromText));
+  const toKnown = getKnownIndianCity(toPlace?.city || toPlace?.name || toText) || getKnownIndianCity(normalizePlaceKey(toText));
+  const intl = isInternationalRoute(fromPlace?.display_name || fromText, toPlace?.display_name || toText);
+  const fromCoords = fromKnown || (fromPlace ? { lat: fromPlace.lat, lon: fromPlace.lon, rail: false, bus: false, cab: false } : null);
+  const toCoords = toKnown || (toPlace ? { lat: toPlace.lat, lon: toPlace.lon, rail: false, bus: false, cab: false } : null);
+  const distanceKm = fromCoords && toCoords ? kmBetween(fromCoords, toCoords) : null;
+
+  if (!fromCoords || !toCoords) {
+    return { valid: false, intl, distanceKm, available: { flight: false, train: false, bus: false, cab: false }, reason: "Transport information currently unavailable. Select a city, airport, railway station, or bus stand from suggestions." };
+  }
+  if (distanceKm !== null && distanceKm < 8) {
+    return { valid: false, intl, distanceKm, available: { flight: false, train: false, bus: false, cab: false }, reason: "Origin and destination are too close or matched to the same place." };
+  }
+
+  const fromIata = fromPlace?.iata || resolveIata(fromPlace?.city || fromPlace?.name || fromText);
+  const toIata = toPlace?.iata || resolveIata(toPlace?.city || toPlace?.name || toText);
+  const domesticKnown = !!fromKnown && !!toKnown && !intl;
+  const flight = intl ? !!toCoords : !!(fromIata && toIata && distanceKm !== null && distanceKm >= 180);
+  const train = domesticKnown && fromKnown.rail && toKnown.rail && distanceKm !== null && distanceKm <= 2600;
+  const bus = domesticKnown && fromKnown.bus && toKnown.bus && distanceKm !== null && distanceKm <= 900;
+  const cab = domesticKnown && fromKnown.cab && toKnown.cab && distanceKm !== null && distanceKm <= 650;
+  return { valid: flight || train || bus || cab, intl, distanceKm, available: { flight, train, bus, cab } };
+}
+
+function priceRange(mode: Mode, route: RouteAnalysis): [number, number] {
+  const km = route.distanceKm ?? (route.intl ? 4500 : 500);
+  if (mode === "flight") {
+    if (route.intl) return [Math.max(25000, Math.round(km * 5.2)), Math.max(42000, Math.round(km * 9.5))];
+    return [Math.max(2200, Math.round(km * 5.5)), Math.min(15000, Math.max(4200, Math.round(km * 13)))];
+  }
+  if (mode === "train") return [Math.max(180, Math.round(km * 0.9)), Math.max(650, Math.round(km * 3.1))];
+  if (mode === "bus") return [Math.max(300, Math.round(km * 1.2)), Math.max(800, Math.round(km * 2.8))];
+  return [Math.max(1800, Math.round(km * 10)), Math.max(3200, Math.round(km * 18))];
 }
 
 const FLIGHT_OPS = ["IndiGo", "Air India", "Vistara", "SpiceJet", "Akasa Air"];
 const INTL_OPS = ["Emirates", "Qatar Airways", "Singapore Airlines", "Lufthansa", "Air India"];
-const TRAIN_OPS = ["Rajdhani Express", "Shatabdi Express", "Vande Bharat", "Duronto Express", "Garib Rath"];
-const BUS_OPS = ["VRL Travels", "SRS Travels", "Orange Tours", "IntrCity SmartBus", "Zingbus"];
+const TRAIN_OPS = ["Indian Railways", "Vande Bharat", "Intercity Express", "Superfast Express", "Express Train"];
+const BUS_OPS = ["State RTC", "IntrCity SmartBus", "Orange Tours", "VRL Travels", "Zingbus"];
 const CAB_OPS = ["Savaari", "Ola Outstation", "Uber Intercity", "Local Taxi"];
 
-function makeResults(mode: Mode, intl: boolean): TransportResult[] {
-  const ops = mode === "flight" ? (intl ? INTL_OPS : FLIGHT_OPS) : mode === "train" ? TRAIN_OPS : mode === "bus" ? BUS_OPS : CAB_OPS;
-  const [lo, hi] = priceRange(mode, intl);
-  const baseHours = mode === "flight" ? (intl ? 7 : 2) : mode === "train" ? 8 : mode === "bus" ? 10 : 6;
+function makeResults(mode: Mode, route: RouteAnalysis): TransportResult[] {
+  if (!route.available[mode]) return [];
+  const ops = mode === "flight" ? (route.intl ? INTL_OPS : FLIGHT_OPS) : mode === "train" ? TRAIN_OPS : mode === "bus" ? BUS_OPS : CAB_OPS;
+  const [lo, hi] = priceRange(mode, route);
+  const km = route.distanceKm ?? 500;
+  const baseHours = mode === "flight" ? Math.max(route.intl ? 5 : 1, Math.round(km / 750)) : mode === "train" ? Math.max(3, Math.round(km / 65)) : mode === "bus" ? Math.max(3, Math.round(km / 55)) : Math.max(2, Math.round(km / 45));
 
   const out: TransportResult[] = ops.slice(0, 5).map((op, i) => {
     const departHr = 6 + i * 3;
