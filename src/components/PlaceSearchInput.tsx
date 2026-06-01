@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { MapPin, Loader2, Search, Plane, Landmark, Building2 } from "lucide-react";
+import { MapPin, Loader2, Search, Plane, Landmark, Building2, Train, Bus } from "lucide-react";
 import { searchPlaces, type PlaceSuggestion, type PlaceKind } from "@/lib/places";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +17,8 @@ interface PlaceSearchInputProps {
 function KindIcon({ kind, className }: { kind?: PlaceKind; className?: string }) {
   const cls = cn("h-4 w-4 shrink-0", className);
   if (kind === "airport") return <Plane className={cls} />;
+  if (kind === "railway_station") return <Train className={cls} />;
+  if (kind === "bus_station") return <Bus className={cls} />;
   if (kind === "landmark") return <Landmark className={cls} />;
   if (kind === "area") return <Building2 className={cls} />;
   return <MapPin className={cls} />;
@@ -24,6 +26,8 @@ function KindIcon({ kind, className }: { kind?: PlaceKind; className?: string })
 
 function kindLabel(k?: PlaceKind) {
   if (k === "airport") return "Airport";
+  if (k === "railway_station") return "Railway";
+  if (k === "bus_station") return "Bus stand";
   if (k === "city") return "City";
   if (k === "landmark") return "Landmark";
   if (k === "area") return "Area";
@@ -47,7 +51,7 @@ export function PlaceSearchInput({ value, onChange, onSelect, placeholder, requi
       try {
         const r = await searchPlaces(value, 8);
         // Prioritize cities & airports
-        const order: Record<string, number> = { city: 0, airport: 1, area: 2, landmark: 3 };
+        const order: Record<string, number> = { city: 0, airport: 1, railway_station: 2, bus_station: 3, area: 4, landmark: 5 };
         r.sort((a, b) => (order[a.kind ?? "landmark"] ?? 9) - (order[b.kind ?? "landmark"] ?? 9));
         setResults(r);
         setOpen(true);
