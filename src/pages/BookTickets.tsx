@@ -4,9 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plane, Train, Bus, Car, ExternalLink, Ban, Star, Clock, MapPin } from "lucide-react";
+import { ArrowLeft, Plane, Train, Bus, Car, ExternalLink, Ban, Star, Clock, MapPin, Loader2, AlertTriangle } from "lucide-react";
 import { PlaceSearchInput } from "@/components/PlaceSearchInput";
-import { isInternationalRoute, resolveIata, type PlaceSuggestion, type PlaceKind } from "@/lib/places";
+import { getKnownIndianCity, isInternationalRoute, normalizePlaceKey, resolveIata, type PlaceSuggestion, type PlaceKind } from "@/lib/places";
 
 type Mode = "flight" | "train" | "bus" | "cab";
 
@@ -17,6 +17,9 @@ const PLATFORMS: BookingPlatform[] = [
   { name: "EaseMyTrip", href: ({ mode }) => mode === "flight" ? "https://www.easemytrip.com/flights.html" : mode === "train" ? "https://www.easemytrip.com/railways/" : mode === "bus" ? "https://www.easemytrip.com/bus.html" : "https://www.easemytrip.com/cabs.html" },
   { name: "ixigo",      href: ({ mode }) => mode === "flight" ? "https://www.ixigo.com/flights" : mode === "train" ? "https://www.ixigo.com/trains" : mode === "bus" ? "https://www.ixigo.com/bus" : "https://www.ixigo.com/cabs" },
   { name: "MakeMyTrip", href: ({ mode }) => mode === "flight" ? "https://www.makemytrip.com/flights/" : mode === "train" ? "https://www.makemytrip.com/railways/" : mode === "bus" ? "https://www.makemytrip.com/bus-tickets/" : "https://www.makemytrip.com/cabs/" },
+  { name: "Yatra", href: ({ mode }) => mode === "flight" ? "https://www.yatra.com/flights" : mode === "train" ? "https://www.yatra.com/trains" : mode === "bus" ? "https://www.yatra.com/bus" : "https://www.yatra.com/cabs" },
+  { name: "Goibibo", href: ({ mode }) => mode === "flight" ? "https://www.goibibo.com/flights/" : mode === "train" ? "https://www.goibibo.com/trains/" : mode === "bus" ? "https://www.goibibo.com/bus/" : "https://www.goibibo.com/cars/" },
+  { name: "Cleartrip", href: ({ mode }) => mode === "flight" ? "https://www.cleartrip.com/flights" : mode === "train" ? "https://www.cleartrip.com/trains" : mode === "bus" ? "https://www.cleartrip.com/bus" : "https://www.cleartrip.com/cabs" },
 ];
 
 const MODE_META: Record<Mode, { label: string; icon: typeof Plane }> = {
