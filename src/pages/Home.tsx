@@ -83,10 +83,22 @@ export default function Home() {
 
   return (
     <div className="bg-texture-paper">
-      {/* Burgundy hero band — wordmark visually balanced (equal breathing room top + bottom) */}
-      <section className="relative overflow-hidden bg-primary bg-texture-hero px-4 py-10 md:py-14">
-        <div className="mx-auto flex max-w-3xl items-center justify-center text-center">
-          <h1 className="font-handwritten text-5xl leading-none tracking-normal text-primary-foreground md:text-7xl">
+      {/* Hero band — illustrated travel map background with handwritten wordmark */}
+      <section className="relative overflow-hidden px-4 py-12 md:py-20">
+        <img
+          src={helolaMapHeader.url}
+          alt="Illustrated travel map of Helola Trips destinations across Europe and Asia"
+          className="absolute inset-0 h-full w-full object-cover"
+          loading="eager"
+        />
+        {/* Subtle burgundy wash so the wordmark stays legible */}
+        <div className="absolute inset-0 bg-primary/35" />
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-primary/55 to-transparent" />
+        <div className="relative mx-auto flex max-w-3xl items-center justify-center text-center">
+          <h1
+            className="font-handwritten text-6xl leading-none tracking-normal text-primary-foreground md:text-8xl"
+            style={{ textShadow: "0 3px 18px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.35)" }}
+          >
             helola
           </h1>
         </div>
