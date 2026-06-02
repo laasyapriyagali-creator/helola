@@ -11,6 +11,7 @@ import { Search, Plus, MapPin, Calendar, Users, IndianRupee, Sparkles, TrendingU
 import { Skeleton } from "@/components/ui/skeleton";
 import { DestinationsExplorer } from "@/components/DestinationsExplorer";
 import { TripImage } from "@/components/TripImage";
+import helolaMapHeader from "@/assets/helola-map-header.png.asset.json";
 
 interface Trip {
   id: string;
