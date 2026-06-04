@@ -22,6 +22,51 @@ export default function Auth() {
   const [gender, setGender] = useState<string>("");
   const [busy, setBusy] = useState(false);
 
+  const cleanEmail = email.trim().toLowerCase();
+
+  const finishPasswordReset = async () => {
+    if (!cleanEmail) {
+      toast({ title: "Enter your email first", description: "Add your email above and we'll send a secure reset link." });
+      return;
+    }
+
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setBusy(false);
+
+    if (error) {
+      toast({ title: "Reset link failed", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Reset link sent", description: "Check your email, then set a new password and sign in again." });
+  };
+
+  const continueWithGoogle = async () => {
+    setBusy(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+        extraParams: { prompt: "select_account" },
+      });
+
+      if (result.error) {
+        toast({ title: "Google sign-in failed", description: result.error.message, variant: "destructive" });
+        setBusy(false);
+        return;
+      }
+
+      if (result.redirected) return;
+      navigate("/", { replace: true });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Please try Google sign-in again.";
+      toast({ title: "Google sign-in failed", description: message, variant: "destructive" });
+      setBusy(false);
+    }
+  };
+
   useEffect(() => {
     document.title = mode === "signin" ? "Sign in · HELOLA Trips" : "Join HELOLA · Create account";
   }, [mode]);
@@ -43,10 +88,10 @@ export default function Auth() {
         const baseUsername = name.toLowerCase().trim().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
 
         const { data: signUpData, error } = await supabase.auth.signUp({
-          email,
+          email: cleanEmail,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: `${window.location.origin}/auth`,
             data: { full_name: name.trim(), username: baseUsername },
           },
         });
@@ -70,10 +115,23 @@ export default function Auth() {
             await new Promise((r) => setTimeout(r, 250));
           }
         }
-        toast({ title: "Welcome to HELOLA!", description: "Account created. You're in." });
+        if (signUpData.session) {
+          toast({ title: "Welcome to HELOLA!", description: "Account created. You're in." });
+          navigate("/", { replace: true });
+        } else {
+          toast({ title: "Check your email", description: "Confirm your email to finish creating your HELOLA account." });
+        }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+        if (error) {
+          const invalidCredentials = /invalid login credentials/i.test(error.message);
+          throw new Error(
+            invalidCredentials
+              ? "That email and password don't match. If this account was made with Google, use Continue with Google, or reset your password."
+              : error.message,
+          );
+        }
+        navigate("/", { replace: true });
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Something went wrong";
@@ -153,7 +211,14 @@ export default function Auth() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="password">Password</Label>
+                  {mode === "signin" && (
+                    <button type="button" onClick={finishPasswordReset} disabled={busy} className="text-xs font-semibold text-primary hover:underline">
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
                 <div className="relative">
                   <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" className="pl-10" />
@@ -173,14 +238,7 @@ export default function Auth() {
               type="button"
               variant="outline"
               disabled={busy}
-              onClick={async () => {
-                setBusy(true);
-                const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-                if (result.error) {
-                  toast({ title: "Google sign-in failed", description: result.error.message, variant: "destructive" });
-                  setBusy(false);
-                }
-              }}
+              onClick={continueWithGoogle}
               className="h-12 w-full rounded-xl text-base font-semibold"
             >
               <svg className="mr-2 h-5 w-5" viewBox="0 0 48 48" aria-hidden>
