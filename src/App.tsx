@@ -8,6 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import CreateTrip from "./pages/CreateTrip";
 import TripDetails from "./pages/TripDetails";
 import MyTrips from "./pages/MyTrips";
@@ -38,6 +39,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/chats/:tripId" element={<AppShell><ChatRoom /></AppShell>} />
             <Route path="/" element={<AppShell><Index /></AppShell>} />
             <Route path="/trips" element={<AppShell><MyTrips /></AppShell>} />
