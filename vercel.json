@@ -1,8 +1,9 @@
 {
+  "github": {
+    "enabled": false
+  },
   "rewrites": [
-    { "source": "/oauth/:path*", "destination": "/index.html" },
-    { "source": "/oauth/:path*", "destination": "/index.html" },
-    { "source": "/auth/:path*", "destination": "/index.html" },
+    { "source": "/auth/v1/:path", "destination": "/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
