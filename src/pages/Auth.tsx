@@ -1,481 +1,191 @@
-import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
-// ✅ FIXED: Use EXACT Vercel URL - no environment variables
-const SUPABASE_URL = 'https://yhcvhrcolriymnwdorjm.supabase.co'
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InloY3ZocmNvbHJpeW1ud2RvcmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MjUwNTIsImV4cCI6MjA5NjIwMTA1Mn0.l_8ptH6wTHqHBoXZkTkYUH67ZtSC26w8_VZJHgS2bSs'
+const GoogleIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+    <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
+    <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.9 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/>
+    <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2c-2 1.4-4.5 2.4-7.2 2.4-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.6 39.6 16.2 44 24 44z"/>
+    <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.1 5.6l6.2 5.2C41 35.5 44 30.2 44 24c0-1.3-.1-2.4-.4-3.5z"/>
+  </svg>
+);
 
-// ✅ FIXED: Use EXACT Vercel URL for redirects
-const REDIRECT_URL = 'https://helola-laasyapriyagali-creator.vercel.app/auth/v1/callback'
+export default function Auth() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
+  const [loading, setLoading] = useState(false);
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+  // signin
+  const [siEmail, setSiEmail] = useState("");
+  const [siPassword, setSiPassword] = useState("");
+  // signup
+  const [suName, setSuName] = useState("");
+  const [suEmail, setSuEmail] = useState("");
+  const [suPassword, setSuPassword] = useState("");
 
-interface AuthProps {
-  onLogin?: (user: any) => void
-}
+  useEffect(() => {
+    if (!authLoading && user) navigate("/", { replace: true });
+  }, [user, authLoading, navigate]);
 
-export default function Auth({ onLogin }: AuthProps) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [phone, setPhone] = useState('')
-  const [otp, setOtp] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [view, setView] = useState<'login' | 'signup' | 'phone' | 'verify'>('login')
-
-  // ✅ GOOGLE LOGIN - Fixed redirect URL
-  const handleGoogleLogin = async () => {
-    setLoading(true)
-    setError('')
-    console.log('Google Login: Redirect URL =', REDIRECT_URL)
-    
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: REDIRECT_URL  // ✅ EXACT URL - not window.location.origin
+  const handleGoogle = async () => {
+    setLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast({ title: "Google sign-in failed", description: result.error.message, variant: "destructive" });
+        setLoading(false);
+        return;
       }
-    })
-    
-    if (error) {
-      console.error('Google Error:', error)
-      setError(error.message)
-    } else {
-      console.log('Google Response:', data)
+      if (result.redirected) return;
+      navigate("/", { replace: true });
+    } catch (e: any) {
+      toast({ title: "Google sign-in failed", description: e?.message ?? "Try again", variant: "destructive" });
+      setLoading(false);
     }
-    setLoading(false)
-  }
+  };
 
-  // ✅ PHONE LOGIN - Fixed redirect URL
-  const handlePhoneLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setSuccess('')
-    console.log('Sending OTP to:', phone)
-
-    const { data, error } = await supabase.auth.signInWithOtp({
-      phone: phone,
-      options: {
-        channel: 'sms',
-        redirectTo: REDIRECT_URL  // ✅ EXACT URL
-      }
-    })
-
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const email = siEmail.trim().toLowerCase();
+    const { error } = await supabase.auth.signInWithPassword({ email, password: siPassword });
+    setLoading(false);
     if (error) {
-      console.error('Phone Error:', error)
-      setError(error.message)
-    } else {
-      console.log('OTP Sent:', data)
-      setSuccess('OTP sent to your phone!')
-      setView('verify')
+      toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
+      return;
     }
-    setLoading(false)
-  }
+    navigate("/", { replace: true });
+  };
 
-  // ✅ VERIFY PHONE OTP
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    console.log('Verifying OTP:', otp, 'for phone:', phone)
-
-    const { data, error } = await supabase.auth.verifyOtp({
-      phone: phone,
-      token: otp
-    })
-
-    if (error) {
-      console.error('Verify Error:', error)
-      setError(error.message)
-    } else {
-      console.log('Verified:', data)
-      setSuccess('Login successful!')
-      if (onLogin) onLogin(data.user)
-    }
-    setLoading(false)
-  }
-
-  // ✅ EMAIL MAGIC LINK - Fixed redirect URL
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setSuccess('')
-    console.log('Sending Magic Link to:', email, 'Redirect URL:', REDIRECT_URL)
-
-    const { data, error } = await supabase.auth.signInWithOtp({
-      email: email,
-      options: {
-        emailRedirectTo: REDIRECT_URL  // ✅ EXACT URL - not window.location.origin
-      }
-    })
-
-    if (error) {
-      console.error('Email Error:', error)
-      setError(error.message)
-    } else {
-      console.log('Magic Link Sent:', data)
-      setSuccess('✅ Check your email for the magic link!')
-    }
-    setLoading(false)
-  }
-
-  // ✅ SIGN UP WITH PASSWORD
   const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setSuccess('')
-
-    const { data, error } = await supabase.auth.signUp({
-      email: email,
-      password: password
-    })
-
+    e.preventDefault();
+    setLoading(true);
+    const email = suEmail.trim().toLowerCase();
+    const { error } = await supabase.auth.signUp({
+      email,
+      password: suPassword,
+      options: {
+        emailRedirectTo: `${window.location.origin}/`,
+        data: { full_name: suName.trim() },
+      },
+    });
+    setLoading(false);
     if (error) {
-      console.error('SignUp Error:', error)
-      setError(error.message)
-    } else {
-      console.log('SignUp Success:', data)
-      setSuccess('✅ Account created! Check your email to verify.')
-      setView('login')
+      toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
+      return;
     }
-    setLoading(false)
-  }
+    toast({ title: "Account created", description: "You're signed in. Welcome to Helola!" });
+    navigate("/", { replace: true });
+  };
 
-  // ✅ SIGN OUT
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    window.location.reload()
-  }
+  const handleForgot = async () => {
+    const email = siEmail.trim().toLowerCase();
+    if (!email) {
+      toast({ title: "Enter your email first", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) {
+      toast({ title: "Reset failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Check your email", description: "Password reset link sent." });
+    }
+  };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f4f6', padding: '20px' }}>
-      <div style={{ backgroundColor: 'white', padding: '32px', borderRadius: '12px', width: '100%', maxWidth: '420px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-        
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', textAlign: 'center', marginBottom: '24px', color: '#1f2937' }}>
-          🔐 {view === 'login' && ' Welcome Back '}
-          {view === 'signup' && ' Create Account '}
-          {view === 'phone' && ' Phone Login '}
-          {view === 'verify' && ' Verify OTP '}
-        </h1>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Welcome to Helola</CardTitle>
+          <CardDescription>Sign in or create an account to continue</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full mb-4"
+            onClick={handleGoogle}
+            disabled={loading}
+          >
+            <GoogleIcon />
+            <span className="ml-2">Continue with Google</span>
+          </Button>
 
-        {/* Error Message */}
-        {error && (
-          <div style={{ backgroundColor: '#fee2e2', border: '1px solid #ef4444', color: '#b91c1c', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>
-            ❌ {error}
-          </div>
-        )}
-
-        {/* Success Message */}
-        {success && (
-          <div style={{ backgroundColor: '#dcfce7', border: '1px solid #22c55e', color: '#15803d', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>
-            {success}
-          </div>
-        )}
-
-        {/* ==================== LOGIN VIEW ==================== */}
-        {view === 'login' && (
-          <>
-
-            {/* 🔴 GOOGLE LOGIN BUTTON */}
-            <button
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              style={{ 
-                width: '100%', 
-                backgroundColor: '#4285F4', 
-                color: 'white', 
-                padding: '16px', 
-                borderRadius: '8px', 
-                fontWeight: '600', 
-                marginBottom: '16px', 
-                border: 'none', 
-                cursor: 'pointer', 
-                opacity: loading ? 0.5 : 1,
-                fontSize: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
-              }}
-            >
-              🔴 Continue with Google
-            </button>
-
-            <div style={{ position: 'relative', margin: '20px 0' }}>
-              <div style={{ position: 'absolute', left: 0, right: 0, borderTop: '1px solid #e5e7eb' }}></div>
-              <div style={{ position: 'relative', textAlign: 'center', backgroundColor: 'white', width: 'fit-content', margin: '0 auto', padding: '0 12px' }}>
-                <span style={{ color: '#9ca3af', fontSize: '14px' }}>or</span>
-              </div>
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">or</span>
             </div>
+          </div>
 
-            {/* 📧 EMAIL MAGIC LINK */}
-            <form onSubmit={handleEmailLogin} style={{ marginBottom: '16px' }}>
-              <input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                style={{ 
-                  width: '100%', 
-                  padding: '14px', 
-                  border: '1px solid #d1d5db', 
-                  borderRadius: '8px', 
-                  marginBottom: '12px', 
-                  fontSize: '16px',
-                  boxSizing: 'border-box'
-                }}
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                style={{ 
-                  width: '100%', 
-                  backgroundColor: '#374151', 
-                  color: 'white', 
-                  padding: '16px', 
-                  borderRadius: '8px', 
-                  fontWeight: '600', 
-                  border: 'none', 
-                  cursor: 'pointer', 
-                  opacity: loading ? 0.5 : 1,
-                  fontSize: '16px'
-                }}
-              >
-                📧 Send Magic Link
-              </button>
-            </form>
+          <Tabs defaultValue="signin">
+            <TabsList className="grid grid-cols-2 w-full">
+              <TabsTrigger value="signin">Sign in</TabsTrigger>
+              <TabsTrigger value="signup">Sign up</TabsTrigger>
+            </TabsList>
 
-            {/* 📱 PHONE LOGIN BUTTON */}
-            <button
-              onClick={() => setView('phone')}
-              style={{ 
-                width: '100%', 
-                backgroundColor: '#059669', 
-                color: 'white', 
-                padding: '16px', 
-                borderRadius: '8px', 
-                fontWeight: '600', 
-                marginBottom: '20px', 
-                border: 'none', 
-                cursor: 'pointer',
-                fontSize: '16px'
-              }}
-            >
-              📱 Login with Phone Number
-            </button>
+            <TabsContent value="signin">
+              <form onSubmit={handleSignIn} className="space-y-3">
+                <div>
+                  <Label htmlFor="si-email">Email</Label>
+                  <Input id="si-email" type="email" required value={siEmail} onChange={(e) => setSiEmail(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="si-password">Password</Label>
+                  <Input id="si-password" type="password" required value={siPassword} onChange={(e) => setSiPassword(e.target.value)} />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Sign in
+                </Button>
+                <button type="button" onClick={handleForgot} className="text-sm text-muted-foreground hover:text-foreground underline w-full text-center">
+                  Forgot password?
+                </button>
+              </form>
+            </TabsContent>
 
-            <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '14px' }}>
-              Don't have an account?{' '}
-              <button 
-                onClick={() => setView('signup')} 
-                style={{ 
-                  color: '#2563eb', 
-                  background: 'none', 
-                  border: 'none', 
-                  cursor: 'pointer', 
-                  textDecoration: 'underline',
-                  fontWeight: '600'
-                }}
-              >
-                Sign Up
-              </button>
-            </p>
-          </>
-        )}
+            <TabsContent value="signup">
+              <form onSubmit={handleSignUp} className="space-y-3">
+                <div>
+                  <Label htmlFor="su-name">Full name</Label>
+                  <Input id="su-name" type="text" required value={suName} onChange={(e) => setSuName(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="su-email">Email</Label>
+                  <Input id="su-email" type="email" required value={suEmail} onChange={(e) => setSuEmail(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="su-password">Password</Label>
+                  <Input id="su-password" type="password" required minLength={6} value={suPassword} onChange={(e) => setSuPassword(e.target.value)} />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Create account
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
 
-        {/* ==================== SIGN UP VIEW ==================== */}
-        {view === 'signup' && (
-          <form onSubmit={handleSignUp}>
-            <input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{ 
-                width: '100%', 
-                padding: '14px', 
-                border: '1px solid #d1d5db', 
-                borderRadius: '8px', 
-                marginBottom: '12px', 
-                fontSize: '16px',
-                boxSizing: 'border-box'
-              }}
-            />
-            <input
-              type="password"
-              placeholder="Create a password (min 6 chars)"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              style={{ 
-                width: '100%', 
-                padding: '14px', 
-                border: '1px solid #d1d5db', 
-                borderRadius: '8px', 
-                marginBottom: '12px', 
-                fontSize: '16px',
-                boxSizing: 'border-box'
-              }}
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              style={{ 
-                width: '100%', 
-                backgroundColor: '#22c55e', 
-                color: 'white', 
-                padding: '16px', 
-                borderRadius: '8px', 
-                fontWeight: '600', 
-                border: 'none', 
-                cursor: 'pointer', 
-                opacity: loading ? 0.5 : 1,
-                fontSize: '16px'
-              }}
-            >
-              ✅ Create Account
-            </button>
-            
-            <button
-              onClick={() => setView('login')}
-              style={{ 
-                width: '100%', 
-                marginTop: '16px', 
-                color: '#2563eb', 
-                background: 'none', 
-                border: 'none', 
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              ← Already have an account? Login
-            </button>
-          </form>
-        )}
-
-        {/* ==================== PHONE LOGIN VIEW ==================== */}
-        {view === 'phone' && (
-          <form onSubmit={handlePhoneLogin}>
-            <input
-              type="tel"
-              placeholder="Enter phone number (+1234567890)"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-              style={{ 
-                width: '100%', 
-                padding: '14px', 
-                border: '1px solid #d1d5db', 
-                borderRadius: '8px', 
-                marginBottom: '12px', 
-                fontSize: '16px',
-                boxSizing: 'border-box'
-              }}
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              style={{ 
-                width: '100%', 
-                backgroundColor: '#059669', 
-                color: 'white', 
-                padding: '16px', 
-                borderRadius: '8px', 
-                fontWeight: '600', 
-                border: 'none', 
-                cursor: 'pointer', 
-                opacity: loading ? 0.5 : 1,
-                fontSize: '16px'
-              }}
-            >
-              📱 Send OTP
-            </button>
-            
-            <button
-              onClick={() => setView('login')}
-              style={{ 
-                width: '100%', 
-                marginTop: '16px', 
-                color: '#2563eb', 
-                background: 'none', 
-                border: 'none', 
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              ← Back to Login
-            </button>
-          </form>
-        )}
-
-        {/* ==================== VERIFY OTP VIEW ==================== */}
-        {view === 'verify' && (
-          <form onSubmit={handleVerifyOTP}>
-            <p style={{ marginBottom: '16px', color: '#6b7280', fontSize: '14px', textAlign: 'center' }}>
-              Enter the 6-digit code sent to<br />
-              <strong style={{ color: '#059669' }}>{phone}</strong>
-            </p>
-            <input
-              type="text"
-              placeholder="Enter 6-digit OTP"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              required
-              maxLength={6}
-              style={{ 
-                width: '100%', 
-                padding: '14px', 
-                border: '1px solid #d1d5db', 
-                borderRadius: '8px', 
-                marginBottom: '12px', 
-                fontSize: '20px', 
-                textAlign: 'center', 
-                letterSpacing: '4px',
-                boxSizing: 'border-box'
-              }}
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              style={{ 
-                width: '100%', 
-                backgroundColor: '#059669', 
-                color: 'white', 
-                padding: '16px', 
-                borderRadius: '8px', 
-                fontWeight: '600', 
-                border: 'none', 
-                cursor: 'pointer', 
-                opacity: loading ? 0.5 : 1,
-                fontSize: '16px'
-              }}
-            >
-              ✅ Verify & Login
-            </button>
-            
-            <button
-              onClick={() => setView('phone')}
-              style={{ 
-                width: '100%', 
-                marginTop: '16px', 
-                color: '#2563eb', 
-                background: 'none', 
-                border: 'none', 
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              Resend OTP
-            </button>
-          </form>
-        )}
-      </div>
+          <p className="text-xs text-muted-foreground text-center mt-4">
+            By continuing you agree to our <Link to="/legal" className="underline">Terms</Link>.
+          </p>
+        </CardContent>
+      </Card>
     </div>
-  )
+  );
 }
