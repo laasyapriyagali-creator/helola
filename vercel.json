@@ -1,9 +1,22 @@
 {
-  "rewrites": [
-    { "source": "/auth/v1/:path", "destination": "/index.html" },
-    { "source": "/:path*", "destination": "/index.html" }
-  ],
   "github": {
-    "enabled": false
-  }
+    "silent": true
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    }
+  ]
 }
