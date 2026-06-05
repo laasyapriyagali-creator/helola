@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
-// NEW Supabase Configuration
-const supabaseUrl = 'https://yhcvhrcolriymnwdorjm.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InloY3ZocmNvbHJpeW1ud2RvcmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MjUwNTIsImV4cCI6MjA5NjIwMTA1Mn0.l_8ptH6wTHqHBoXZkTkYUH67ZtSC26w8_VZJHgS2bSs'
+// ✅ FIXED: Use EXACT Vercel URL - no environment variables
+const SUPABASE_URL = 'https://yhcvhrcolriymnwdorjm.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InloY3ZocmNvbHJpeW1ud2RvcmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MjUwNTIsImV4cCI6MjA5NjIwMTA1Mn0.l_8ptH6wTHqHBoXZkTkYUH67ZtSC26w8_VZJHgS2bSs'
 
-const supabase = createClient(supabaseUrl, supabaseKey)
+// ✅ FIXED: Use EXACT Vercel URL for redirects
+const REDIRECT_URL = 'https://helola-laasyapriyagali-creator.vercel.app/auth/v1/callback'
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 interface AuthProps {
   onLogin?: (user: any) => void
@@ -21,34 +24,29 @@ export default function Auth({ onLogin }: AuthProps) {
   const [success, setSuccess] = useState('')
   const [view, setView] = useState<'login' | 'signup' | 'phone' | 'verify'>('login')
 
-  // ==================== GOOGLE LOGIN ====================
+  // ✅ GOOGLE LOGIN - Fixed redirect URL
   const handleGoogleLogin = async () => {
     setLoading(true)
     setError('')
-    console.log('Starting Google Login...')
+    console.log('Google Login: Redirect URL =', REDIRECT_URL)
     
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin + '/auth/v1/callback'
-        }
-      })
-      
-      if (error) {
-        console.error('Google Error:', error)
-        setError(error.message)
-      } else {
-        console.log('Google Data:', data)
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: REDIRECT_URL  // ✅ EXACT URL - not window.location.origin
       }
-    } catch (err) {
-      console.error('Catch Error:', err)
-      setError('Something went wrong')
+    })
+    
+    if (error) {
+      console.error('Google Error:', error)
+      setError(error.message)
+    } else {
+      console.log('Google Response:', data)
     }
     setLoading(false)
   }
 
-  // ==================== PHONE LOGIN ====================
+  // ✅ PHONE LOGIN - Fixed redirect URL
   const handlePhoneLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -59,7 +57,8 @@ export default function Auth({ onLogin }: AuthProps) {
     const { data, error } = await supabase.auth.signInWithOtp({
       phone: phone,
       options: {
-        channel: 'sms'
+        channel: 'sms',
+        redirectTo: REDIRECT_URL  // ✅ EXACT URL
       }
     })
 
@@ -74,7 +73,7 @@ export default function Auth({ onLogin }: AuthProps) {
     setLoading(false)
   }
 
-  // Verify Phone OTP
+  // ✅ VERIFY PHONE OTP
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -91,23 +90,24 @@ export default function Auth({ onLogin }: AuthProps) {
       setError(error.message)
     } else {
       console.log('Verified:', data)
+      setSuccess('Login successful!')
       if (onLogin) onLogin(data.user)
     }
     setLoading(false)
   }
 
-  // ==================== EMAIL MAGIC LINK ====================
+  // ✅ EMAIL MAGIC LINK - Fixed redirect URL
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
     setSuccess('')
-    console.log('Sending Magic Link to:', email)
+    console.log('Sending Magic Link to:', email, 'Redirect URL:', REDIRECT_URL)
 
     const { data, error } = await supabase.auth.signInWithOtp({
       email: email,
       options: {
-        emailRedirectTo: window.location.origin + '/auth/v1/callback'
+        emailRedirectTo: REDIRECT_URL  // ✅ EXACT URL - not window.location.origin
       }
     })
 
@@ -116,12 +116,12 @@ export default function Auth({ onLogin }: AuthProps) {
       setError(error.message)
     } else {
       console.log('Magic Link Sent:', data)
-      setSuccess('Check your email for the magic link!')
+      setSuccess('✅ Check your email for the magic link!')
     }
     setLoading(false)
   }
 
-  // ==================== PASSWORD SIGN UP ====================
+  // ✅ SIGN UP WITH PASSWORD
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -138,32 +138,39 @@ export default function Auth({ onLogin }: AuthProps) {
       setError(error.message)
     } else {
       console.log('SignUp Success:', data)
-      setSuccess('Account created! Please check your email to verify.')
+      setSuccess('✅ Account created! Check your email to verify.')
       setView('login')
     }
     setLoading(false)
   }
 
+  // ✅ SIGN OUT
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    window.location.reload()
+  }
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f4f6', padding: '20px' }}>
       <div style={{ backgroundColor: 'white', padding: '32px', borderRadius: '12px', width: '100%', maxWidth: '420px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', textAlign: 'center', marginBottom: '24px' }}>
-          {view === 'login' && ' Welcome Back '}
+        
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', textAlign: 'center', marginBottom: '24px', color: '#1f2937' }}>
+          🔐 {view === 'login' && ' Welcome Back '}
           {view === 'signup' && ' Create Account '}
           {view === 'phone' && ' Phone Login '}
-          {view === 'verify' && ' Enter OTP '}
+          {view === 'verify' && ' Verify OTP '}
         </h1>
 
         {/* Error Message */}
         {error && (
-          <div style={{ backgroundColor: '#fee2e2', border: '1px solid #ef4444', color: '#b91c1c', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>
-            {error}
+          <div style={{ backgroundColor: '#fee2e2', border: '1px solid #ef4444', color: '#b91c1c', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>
+            ❌ {error}
           </div>
         )}
 
         {/* Success Message */}
         {success && (
-          <div style={{ backgroundColor: '#dcfce7', border: '1px solid #22c55e', color: '#15803d', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>
+          <div style={{ backgroundColor: '#dcfce7', border: '1px solid #22c55e', color: '#15803d', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>
             {success}
           </div>
         )}
@@ -171,19 +178,36 @@ export default function Auth({ onLogin }: AuthProps) {
         {/* ==================== LOGIN VIEW ==================== */}
         {view === 'login' && (
           <>
+
             {/* 🔴 GOOGLE LOGIN BUTTON */}
             <button
               onClick={handleGoogleLogin}
               disabled={loading}
-              style={{ width: '100%', backgroundColor: '#4285F4', color: 'white', padding: '14px', borderRadius: '8px', fontWeight: '600', marginBottom: '16px', border: 'none', cursor: 'pointer', opacity: loading ? 0.5 : 1 }}
+              style={{ 
+                width: '100%', 
+                backgroundColor: '#4285F4', 
+                color: 'white', 
+                padding: '16px', 
+                borderRadius: '8px', 
+                fontWeight: '600', 
+                marginBottom: '16px', 
+                border: 'none', 
+                cursor: 'pointer', 
+                opacity: loading ? 0.5 : 1,
+                fontSize: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
             >
-              {loading ? 'Loading...' : '🔴 Continue with Google'}
+              🔴 Continue with Google
             </button>
 
             <div style={{ position: 'relative', margin: '20px 0' }}>
-              <div style={{ position: 'absolute', left: 0, right: 0, borderTop: '1px solid #d1d5db' }}></div>
+              <div style={{ position: 'absolute', left: 0, right: 0, borderTop: '1px solid #e5e7eb' }}></div>
               <div style={{ position: 'relative', textAlign: 'center', backgroundColor: 'white', width: 'fit-content', margin: '0 auto', padding: '0 12px' }}>
-                <span style={{ color: '#6b7280', fontSize: '14px' }}>or</span>
+                <span style={{ color: '#9ca3af', fontSize: '14px' }}>or</span>
               </div>
             </div>
 
@@ -195,28 +219,68 @@ export default function Auth({ onLogin }: AuthProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                style={{ width: '100%', padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', marginBottom: '12px', fontSize: '16px' }}
+                style={{ 
+                  width: '100%', 
+                  padding: '14px', 
+                  border: '1px solid #d1d5db', 
+                  borderRadius: '8px', 
+                  marginBottom: '12px', 
+                  fontSize: '16px',
+                  boxSizing: 'border-box'
+                }}
               />
               <button
                 type="submit"
                 disabled={loading}
-                style={{ width: '100%', backgroundColor: '#374151', color: 'white', padding: '14px', borderRadius: '8px', fontWeight: '600', border: 'none', cursor: 'pointer', opacity: loading ? 0.5 : 1 }}
+                style={{ 
+                  width: '100%', 
+                  backgroundColor: '#374151', 
+                  color: 'white', 
+                  padding: '16px', 
+                  borderRadius: '8px', 
+                  fontWeight: '600', 
+                  border: 'none', 
+                  cursor: 'pointer', 
+                  opacity: loading ? 0.5 : 1,
+                  fontSize: '16px'
+                }}
               >
-                {loading ? 'Sending...' : '📧 Send Magic Link'}
+                📧 Send Magic Link
               </button>
             </form>
 
             {/* 📱 PHONE LOGIN BUTTON */}
             <button
               onClick={() => setView('phone')}
-              style={{ width: '100%', backgroundColor: '#10b981', color: 'white', padding: '14px', borderRadius: '8px', fontWeight: '600', marginBottom: '16px', border: 'none', cursor: 'pointer' }}
+              style={{ 
+                width: '100%', 
+                backgroundColor: '#059669', 
+                color: 'white', 
+                padding: '16px', 
+                borderRadius: '8px', 
+                fontWeight: '600', 
+                marginBottom: '20px', 
+                border: 'none', 
+                cursor: 'pointer',
+                fontSize: '16px'
+              }}
             >
               📱 Login with Phone Number
             </button>
 
-            <p style={{ textAlign: 'center', color: '#6b7280' }}>
+            <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '14px' }}>
               Don't have an account?{' '}
-              <button onClick={() => setView('signup')} style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+              <button 
+                onClick={() => setView('signup')} 
+                style={{ 
+                  color: '#2563eb', 
+                  background: 'none', 
+                  border: 'none', 
+                  cursor: 'pointer', 
+                  textDecoration: 'underline',
+                  fontWeight: '600'
+                }}
+              >
                 Sign Up
               </button>
             </p>
@@ -232,29 +296,65 @@ export default function Auth({ onLogin }: AuthProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              style={{ width: '100%', padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', marginBottom: '12px', fontSize: '16px' }}
+              style={{ 
+                width: '100%', 
+                padding: '14px', 
+                border: '1px solid #d1d5db', 
+                borderRadius: '8px', 
+                marginBottom: '12px', 
+                fontSize: '16px',
+                boxSizing: 'border-box'
+              }}
             />
             <input
               type="password"
-              placeholder="Create a password"
+              placeholder="Create a password (min 6 chars)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              style={{ width: '100%', padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', marginBottom: '12px', fontSize: '16px' }}
+              minLength={6}
+              style={{ 
+                width: '100%', 
+                padding: '14px', 
+                border: '1px solid #d1d5db', 
+                borderRadius: '8px', 
+                marginBottom: '12px', 
+                fontSize: '16px',
+                boxSizing: 'border-box'
+              }}
             />
             <button
               type="submit"
               disabled={loading}
-              style={{ width: '100%', backgroundColor: '#22c55e', color: 'white', padding: '14px', borderRadius: '8px', fontWeight: '600', border: 'none', cursor: 'pointer', opacity: loading ? 0.5 : 1 }}
+              style={{ 
+                width: '100%', 
+                backgroundColor: '#22c55e', 
+                color: 'white', 
+                padding: '16px', 
+                borderRadius: '8px', 
+                fontWeight: '600', 
+                border: 'none', 
+                cursor: 'pointer', 
+                opacity: loading ? 0.5 : 1,
+                fontSize: '16px'
+              }}
             >
-              {loading ? 'Creating...' : '✅ Create Account'}
+              ✅ Create Account
             </button>
             
             <button
               onClick={() => setView('login')}
-              style={{ width: '100%', marginTop: '16px', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer' }}
+              style={{ 
+                width: '100%', 
+                marginTop: '16px', 
+                color: '#2563eb', 
+                background: 'none', 
+                border: 'none', 
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
             >
-              Already have an account? Login
+              ← Already have an account? Login
             </button>
           </form>
         )}
@@ -268,19 +368,46 @@ export default function Auth({ onLogin }: AuthProps) {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               required
-              style={{ width: '100%', padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', marginBottom: '12px', fontSize: '16px' }}
+              style={{ 
+                width: '100%', 
+                padding: '14px', 
+                border: '1px solid #d1d5db', 
+                borderRadius: '8px', 
+                marginBottom: '12px', 
+                fontSize: '16px',
+                boxSizing: 'border-box'
+              }}
             />
             <button
               type="submit"
               disabled={loading}
-              style={{ width: '100%', backgroundColor: '#10b981', color: 'white', padding: '14px', borderRadius: '8px', fontWeight: '600', border: 'none', cursor: 'pointer', opacity: loading ? 0.5 : 1 }}
+              style={{ 
+                width: '100%', 
+                backgroundColor: '#059669', 
+                color: 'white', 
+                padding: '16px', 
+                borderRadius: '8px', 
+                fontWeight: '600', 
+                border: 'none', 
+                cursor: 'pointer', 
+                opacity: loading ? 0.5 : 1,
+                fontSize: '16px'
+              }}
             >
-              {loading ? 'Sending OTP...' : '📱 Send OTP'}
+              📱 Send OTP
             </button>
             
             <button
               onClick={() => setView('login')}
-              style={{ width: '100%', marginTop: '16px', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer' }}
+              style={{ 
+                width: '100%', 
+                marginTop: '16px', 
+                color: '#2563eb', 
+                background: 'none', 
+                border: 'none', 
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
             >
               ← Back to Login
             </button>
@@ -290,7 +417,10 @@ export default function Auth({ onLogin }: AuthProps) {
         {/* ==================== VERIFY OTP VIEW ==================== */}
         {view === 'verify' && (
           <form onSubmit={handleVerifyOTP}>
-            <p style={{ marginBottom: '12px', color: '#6b7280' }}>Enter the 6-digit code sent to {phone}</p>
+            <p style={{ marginBottom: '16px', color: '#6b7280', fontSize: '14px', textAlign: 'center' }}>
+              Enter the 6-digit code sent to<br />
+              <strong style={{ color: '#059669' }}>{phone}</strong>
+            </p>
             <input
               type="text"
               placeholder="Enter 6-digit OTP"
@@ -298,19 +428,48 @@ export default function Auth({ onLogin }: AuthProps) {
               onChange={(e) => setOtp(e.target.value)}
               required
               maxLength={6}
-              style={{ width: '100%', padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', marginBottom: '12px', fontSize: '16px', textAlign: 'center', letterSpacing: '4px' }}
+              style={{ 
+                width: '100%', 
+                padding: '14px', 
+                border: '1px solid #d1d5db', 
+                borderRadius: '8px', 
+                marginBottom: '12px', 
+                fontSize: '20px', 
+                textAlign: 'center', 
+                letterSpacing: '4px',
+                boxSizing: 'border-box'
+              }}
             />
             <button
               type="submit"
               disabled={loading}
-              style={{ width: '100%', backgroundColor: '#10b981', color: 'white', padding: '14px', borderRadius: '8px', fontWeight: '600', border: 'none', cursor: 'pointer', opacity: loading ? 0.5 : 1 }}
+              style={{ 
+                width: '100%', 
+                backgroundColor: '#059669', 
+                color: 'white', 
+                padding: '16px', 
+                borderRadius: '8px', 
+                fontWeight: '600', 
+                border: 'none', 
+                cursor: 'pointer', 
+                opacity: loading ? 0.5 : 1,
+                fontSize: '16px'
+              }}
             >
-              {loading ? 'Verifying...' : '✅ Verify & Login'}
+              ✅ Verify & Login
             </button>
             
             <button
               onClick={() => setView('phone')}
-              style={{ width: '100%', marginTop: '16px', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer' }}
+              style={{ 
+                width: '100%', 
+                marginTop: '16px', 
+                color: '#2563eb', 
+                background: 'none', 
+                border: 'none', 
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
             >
               Resend OTP
             </button>
