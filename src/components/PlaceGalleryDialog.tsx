@@ -33,19 +33,11 @@ export function PlaceGalleryDialog({ open, onOpenChange, place }: Props) {
       if (sum?.image) candidates.push({ url: sum.image, thumb: sum.image, source: `https://en.wikipedia.org/wiki/${encodeURIComponent(place)}`, title: place });
       for (const i of rawImgs) if (!candidates.find(c => c.url === i.url)) candidates.push(i);
 
-      let verified = await filterLoadable(candidates, 12);
-      if (verified.length < 8) {
-        const fallbacks: PlaceImage[] = Array.from({ length: 16 }).map((_, i) => {
-          const u = `https://source.unsplash.com/800x600/?${encodeURIComponent(place)}&sig=${i + 100}`;
-          return { url: u, thumb: u, source: u, title: `${place} photo` };
-        });
-        const extra = await filterLoadable(fallbacks, 12 - verified.length);
-        verified = [...verified, ...extra];
-      }
+      const verified = await filterLoadable(candidates, 24);
 
       setImages(verified);
       setSummary(sum?.extract || "");
-      if (verified.length === 0) setError("Couldn't load any photos. Tap retry.");
+      if (verified.length === 0) setError("No verified photos found for this place.");
     } catch (e: any) {
       setError(e?.message || "Couldn't load photos.");
     } finally {
