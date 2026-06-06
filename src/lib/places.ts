@@ -1,6 +1,6 @@
 // Real-world place data via free, public APIs.
 // - Search & geocode: OpenStreetMap Nominatim
-// - Images: Wikipedia REST + Wikimedia Commons + Unsplash Source fallback
+// - Images: Wikipedia REST + Wikimedia Commons + verified to belong to the resolved article
 // No API keys required.
 
 export type PlaceKind = "airport" | "city" | "landmark" | "area" | "railway_station" | "bus_station";

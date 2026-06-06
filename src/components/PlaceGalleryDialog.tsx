@@ -141,7 +141,7 @@ export function PlaceGalleryDialog({ open, onOpenChange, place }: Props) {
                   </div>
                 </>
               )}
-              <p className="mt-3 text-[11px] text-muted-foreground">Photos via Wikimedia Commons, Wikipedia & Unsplash.</p>
+              <p className="mt-3 text-[11px] text-muted-foreground">Photos via Wikimedia Commons, Wikipedia.</p>
             </>
           )}
         </div>
