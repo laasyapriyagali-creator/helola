@@ -57,7 +57,7 @@ export default function DestinationDetail() {
           <div className="relative h-64 bg-muted md:h-96">
             {loading && !hero ? <Skeleton className="h-full w-full" /> : (
               <img
-                src={hero?.url || `https://source.unsplash.com/1200x800/?${encodeURIComponent(decoded)}`}
+                src={hero?.url || "/placeholder.svg"}
                 alt={`${decoded} real photograph`}
                 className="h-full w-full object-cover"
                 loading="eager"
@@ -119,14 +119,14 @@ export default function DestinationDetail() {
                   src={img.thumb}
                   alt={img.title}
                   loading="lazy"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = `https://source.unsplash.com/600x400/?${encodeURIComponent(decoded)}&sig=${idx}`; }}
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }}
                   className="h-32 w-full object-cover transition-transform duration-500 group-hover:scale-105 md:h-40"
                 />
               </button>
             ))}
           </div>
         )}
-        <p className="mt-3 text-[11px] text-muted-foreground">Photos via Wikimedia Commons, Wikipedia & Unsplash. Map data © OpenStreetMap contributors.</p>
+        <p className="mt-3 text-[11px] text-muted-foreground">Photos via Wikimedia Commons, Wikipedia. Map data © OpenStreetMap contributors.</p>
       </div>
 
       {lightbox !== null && images[lightbox] && (

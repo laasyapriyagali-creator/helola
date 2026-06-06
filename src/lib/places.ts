@@ -1,6 +1,6 @@
 // Real-world place data via free, public APIs.
 // - Search & geocode: OpenStreetMap Nominatim
-// - Images: Wikipedia REST + Wikimedia Commons + Unsplash Source fallback
+// - Images: Wikipedia REST + Wikimedia Commons + verified to belong to the resolved article
 // No API keys required.
 
 export type PlaceKind = "airport" | "city" | "landmark" | "area" | "railway_station" | "bus_station";
@@ -131,117 +131,104 @@ export async function searchPlaces(query: string, limit = 6): Promise<PlaceSugge
   } catch { return LOCAL_TRANSPORT_HUBS.filter(h => h.name.toLowerCase().includes(query.toLowerCase())).slice(0, limit); }
 }
 
-export async function getPlaceSummary(name: string): Promise<{ extract: string; thumb?: string; image?: string } | null> {
-  if (summaryCache.has(name)) return summaryCache.get(name)!;
+// Resolve the canonical Wikipedia title for a query (handles redirects/disambig).
+const titleCache = new Map<string, string | null>();
+async function resolveWikiTitle(name: string): Promise<string | null> {
+  const key = name.trim();
+  if (titleCache.has(key)) return titleCache.get(key)!;
   const variants = Array.from(new Set([
-    name,
-    name.split(",")[0]?.trim(),
-    name.replace(/,.*$/, "").trim(),
+    key,
+    key.split(",")[0]?.trim(),
+    key.replace(/,.*$/, "").trim(),
   ].filter(Boolean))) as string[];
-
-  let extract = "";
-  let image: string | undefined;
-  let thumb: string | undefined;
-
   for (const v of variants) {
     try {
-      const res = await fetch(`${WIKI_REST}/page/summary/${encodeURIComponent(v)}`);
-      if (!res.ok) continue;
-      const data = await res.json();
-      if (!extract && data.extract) extract = data.extract;
-      const img = data.originalimage?.source || data.thumbnail?.source;
-      if (img) { image = img; thumb = data.thumbnail?.source || img; break; }
-    } catch { /* keep trying */ }
-  }
-
-  if (!image) {
-    try {
-      const imgs = await getPlaceImages(variants[0], 1);
-      if (imgs[0]) { image = imgs[0].url; thumb = imgs[0].thumb; }
+      const r = await fetch(`${WIKI_REST}/page/summary/${encodeURIComponent(v)}?redirect=true`);
+      if (!r.ok) continue;
+      const d = await r.json();
+      if (d?.type === "disambiguation") continue;
+      const t = d?.titles?.canonical || d?.title;
+      if (t) { titleCache.set(key, t); return t; }
     } catch { /* ignore */ }
   }
-
-  // Last-resort hero: Unsplash Source (no key, deterministic by query)
-  if (!image) image = unsplashUrl(name, 1200, 800, 0);
-  if (!thumb) thumb = unsplashUrl(name, 600, 400, 0);
-
-  const result = { extract, thumb, image };
-  summaryCache.set(name, result);
-  return result;
+  titleCache.set(key, null);
+  return null;
 }
 
-function unsplashUrl(query: string, w = 800, h = 600, sig = 0) {
-  const q = encodeURIComponent(`${query.split(",")[0]} travel`);
-  return `https://source.unsplash.com/${w}x${h}/?${q}&sig=${sig}`;
+export async function getPlaceSummary(name: string): Promise<{ extract: string; thumb?: string; image?: string } | null> {
+  if (summaryCache.has(name)) return summaryCache.get(name)!;
+  const title = await resolveWikiTitle(name);
+  if (!title) { summaryCache.set(name, null); return null; }
+  try {
+    const r = await fetch(`${WIKI_REST}/page/summary/${encodeURIComponent(title)}?redirect=true`);
+    if (!r.ok) { summaryCache.set(name, null); return null; }
+    const d = await r.json();
+    const image = d.originalimage?.source || d.thumbnail?.source;
+    const thumb = d.thumbnail?.source || image;
+    const result = { extract: d.extract || "", thumb, image };
+    summaryCache.set(name, result);
+    return result;
+  } catch {
+    summaryCache.set(name, null);
+    return null;
+  }
 }
 
-function loremFlickrUrl(query: string, w = 800, h = 600, sig = 0) {
-  const q = encodeURIComponent(query.split(",")[0]);
-  return `https://loremflickr.com/${w}/${h}/${q}/all?lock=${sig}`;
+// Filter out icons/logos/flags/maps that frequently appear in infoboxes.
+function isLikelyPhoto(fileTitle: string): boolean {
+  const t = fileTitle.toLowerCase();
+  if (!/\.(jpe?g|png|webp)$/i.test(t)) return false;
+  const bad = ["icon", "logo", "flag", "coat_of_arms", "coat of arms", "seal", "emblem", "map", "locator", "location", "symbol", "commons-logo", "pictogram", "wiki"];
+  return !bad.some(b => t.includes(b));
 }
 
-export async function getPlaceImages(name: string, limit = 10): Promise<PlaceImage[]> {
+// Pull images *belonging to the resolved Wikipedia article* — guarantees relevance.
+export async function getPlaceImages(name: string, limit = 12): Promise<PlaceImage[]> {
   const cacheKey = `${name}::${limit}`;
   if (imagesCache.has(cacheKey)) return imagesCache.get(cacheKey)!;
 
+  const title = await resolveWikiTitle(name);
+  if (!title) { imagesCache.set(cacheKey, []); return []; }
+
   const collected: PlaceImage[] = [];
 
-  // 1. Try Wikimedia Commons
+  // 1) media-list = ordered list of images embedded in the article — most relevant.
   try {
-    const url = `${COMMONS_API}?action=query&format=json&origin=*&generator=search&gsrsearch=${encodeURIComponent(
-      name,
-    )}&gsrlimit=${limit}&gsrnamespace=6&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=800`;
-    const res = await fetch(url);
-    if (res.ok) {
-      const data = await res.json();
-      const pages = data?.query?.pages ? Object.values(data.query.pages) : [];
-      for (const p of pages as any[]) {
-        const info = p?.imageinfo?.[0];
-        if (!info) continue;
-        const ext = (info.url || "").toLowerCase();
-        if (!/\.(jpg|jpeg|png|webp)$/.test(ext)) continue;
+    const r = await fetch(`${WIKI_REST}/page/media-list/${encodeURIComponent(title)}`);
+    if (r.ok) {
+      const d = await r.json();
+      for (const item of (d?.items || []) as any[]) {
+        if (item.type !== "image") continue;
+        const fileTitle: string = item.title || "";
+        if (!isLikelyPhoto(fileTitle)) continue;
+        const srcset = (item.srcset || []).slice().sort((a: any, b: any) => (b.scale || 1) - (a.scale || 1));
+        let src: string | undefined = srcset[0]?.src || item.original?.source;
+        if (!src) continue;
+        if (src.startsWith("//")) src = "https:" + src;
+        if (collected.find(c => c.url === src)) continue;
         collected.push({
-          url: info.thumburl || info.url,
-          thumb: info.thumburl || info.url,
-          source: info.descriptionshorturl || info.url,
-          title: p.title?.replace(/^File:/, "") || name,
+          url: src,
+          thumb: src,
+          source: `https://commons.wikimedia.org/wiki/${encodeURIComponent(fileTitle)}`,
+          title: fileTitle.replace(/^File:/, "").replace(/\.(jpe?g|png|webp)$/i, "").replace(/_/g, " "),
         });
+        if (collected.length >= limit) break;
       }
     }
   } catch { /* ignore */ }
 
-  // 2. Add Wikipedia summary hero (different keywords) for variety
-  if (collected.length < limit) {
-    const baseName = name.split(",")[0].trim();
-    const queries = [baseName, `${baseName} city`, `${baseName} landmark`, `${baseName} tourism`];
-    for (const q of queries) {
-      try {
-        const r = await fetch(`${WIKI_REST}/page/summary/${encodeURIComponent(q)}`);
-        if (!r.ok) continue;
-        const d = await r.json();
-        const u = d.originalimage?.source || d.thumbnail?.source;
-        if (u && !collected.find(c => c.url === u)) {
-          collected.push({ url: u, thumb: d.thumbnail?.source || u, source: d.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(q)}`, title: q });
-        }
-      } catch { /* ignore */ }
-      if (collected.length >= limit) break;
+  // 2) Prepend the summary hero if not already in.
+  try {
+    const sum = await getPlaceSummary(name);
+    if (sum?.image && !collected.find(c => c.url === sum.image)) {
+      collected.unshift({ url: sum.image, thumb: sum.thumb || sum.image, source: `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}`, title });
     }
-  }
+  } catch { /* ignore */ }
 
-  // 3. Always supplement with Unsplash + LoremFlickr fallbacks so gallery is never empty
-  const target = Math.max(limit, 8);
-  let sig = 0;
-  while (collected.length < target) {
-    const useFlickr = sig % 2 === 1;
-    const u = useFlickr ? loremFlickrUrl(name, 800, 600, sig) : unsplashUrl(name, 800, 600, sig);
-    collected.push({ url: u, thumb: u, source: u, title: `${name} photo` });
-    sig++;
-    if (sig > 20) break;
-  }
-
-  imagesCache.set(cacheKey, collected);
-  return collected;
+  imagesCache.set(cacheKey, collected.slice(0, limit));
+  return imagesCache.get(cacheKey)!;
 }
+
 
 // Curated, real-world destinations used as the default scrollable list.
 export const FEATURED_DESTINATIONS: { name: string; query: string; region: string; tagline: string }[] = [
