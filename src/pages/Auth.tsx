@@ -1,185 +1,181 @@
-import { useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { toast } from "@/hooks/use-toast";
+import { Loader2, Mail, Phone, Plane } from "lucide-react";
 
-// ✅ Your Supabase Config
-const SUPABASE_URL = 'https://yhcvhrcolriymnwdorjm.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InloY3ZocmNvbHJpeW1ud2RvcmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MjUwNTIsImV4cCI6MjA5NjIwMTA1Mn0.l_8ptH6wTHqHBoXZkTkYUH67ZtSC26w8_VZJHgS2bSs';
+const GoogleIcon = () => (
+  <svg viewBox="0 0 48 48" className="h-5 w-5" aria-hidden="true">
+    <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35.5 24 35.5c-6.4 0-11.5-5.1-11.5-11.5S17.6 12.5 24 12.5c2.9 0 5.6 1.1 7.7 2.9l5.7-5.7C33.9 6.4 29.2 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.3-.4-3.5z"/>
+    <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12.5 24 12.5c2.9 0 5.6 1.1 7.7 2.9l5.7-5.7C33.9 6.4 29.2 4.5 24 4.5 16.3 4.5 9.7 8.9 6.3 14.7z"/>
+    <path fill="#4CAF50" d="M24 43.5c5.1 0 9.7-1.9 13.2-5.1l-6.1-5.2c-2 1.5-4.5 2.4-7.1 2.4-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.6 39 16.2 43.5 24 43.5z"/>
+    <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.2l6.1 5.2C40.6 35.3 43.5 30.1 43.5 24c0-1.2-.1-2.3-.4-3.5z"/>
+  </svg>
+);
 
-// ✅ Use your exact Vercel URL
-const REDIRECT_URL = 'https://helola-laasyapriyagali-creator.vercel.app/auth/v1/callback';
+export default function Auth() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [tab, setTab] = useState<"signin" | "signup" | "phone">("signin");
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-interface AuthProps {
-  onLogin?: (user: any) => void;
-}
-
-export default function Auth({ onLogin }: AuthProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [view, setView] = useState<'login' | 'signup' | 'phone' | 'verify'>('login');
 
-  // Google Login
-  const handleGoogleLogin = async () => {
+  useEffect(() => { if (user) navigate("/", { replace: true }); }, [user, navigate]);
+
+  const handleGoogle = async () => {
     setLoading(true);
-    setError('');
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: REDIRECT_URL }
-    });
-    if (error) setError(error.message);
-    setLoading(false);
+    try {
+      const res = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+      if (res.error) toast({ title: "Google sign-in failed", description: res.error.message, variant: "destructive" });
+    } finally { setLoading(false); }
   };
 
-  // Magic Link
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: REDIRECT_URL }
-    });
-    if (error) setError(error.message);
-    else setSuccess('✅ Magic link sent! Check your email.');
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
     setLoading(false);
-  };
-
-  // Phone OTP
-  const handlePhoneLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    const { error } = await supabase.auth.signInWithOtp({
-      phone,
-      options: { channel: 'sms', redirectTo: REDIRECT_URL }
-    });
-    if (error) setError(error.message);
-    else {
-      setSuccess('OTP sent!');
-      setView('verify');
-    }
-    setLoading(false);
-  };
-
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    const { error } = await supabase.auth.verifyOtp({ phone, token: otp });
-    if (error) setError(error.message);
-    else {
-      setSuccess('Login successful!');
-      if (onLogin) onLogin(supabase.auth.getUser());
-    }
-    setLoading(false);
+    if (error) toast({ title: "Sign-in failed", description: error.message, variant: "destructive" });
+    else navigate("/", { replace: true });
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) setError(error.message);
-    else {
-      setSuccess('Account created! Check email to verify.');
-      setView('login');
-    }
+    const { error } = await supabase.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password,
+      options: { emailRedirectTo: `${window.location.origin}/`, data: { full_name: fullName.trim() } },
+    });
     setLoading(false);
+    if (error) toast({ title: "Sign-up failed", description: error.message, variant: "destructive" });
+    else toast({ title: "Welcome to Helola!", description: "Account created — you're signed in." });
+  };
+
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOtp({ phone: phone.trim() });
+    setLoading(false);
+    if (error) toast({ title: "Could not send OTP", description: error.message, variant: "destructive" });
+    else { setOtpSent(true); toast({ title: "OTP sent", description: `Code sent to ${phone}` }); }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.verifyOtp({ phone: phone.trim(), token: otp.trim(), type: "sms" });
+    setLoading(false);
+    if (error) toast({ title: "Invalid code", description: error.message, variant: "destructive" });
+    else navigate("/", { replace: true });
+  };
+
+  const handleForgot = async () => {
+    if (!email.trim()) { toast({ title: "Enter your email first" }); return; }
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) toast({ title: "Could not send reset", description: error.message, variant: "destructive" });
+    else toast({ title: "Reset email sent", description: "Check your inbox." });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-emerald-600 p-8 text-white text-center">
-          <div className="text-4xl mb-3">✈️</div>
-          <h1 className="text-3xl font-bold">Helola Trips</h1>
-          <p className="text-blue-100 mt-2">Real trips, real friends</p>
+    <div className="min-h-screen bg-texture-paper flex items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-elegant">
+        <Link to="/" className="mb-6 flex items-center justify-center gap-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-warm text-primary-foreground shadow-soft">
+            <Plane className="h-5 w-5" strokeWidth={2.5} />
+          </div>
+          <span className="font-display text-3xl font-bold text-primary">helola</span>
+        </Link>
+        <h1 className="mb-1 text-center font-display text-2xl font-semibold">Welcome</h1>
+        <p className="mb-6 text-center text-sm text-muted-foreground">Real trips. Real friends.</p>
+
+        <Button onClick={handleGoogle} disabled={loading} variant="outline" className="mb-4 h-12 w-full gap-3 rounded-xl">
+          <GoogleIcon /> Continue with Google
+        </Button>
+
+        <div className="my-4 flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">or</span>
+          <div className="h-px flex-1 bg-border" />
         </div>
 
-        <div className="p-8">
-          {error && (
-            <div className="bg-red-50 text-red-600 p-4 rounded-2xl mb-6 text-sm">
-              {error}
-            </div>
-          )}
-          {success && (
-            <div className="bg-emerald-50 text-emerald-600 p-4 rounded-2xl mb-6 text-sm">
-              {success}
-            </div>
-          )}
+        <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="signin"><Mail className="mr-1 h-3.5 w-3.5" />Sign in</TabsTrigger>
+            <TabsTrigger value="signup">Sign up</TabsTrigger>
+            <TabsTrigger value="phone"><Phone className="mr-1 h-3.5 w-3.5" />Phone</TabsTrigger>
+          </TabsList>
 
-          {/* Login View */}
-          {view === 'login' && (
-            <>
-              <button
-                onClick={handleGoogleLogin}
-                disabled={loading}
-                className="w-full bg-white border-2 border-gray-200 hover:border-gray-300 text-gray-800 font-semibold py-4 rounded-2xl flex items-center justify-center gap-3 mb-6 transition-all"
-              >
-                <span className="text-2xl">G</span>
-                Continue with Google
+          <TabsContent value="signin" className="mt-4">
+            <form onSubmit={handleSignIn} className="space-y-3">
+              <div><Label>Email</Label><Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+              <div><Label>Password</Label><Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+              <Button type="submit" disabled={loading} className="h-11 w-full rounded-xl">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
+              </Button>
+              <button type="button" onClick={handleForgot} className="block w-full text-center text-xs text-muted-foreground hover:text-primary">
+                Forgot password?
               </button>
+            </form>
+          </TabsContent>
 
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200"></div>
-                </div>
-                <div className="relative text-center">
-                  <span className="bg-white px-4 text-sm text-gray-500">or continue with email</span>
-                </div>
-              </div>
+          <TabsContent value="signup" className="mt-4">
+            <form onSubmit={handleSignUp} className="space-y-3">
+              <div><Label>Full name</Label><Input required value={fullName} onChange={(e) => setFullName(e.target.value)} /></div>
+              <div><Label>Email</Label><Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+              <div><Label>Password</Label><Input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+              <Button type="submit" disabled={loading} className="h-11 w-full rounded-xl">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create account"}
+              </Button>
+            </form>
+          </TabsContent>
 
-              <form onSubmit={handleEmailLogin}>
-                <input
-                  type="email"
-                  placeholder="Your email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full px-5 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 mb-4"
-                />
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-semibold py-4 rounded-2xl hover:brightness-105 transition"
-                >
-                  {loading ? 'Sending...' : 'Send Magic Link'}
+          <TabsContent value="phone" className="mt-4">
+            {!otpSent ? (
+              <form onSubmit={handleSendOtp} className="space-y-3">
+                <div>
+                  <Label>Phone number</Label>
+                  <Input type="tel" required placeholder="+91 98xxxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  <p className="mt-1 text-xs text-muted-foreground">Include country code (e.g. +91, +1)</p>
+                </div>
+                <Button type="submit" disabled={loading} className="h-11 w-full rounded-xl">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send OTP"}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyOtp} className="space-y-3">
+                <div>
+                  <Label>Enter 6-digit code</Label>
+                  <Input required maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value)} />
+                </div>
+                <Button type="submit" disabled={loading} className="h-11 w-full rounded-xl">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify & sign in"}
+                </Button>
+                <button type="button" onClick={() => { setOtpSent(false); setOtp(""); }} className="block w-full text-center text-xs text-muted-foreground hover:text-primary">
+                  Use a different number
                 </button>
               </form>
+            )}
+          </TabsContent>
+        </Tabs>
 
-              <button
-                onClick={() => setView('phone')}
-                className="w-full mt-4 bg-emerald-600 text-white font-semibold py-4 rounded-2xl hover:bg-emerald-700 transition"
-              >
-                Login with Phone Number
-              </button>
-
-              <p className="text-center mt-8 text-gray-600">
-                Don't have an account?{' '}
-                <button onClick={() => setView('signup')} className="text-blue-600 font-semibold hover:underline">
-                  Sign up
-                </button>
-              </p>
-            </>
-          )}
-
-          {/* Signup, Phone, Verify views... (I kept them but improved styling) */}
-          {/* You can expand them similarly if needed. For now, main login is improved. */}
-
-          {view === 'signup' && (
-            <form onSubmit={handleSignUp} className="space-y-4">
-              {/* Similar improved inputs as above */}
-              {/* ... (add if you want full signup UI) */}
-            </form>
-          )}
-        </div>
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          By continuing you agree to our <Link to="/legal/terms" className="underline">Terms</Link> & <Link to="/legal/privacy" className="underline">Privacy</Link>.
+        </p>
       </div>
     </div>
   );
