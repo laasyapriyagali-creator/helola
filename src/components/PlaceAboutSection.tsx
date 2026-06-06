@@ -24,23 +24,14 @@ export function PlaceAboutSection({ place }: Props) {
     setError(null);
     try {
       const [rawImgs, sum] = await Promise.all([
-        getPlaceImages(place, 16).catch(() => [] as PlaceImage[]),
+        getPlaceImages(place, 12).catch(() => [] as PlaceImage[]),
         getPlaceSummary(place).catch(() => null),
       ]);
-      // Only keep images we can actually display, top-up with Unsplash fallbacks if needed.
+      // Only keep images we can actually display. Never inject unrelated stock photos.
       const verified = await filterLoadable(rawImgs, 6);
-      let final = verified;
-      if (final.length < 6) {
-        const fallbacks: PlaceImage[] = Array.from({ length: 12 }).map((_, i) => {
-          const u = `https://source.unsplash.com/600x400/?${encodeURIComponent(place)}&sig=${i + 50}`;
-          return { url: u, thumb: u, source: u, title: place };
-        });
-        const extra = await filterLoadable(fallbacks, 6 - final.length);
-        final = [...final, ...extra];
-      }
-      setImages(final.slice(0, 6));
+      setImages(verified.slice(0, 6));
       setSummary(sum?.extract || "");
-      if (final.length === 0) setError("Couldn't load photos. Tap retry.");
+      if (verified.length === 0) setError("No verified photos found for this place.");
     } catch (e: any) {
       setError(e?.message || "Couldn't load place info.");
     } finally {
