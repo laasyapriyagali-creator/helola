@@ -57,7 +57,7 @@ export default function DestinationDetail() {
           <div className="relative h-64 bg-muted md:h-96">
             {loading && !hero ? <Skeleton className="h-full w-full" /> : (
               <img
-                src={hero?.url || `https://source.unsplash.com/1200x800/?${encodeURIComponent(decoded)}`}
+                src={hero?.url || "/placeholder.svg"}
                 alt={`${decoded} real photograph`}
                 className="h-full w-full object-cover"
                 loading="eager"
