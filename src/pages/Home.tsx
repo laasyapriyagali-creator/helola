@@ -105,19 +105,36 @@ export default function Home() {
       </section>
 
       <div className="px-4 md:px-8">
-        {/* Search bar (overlapping the band) */}
+        {/* Search bar — searches real places (OpenStreetMap) */}
         <div className="relative -mt-7 md:-mt-9">
           <div className="mx-auto max-w-3xl">
-            <div className="relative">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const q = search.trim();
+                if (q) navigate(`/destinations/${encodeURIComponent(q)}`);
+              }}
+              className="relative"
+            >
               <Search className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="search-input"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Explore places, cities etc"
-                className="h-14 rounded-full border-border bg-card pl-12 pr-5 text-base shadow-elegant"
+                placeholder="Search any place — Paris, Goa, Tokyo…"
+                className="h-14 rounded-full border-border bg-card pl-12 pr-28 text-base shadow-elegant"
               />
-            </div>
+              <Button type="submit" size="sm" className="absolute right-1.5 top-1/2 h-11 -translate-y-1/2 rounded-full px-5">
+                Search
+              </Button>
+            </form>
+            <button
+              type="button"
+              onClick={() => navigate("/destinations/search")}
+              className="mt-2 ml-5 text-xs text-muted-foreground hover:text-primary"
+            >
+              Browse all destinations →
+            </button>
           </div>
         </div>
 
