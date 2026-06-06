@@ -119,7 +119,7 @@ export default function DestinationDetail() {
                   src={img.thumb}
                   alt={img.title}
                   loading="lazy"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = `https://source.unsplash.com/600x400/?${encodeURIComponent(decoded)}&sig=${idx}`; }}
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }}
                   className="h-32 w-full object-cover transition-transform duration-500 group-hover:scale-105 md:h-40"
                 />
               </button>
