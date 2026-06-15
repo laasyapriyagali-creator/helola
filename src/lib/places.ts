@@ -174,12 +174,43 @@ export async function getPlaceSummary(name: string): Promise<{ extract: string; 
   }
 }
 
-// Filter out icons/logos/flags/maps that frequently appear in infoboxes.
+// Filter out icons/logos/flags/maps/portraits/historical art that frequently appear in articles.
 function isLikelyPhoto(fileTitle: string): boolean {
   const t = fileTitle.toLowerCase();
   if (!/\.(jpe?g|png|webp)$/i.test(t)) return false;
-  const bad = ["icon", "logo", "flag", "coat_of_arms", "coat of arms", "seal", "emblem", "map", "locator", "location", "symbol", "commons-logo", "pictogram", "wiki"];
-  return !bad.some(b => t.includes(b));
+  const bad = [
+    // non-photo assets
+    "icon", "logo", "flag", "coat_of_arms", "coat of arms", "seal", "emblem",
+    "map", "locator", "location_map", "topographic", "symbol", "commons-logo",
+    "pictogram", "wiki", "diagram", "chart", "graph", "blason",
+    // people / portraits — avoid faces
+    "portrait", "headshot", "mugshot", "bust_of", "statue_of",
+    "president", "mayor", "governor", "minister", "senator", "official_portrait",
+    "ceo", "founder", "biographer", "actor", "actress", "singer", "musician",
+    // historical paintings / engravings instead of real photos
+    "painting", "engraving", "lithograph", "drawing_of", "illustration_of",
+    "1846", "1850", "1851", "1852", "1855", "1860", "1870", "1880", "1890",
+    "pre-1900", "19th_century", "18th_century",
+  ];
+  if (bad.some(b => t.includes(b))) return false;
+  // Heuristic: files like "John_Smith_2019.jpg" — two TitleCase tokens then year/number → likely a person
+  const base = fileTitle.replace(/^File:/, "").replace(/\.[^.]+$/, "");
+  if (/^[A-Z][a-z]+_[A-Z][a-z]+(_[A-Z]?[a-z0-9]+)?$/.test(base)) return false;
+  return true;
+}
+
+// Dedupe near-duplicate uploads (same scene, different size/version).
+function dedupeKey(fileTitle: string): string {
+  return fileTitle
+    .replace(/^File:/i, "")
+    .replace(/\.[^.]+$/, "")
+    .toLowerCase()
+    .replace(/[\s_-]+/g, " ")
+    .replace(/\b(\d{3,4}x\d{3,4}|\d+px|hdr|panorama|edit\d*|crop\d*|v\d+|version_?\d+|small|large|big|hi-?res)\b/g, "")
+    .replace(/\b(19|20)\d{2}\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 40);
 }
 
 // Pull images *belonging to the resolved Wikipedia article* — guarantees relevance.
@@ -191,6 +222,7 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
   if (!title) { imagesCache.set(cacheKey, []); return []; }
 
   const collected: PlaceImage[] = [];
+  const seenKeys = new Set<string>();
 
   // 1) media-list = ordered list of images embedded in the article — most relevant.
   try {
@@ -201,11 +233,14 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
         if (item.type !== "image") continue;
         const fileTitle: string = item.title || "";
         if (!isLikelyPhoto(fileTitle)) continue;
+        const key = dedupeKey(fileTitle);
+        if (key && seenKeys.has(key)) continue;
         const srcset = (item.srcset || []).slice().sort((a: any, b: any) => (b.scale || 1) - (a.scale || 1));
         let src: string | undefined = srcset[0]?.src || item.original?.source;
         if (!src) continue;
         if (src.startsWith("//")) src = "https:" + src;
         if (collected.find(c => c.url === src)) continue;
+        if (key) seenKeys.add(key);
         collected.push({
           url: src,
           thumb: src,
