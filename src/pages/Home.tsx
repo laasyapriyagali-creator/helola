@@ -51,7 +51,7 @@ export default function Home() {
         .from("trips")
         .select("id,destination,description,start_date,end_date,max_members,price_per_person,interests,creator_id,status")
         .gte("end_date", todayIso)
-        .in("status", ["upcoming", "ongoing", "active", "open"])
+        .in("status", ["upcoming", "ongoing"])
         .order("start_date", { ascending: true });
       if (error) { console.error(error); setLoading(false); return; }
       const raw = (data ?? []) as (Trip & { status?: string })[];
