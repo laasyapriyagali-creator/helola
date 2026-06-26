@@ -173,10 +173,10 @@ export async function getPlaceSummary(name: string): Promise<{ extract: string; 
     const image = d.originalimage?.source || d.thumbnail?.source;
     const thumb = d.thumbnail?.source || image;
     const result = { extract: d.extract || "", thumb, image };
-    summaryCache.set(name, result);
+    summaryCache.set(name, result); saveSS("helola.placeSummary.v2", summaryCache);
     return result;
   } catch {
-    summaryCache.set(name, null);
+    summaryCache.set(name, null); saveSS("helola.placeSummary.v2", summaryCache);
     return null;
   }
 }
