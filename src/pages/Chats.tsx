@@ -167,12 +167,13 @@ export function ChatRoom() {
       setUploading(true);
       try {
         for (const f of files) {
+          if (f.size > 25 * 1024 * 1024) throw new Error("Files must be 25MB or less");
           const ext = (f.name.split(".").pop() || "bin").toLowerCase();
           const path = `${user.id}/${tripId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
           const { error } = await supabase.storage.from("chat-media").upload(path, f, { contentType: f.type, upsert: false });
           if (error) throw error;
-          const { data: pub } = supabase.storage.from("chat-media").getPublicUrl(path);
-          attachments.push({ type: f.type.startsWith("video/") ? "video" : "image", url: pub.publicUrl });
+          // Store the storage path (private bucket — resolved to signed URL at render time)
+          attachments.push({ type: f.type.startsWith("video/") ? "video" : "image", url: path });
         }
       } catch (e: any) {
         toast({ title: "Upload failed", description: e.message, variant: "destructive" });
