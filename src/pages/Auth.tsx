@@ -162,7 +162,11 @@ export default function Auth() {
             <form onSubmit={handleSignUp} className="space-y-3">
               <div><Label>Full name</Label><Input required value={fullName} onChange={(e) => setFullName(e.target.value)} /></div>
               <div><Label>Email</Label><Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-              <div><Label>Password</Label><Input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+              <div>
+                <Label>Password</Label>
+                <Input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
+                <p className="mt-1 text-xs text-muted-foreground">At least 8 characters. Avoid common passwords like "password" or "12345678".</p>
+              </div>
               <Button type="submit" disabled={loading} className="h-11 w-full rounded-xl">
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create account"}
               </Button>
