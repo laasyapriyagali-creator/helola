@@ -178,8 +178,10 @@ export default function Moments() {
                   )}
                 </div>
 
-                {/* Media carousel */}
-                <MediaCarousel items={getMedia(m)} alt={m.caption ?? "Travel moment"} />
+                {/* Media carousel — double-tap to like */}
+                <div onDoubleClick={() => { if (!m.liked_by_me) toggleLike(m); }} className="select-none">
+                  <MediaCarousel items={getMedia(m)} alt={m.caption ?? "Travel moment"} />
+                </div>
 
                 {/* Like row */}
                 <div className="flex items-center gap-2 px-4 pt-3">
