@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -266,25 +266,7 @@ export function ChatRoom() {
       </div>
 
       <div className="sticky bottom-0 border-t border-border bg-background/95 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] backdrop-blur">
-        {pendingFiles.length > 0 && (
-          <div className="mx-auto mb-2 flex max-w-2xl gap-2 overflow-x-auto">
-            {pendingFiles.map((f, i) => {
-              const url = URL.createObjectURL(f);
-              const isVideo = f.type.startsWith("video/");
-              return (
-                <div key={i} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border">
-                  {isVideo
-                    ? <video src={url} className="h-full w-full object-cover" />
-                    : <img src={url} alt="" className="h-full w-full object-cover" />}
-                  <button onClick={() => setPendingFiles(prev => prev.filter((_, j) => j !== i))}
-                    className="absolute right-0.5 top-0.5 rounded-full bg-black/60 p-0.5 text-white">
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {pendingFiles.length > 0 && <PendingPreview files={pendingFiles} onRemove={(i) => setPendingFiles(prev => prev.filter((_, j) => j !== i))} />}
         <div className="mx-auto flex max-w-2xl items-center gap-2">
           <button onClick={() => fileInputRef.current?.click()}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted text-foreground hover:bg-muted/70"
@@ -305,6 +287,31 @@ export function ChatRoom() {
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Stable object-URL previews — created once per file, revoked on unmount/remove. */
+function PendingPreview({ files, onRemove }: { files: File[]; onRemove: (i: number) => void }) {
+  const urls = useMemo(() => files.map(f => URL.createObjectURL(f)), [files]);
+  useEffect(() => () => { urls.forEach(u => URL.revokeObjectURL(u)); }, [urls]);
+  return (
+    <div className="mx-auto mb-2 flex max-w-2xl gap-2 overflow-x-auto">
+      {files.map((f, i) => {
+        const isVideo = f.type.startsWith("video/");
+        return (
+          <div key={i} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border">
+            {isVideo
+              ? <video src={urls[i]} className="h-full w-full object-cover" />
+              : <img src={urls[i]} alt="" className="h-full w-full object-cover" />}
+            <button onClick={() => onRemove(i)}
+              aria-label="Remove attachment"
+              className="absolute right-0.5 top-0.5 rounded-full bg-black/60 p-0.5 text-white">
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }
