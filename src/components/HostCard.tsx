@@ -31,8 +31,8 @@ export function HostCard({ host }: { host: HostProfile }) {
   return (
     <Card className="overflow-hidden border-border/60 shadow-soft">
       <Link to={`/u/${host.id}`} className="block">
-        {/* Cover — slim banner so it never overpowers the avatar */}
-        <div className="relative h-14 w-full overflow-hidden bg-gradient-warm">
+        {/* Cover — slim banner; avatar sits fully below it (Instagram-style) */}
+        <div className="relative h-20 w-full overflow-hidden bg-gradient-warm">
           {host.cover_url ? (
             <img src={host.cover_url} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
           ) : (
@@ -45,12 +45,14 @@ export function HostCard({ host }: { host: HostProfile }) {
         </div>
 
         <div className="px-4 pb-4">
-          <div className="-mt-10 flex items-start justify-between gap-3">
-            <UserAvatar url={host.avatar_url} name={host.full_name} size={84} className="ring-4 ring-background shadow-soft" />
+          <div className="relative -mt-10 flex items-start justify-between gap-3">
+            <div className="relative z-10">
+              <UserAvatar url={host.avatar_url} name={host.full_name} size={84} className="ring-4 ring-background shadow-soft" />
+            </div>
             <ChevronRight className="mt-12 h-4 w-4 shrink-0 text-muted-foreground" />
           </div>
 
-          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1">
             <h3 className="font-display text-lg font-semibold leading-tight">{host.full_name || "Traveler"}</h3>
             {host.is_verified && (
               <Badge className="rounded-full bg-accent px-2 py-0 text-[10px] text-accent-foreground">✓ Verified</Badge>
