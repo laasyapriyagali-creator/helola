@@ -100,7 +100,9 @@ export function PlaceAboutSection({ place }: Props) {
                         src={img.thumb}
                         alt={img.title}
                         loading="lazy"
+                        decoding="async"
                         referrerPolicy="no-referrer"
+                        onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     </button>
