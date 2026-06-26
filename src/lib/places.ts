@@ -246,11 +246,14 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
         let src: string | undefined = srcset[0]?.src || item.original?.source;
         if (!src) continue;
         if (src.startsWith("//")) src = "https:" + src;
+        // Use Wikimedia's on-the-fly thumbnailer for a lightweight grid thumb (~480px).
+        // This drops grid images from MBs to tens of KB while keeping the full version for the lightbox.
+        const thumb = src.replace(/\/(\d+)px-([^/]+)$/, "/480px-$2");
         if (collected.find(c => c.url === src)) continue;
         if (key) seenKeys.add(key);
         collected.push({
           url: src,
-          thumb: src,
+          thumb,
           source: `https://commons.wikimedia.org/wiki/${encodeURIComponent(fileTitle)}`,
           title: fileTitle.replace(/^File:/, "").replace(/\.(jpe?g|png|webp)$/i, "").replace(/_/g, " "),
         });
