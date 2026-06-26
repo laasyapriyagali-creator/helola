@@ -331,3 +331,20 @@ function PendingPreview({ files, onRemove }: { files: File[]; onRemove: (i: numb
     </div>
   );
 }
+
+/** Renders a chat attachment by resolving its private-bucket reference to a signed URL. */
+function ChatAttachment({ refUrl, type, resolve }: { refUrl: string; type: "image" | "video"; resolve: (r: string) => Promise<string> }) {
+  const [url, setUrl] = useState<string>("");
+  useEffect(() => {
+    let alive = true;
+    resolve(refUrl).then(u => { if (alive) setUrl(u); });
+    return () => { alive = false; };
+  }, [refUrl, resolve]);
+  if (!url) return <div className="h-40 w-full animate-pulse rounded-lg bg-muted/50" />;
+  if (type === "video") return <video src={url} controls playsInline className="max-h-64 w-full rounded-lg object-cover" />;
+  return (
+    <a href={url} target="_blank" rel="noreferrer">
+      <img src={url} alt="attachment" className="max-h-64 w-full rounded-lg object-cover" loading="lazy" />
+    </a>
+  );
+}
