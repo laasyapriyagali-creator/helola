@@ -92,9 +92,16 @@ const NOMINATIM = "https://nominatim.openstreetmap.org";
 const WIKI_REST = "https://en.wikipedia.org/api/rest_v1";
 const COMMONS_API = "https://commons.wikimedia.org/w/api.php";
 
-// In-memory caches (persist for the session) — avoids losing images on re-renders.
-const summaryCache = new Map<string, { extract: string; thumb?: string; image?: string } | null>();
-const imagesCache = new Map<string, PlaceImage[]>();
+// In-memory + sessionStorage caches — survive navigations within a session.
+function loadSS<T>(k: string): Map<string, T> {
+  try { const raw = sessionStorage.getItem(k); return raw ? new Map(JSON.parse(raw)) : new Map(); }
+  catch { return new Map(); }
+}
+function saveSS<T>(k: string, m: Map<string, T>) {
+  try { sessionStorage.setItem(k, JSON.stringify(Array.from(m.entries()).slice(-200))); } catch { /* quota */ }
+}
+const summaryCache = loadSS<{ extract: string; thumb?: string; image?: string } | null>("helola.placeSummary.v2");
+const imagesCache = loadSS<PlaceImage[]>("helola.placeImages.v2");
 
 export async function searchPlaces(query: string, limit = 6): Promise<PlaceSuggestion[]> {
   if (!query.trim()) return [];
