@@ -31,23 +31,23 @@ export function HostCard({ host }: { host: HostProfile }) {
   return (
     <Card className="overflow-hidden border-border/60 shadow-soft">
       <Link to={`/u/${host.id}`} className="block">
-        {/* Cover */}
-        <div className="relative h-24 w-full overflow-hidden bg-gradient-warm">
+        {/* Cover — slim banner so it never overpowers the avatar */}
+        <div className="relative h-14 w-full overflow-hidden bg-gradient-warm">
           {host.cover_url ? (
             <img src={host.cover_url} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
           ) : (
             <div className="h-full w-full bg-primary/90 bg-texture-hero" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-          <span className="absolute right-3 top-3 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary shadow-soft">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+          <span className="absolute right-3 top-2 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary shadow-soft">
             Host
           </span>
         </div>
 
         <div className="px-4 pb-4">
-          <div className="-mt-7 flex items-start justify-between gap-3">
-            <UserAvatar url={host.avatar_url} name={host.full_name} size={64} className="ring-4 ring-background" />
-            <ChevronRight className="mt-8 h-4 w-4 shrink-0 text-muted-foreground" />
+          <div className="-mt-10 flex items-start justify-between gap-3">
+            <UserAvatar url={host.avatar_url} name={host.full_name} size={84} className="ring-4 ring-background shadow-soft" />
+            <ChevronRight className="mt-12 h-4 w-4 shrink-0 text-muted-foreground" />
           </div>
 
           <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
