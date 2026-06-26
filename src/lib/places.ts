@@ -271,6 +271,7 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
   } catch { /* ignore */ }
 
   imagesCache.set(cacheKey, collected.slice(0, limit));
+  saveSS("helola.placeImages.v2", imagesCache);
   return imagesCache.get(cacheKey)!;
 }
 
