@@ -24,14 +24,13 @@ export function PlaceAboutSection({ place }: Props) {
     setError(null);
     try {
       const [rawImgs, sum] = await Promise.all([
-        getPlaceImages(place, 12).catch(() => [] as PlaceImage[]),
+        getPlaceImages(place, 6).catch(() => [] as PlaceImage[]),
         getPlaceSummary(place).catch(() => null),
       ]);
-      // Only keep images we can actually display. Never inject unrelated stock photos.
-      const verified = await filterLoadable(rawImgs, 6);
-      setImages(verified.slice(0, 6));
+      // Show immediately — broken tiles self-hide via onError below.
+      setImages(rawImgs.slice(0, 6));
       setSummary(sum?.extract || "");
-      if (verified.length === 0) setError("No verified photos found for this place.");
+      if (rawImgs.length === 0) setError("No verified photos found for this place.");
     } catch (e: any) {
       setError(e?.message || "Couldn't load place info.");
     } finally {
