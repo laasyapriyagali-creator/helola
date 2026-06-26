@@ -4,11 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plane, Train, Bus, Car, ExternalLink, Ban, Star, Clock, MapPin, Loader2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Plane, Train, Bus, Car, ExternalLink, Ban, Clock, MapPin, Loader2, AlertTriangle, Info, Radio } from "lucide-react";
 import { PlaceSearchInput } from "@/components/PlaceSearchInput";
 import { getKnownIndianCity, isInternationalRoute, normalizePlaceKey, resolveIata, type PlaceSuggestion, type PlaceKind } from "@/lib/places";
-
-type Mode = "flight" | "train" | "bus" | "cab";
+import { searchLiveTransport, type LiveTransportOption, type Mode } from "@/lib/transportProviders";
 
 interface BookingPlatform { name: string; href: (q: SearchParams) => string; }
 interface SearchParams { from: string; to: string; date: string; mode: Mode; }
@@ -28,19 +27,6 @@ const MODE_META: Record<Mode, { label: string; icon: typeof Plane }> = {
   bus:    { label: "Buses",   icon: Bus },
   cab:    { label: "Cabs",    icon: Car },
 };
-
-interface TransportResult {
-  id: string;
-  operator: string;
-  depart: string;
-  arrive: string;
-  duration: string;
-  stops: string;
-  priceMin: number;
-  priceMax: number;
-  estimated: boolean;
-  best?: boolean;
-}
 
 interface RouteAnalysis {
   valid: boolean;
@@ -68,12 +54,11 @@ function analyseRoute(fromText: string, toText: string, fromPlace: PlaceSuggesti
   const distanceKm = fromCoords && toCoords ? kmBetween(fromCoords, toCoords) : null;
 
   if (!fromCoords || !toCoords) {
-    return { valid: false, intl, distanceKm, available: { flight: false, train: false, bus: false, cab: false }, reason: "Transport information currently unavailable. Select a city, airport, railway station, or bus stand from suggestions." };
+    return { valid: false, intl, distanceKm, available: { flight: false, train: false, bus: false, cab: false }, reason: "Select a city, airport, railway station, or bus stand from suggestions to check transport options." };
   }
   if (distanceKm !== null && distanceKm < 8) {
-    return { valid: false, intl, distanceKm, available: { flight: false, train: false, bus: false, cab: false }, reason: "Origin and destination are too close or matched to the same place." };
+    return { valid: false, intl, distanceKm, available: { flight: false, train: false, bus: false, cab: false }, reason: "Origin and destination are too close or resolve to the same place." };
   }
-
   const fromIata = fromPlace?.iata || resolveIata(fromPlace?.city || fromPlace?.name || fromText);
   const toIata = toPlace?.iata || resolveIata(toPlace?.city || toPlace?.name || toText);
   const domesticKnown = !!fromKnown && !!toKnown && !intl;
@@ -84,55 +69,11 @@ function analyseRoute(fromText: string, toText: string, fromPlace: PlaceSuggesti
   return { valid: flight || train || bus || cab, intl, distanceKm, available: { flight, train, bus, cab } };
 }
 
-function priceRange(mode: Mode, route: RouteAnalysis): [number, number] {
-  const km = route.distanceKm ?? (route.intl ? 4500 : 500);
-  if (mode === "flight") {
-    if (route.intl) return [Math.max(25000, Math.round(km * 5.2)), Math.max(42000, Math.round(km * 9.5))];
-    return [Math.max(2200, Math.round(km * 5.5)), Math.min(15000, Math.max(4200, Math.round(km * 13)))];
-  }
-  if (mode === "train") return [Math.max(180, Math.round(km * 0.9)), Math.max(650, Math.round(km * 3.1))];
-  if (mode === "bus") return [Math.max(300, Math.round(km * 1.2)), Math.max(800, Math.round(km * 2.8))];
-  return [Math.max(1800, Math.round(km * 10)), Math.max(3200, Math.round(km * 18))];
-}
-
-const FLIGHT_OPS = ["IndiGo", "Air India", "Vistara", "SpiceJet", "Akasa Air"];
-const INTL_OPS = ["Emirates", "Qatar Airways", "Singapore Airlines", "Lufthansa", "Air India"];
-const TRAIN_OPS = ["Indian Railways", "Vande Bharat", "Intercity Express", "Superfast Express", "Express Train"];
-const BUS_OPS = ["State RTC", "IntrCity SmartBus", "Orange Tours", "VRL Travels", "Zingbus"];
-const CAB_OPS = ["Savaari", "Ola Outstation", "Uber Intercity", "Local Taxi"];
-
-function makeResults(mode: Mode, route: RouteAnalysis): TransportResult[] {
-  if (!route.available[mode]) return [];
-  const ops = mode === "flight" ? (route.intl ? INTL_OPS : FLIGHT_OPS) : mode === "train" ? TRAIN_OPS : mode === "bus" ? BUS_OPS : CAB_OPS;
-  const [lo, hi] = priceRange(mode, route);
-  const km = route.distanceKm ?? 500;
-  const baseHours = mode === "flight" ? Math.max(route.intl ? 5 : 1, Math.round(km / 750)) : mode === "train" ? Math.max(3, Math.round(km / 65)) : mode === "bus" ? Math.max(3, Math.round(km / 55)) : Math.max(2, Math.round(km / 45));
-
-  const out: TransportResult[] = ops.slice(0, 5).map((op, i) => {
-    const departHr = 6 + i * 3;
-    const dur = baseHours + (i % 3);
-    const arriveHr = (departHr + dur) % 24;
-    const fmt = (h: number) => `${String(h).padStart(2, "0")}:${i % 2 ? "30" : "00"}`;
-    const stops = mode === "flight" ? (i === 0 ? "Non-stop" : i === 1 ? "1 stop" : "Non-stop") : mode === "train" ? `${4 + i} halts` : mode === "bus" ? "Non-stop" : "Direct";
-    // spread prices across the range
-    const span = hi - lo;
-    const priceMin = Math.round(lo + (span * (i / ops.length)) / 1.4);
-    const priceMax = Math.round(priceMin + span * 0.18);
-    return {
-      id: `${op}-${i}`,
-      operator: op,
-      depart: fmt(departHr),
-      arrive: fmt(arriveHr) + (departHr + dur >= 24 ? " +1d" : ""),
-      duration: `${dur}h ${i % 2 ? "10" : "45"}m`,
-      stops,
-      priceMin,
-      priceMax,
-      estimated: true,
-    };
-  });
-  out.sort((a, b) => a.priceMin - b.priceMin);
-  if (out[0]) out[0].best = true;
-  return out;
+function fmtDuration(min?: number) {
+  if (!min || min <= 0) return null;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${h}h ${m ? `${m}m` : ""}`.trim();
 }
 
 export default function BookTickets() {
@@ -143,7 +84,9 @@ export default function BookTickets() {
   const [toPlace, setToPlace] = useState<PlaceSuggestion | null>(null);
   const [date, setDate] = useState("");
   const [mode, setMode] = useState<Mode>("flight");
-  const [results, setResults] = useState<TransportResult[]>([]);
+  const [results, setResults] = useState<LiveTransportOption[]>([]);
+  const [liveOk, setLiveOk] = useState(false);
+  const [liveReason, setLiveReason] = useState<string | null>(null);
   const [unavailable, setUnavailable] = useState(false);
   const [searched, setSearched] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -151,7 +94,7 @@ export default function BookTickets() {
   const [error, setError] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { document.title = "Compare ticket prices · HELOLA"; }, []);
+  useEffect(() => { document.title = "Book travel · HELOLA"; }, []);
 
   const intl = useMemo(() => route?.intl ?? isInternationalRoute(fromPlace?.display_name || from, toPlace?.display_name || to), [from, to, fromPlace, toPlace, route]);
 
@@ -160,9 +103,14 @@ export default function BookTickets() {
     setUnavailable(false);
     setSearched(false);
     setRoute(null);
+    setLiveOk(false);
+    setLiveReason(null);
   }, [from, to]);
 
-  const compare = (m: Mode = mode) => {
+  const fromIata = fromPlace?.iata ?? resolveIata(from);
+  const toIata = toPlace?.iata ?? resolveIata(to);
+
+  const compare = async (m: Mode = mode) => {
     setError(null);
     if (!from || !to) { setError("Enter both origin and destination."); return; }
     if (from.trim().toLowerCase() === to.trim().toLowerCase()) {
@@ -172,23 +120,35 @@ export default function BookTickets() {
     setMode(m);
     setSearched(true);
     setSearching(true);
-    window.setTimeout(() => {
-      const nextRoute = analyseRoute(from, to, fromPlace, toPlace);
-      setRoute(nextRoute);
-      if (!nextRoute.valid) {
-        setUnavailable(true);
-        setResults([]);
-        setError(nextRoute.reason || "Transport information currently unavailable.");
-      } else if (!nextRoute.available[m]) {
-        setUnavailable(true);
-        setResults([]);
-      } else {
-        setUnavailable(false);
-        setResults(makeResults(m, nextRoute));
-      }
+
+    const nextRoute = analyseRoute(from, to, fromPlace, toPlace);
+    setRoute(nextRoute);
+
+    if (!nextRoute.valid) {
+      setUnavailable(true);
+      setResults([]);
+      setError(nextRoute.reason || "Route unavailable.");
       setSearching(false);
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
-    }, 350);
+      return;
+    }
+    if (!nextRoute.available[m]) {
+      setUnavailable(true);
+      setResults([]);
+      setSearching(false);
+      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+      return;
+    }
+
+    const live = await searchLiveTransport({
+      from, to, fromIata: fromIata || undefined, toIata: toIata || undefined, date, mode: m,
+    });
+    setLiveOk(live.ok);
+    setLiveReason(live.ok ? null : live.reason || "Live data unavailable.");
+    setResults(live.options);
+    setUnavailable(false);
+    setSearching(false);
+    setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
 
   const switchMode = (m: Mode) => {
@@ -197,9 +157,6 @@ export default function BookTickets() {
   };
 
   const ModeIcon = MODE_META[mode].icon;
-  const fromIata = fromPlace?.iata ?? resolveIata(from);
-  const toIata = toPlace?.iata ?? resolveIata(to);
-
   const params: SearchParams = { from, to, date, mode };
   const available = route?.available;
 
@@ -212,7 +169,7 @@ export default function BookTickets() {
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-warm text-primary-foreground"><Plane className="h-4 w-4" /></div>
         <h1 className="font-display text-3xl font-bold">Book travel tickets</h1>
       </div>
-      <p className="mt-1 text-sm text-muted-foreground">Real flights, trains, buses and cabs with estimated fare ranges. Tap any option to book on your favourite app.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Live prices when available — otherwise tap a partner to check fares directly.</p>
 
       <Card className="mt-5 border-border/60 shadow-elegant">
         <CardContent className="grid gap-3 p-5 md:grid-cols-4">
@@ -239,7 +196,7 @@ export default function BookTickets() {
             {toIata && mode === "flight" && <p className="text-[11px] text-muted-foreground">Nearest airport: <strong>{toIata}</strong></p>}
           </div>
           <div className="space-y-1.5"><Label>Date</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
-          <div className="flex items-end"><Button onClick={() => compare()} className="w-full rounded-xl">Search</Button></div>
+          <div className="flex items-end"><Button onClick={() => compare()} className="w-full rounded-xl" disabled={searching}>Search</Button></div>
           {error && <p className="md:col-span-4 text-sm text-destructive">{error}</p>}
         </CardContent>
       </Card>
@@ -272,7 +229,7 @@ export default function BookTickets() {
         <Card className="mt-6 border-border/60 shadow-soft">
           <CardContent className="flex items-center gap-3 p-5 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            Checking route, transport coverage, and realistic fare ranges…
+            Checking route and querying live transport providers…
           </CardContent>
         </Card>
       )}
@@ -284,7 +241,7 @@ export default function BookTickets() {
               {route?.valid === false ? <AlertTriangle className="h-5 w-5" /> : <Ban className="h-5 w-5" />}
             </div>
             <div>
-              <p className="font-display text-lg font-semibold">{route?.valid === false ? "Transport information currently unavailable" : `${MODE_META[mode].label} aren't available for this route`}</p>
+              <p className="font-display text-lg font-semibold">{route?.valid === false ? "Route unavailable" : `${MODE_META[mode].label} aren't available for this route`}</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {route?.reason || <>No {MODE_META[mode].label.toLowerCase()} between <strong>{from}</strong> and <strong>{to}</strong>{intl ? " (international route)" : ""}. Try another available mode above.</>}
               </p>
@@ -293,7 +250,38 @@ export default function BookTickets() {
         </Card>
       )}
 
-      {results.length > 0 && !unavailable && !searching && (
+      {/* Live data unavailable — honest fallback with partner links */}
+      {searched && !unavailable && !searching && !liveOk && (
+        <Card className="mt-6 border-amber-300/60 bg-amber-50/40 dark:bg-amber-950/20 shadow-soft">
+          <CardContent className="p-5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                <Info className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-display text-lg font-semibold">Live prices couldn't be retrieved</p>
+                <p className="mt-1 text-sm text-muted-foreground">{liveReason}</p>
+                <p className="mt-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Check fares on a partner:</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {PLATFORMS.map((p) => (
+                    <a
+                      key={p.name}
+                      href={p.href(params)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                    >
+                      {p.name}<ExternalLink className="h-3 w-3" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {liveOk && results.length > 0 && !searching && (
         <div className="mt-6 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-display text-xl font-semibold flex items-center gap-2">
@@ -302,54 +290,74 @@ export default function BookTickets() {
             </h2>
             <span className="text-sm text-muted-foreground">· {MODE_META[mode].label}</span>
             {intl && <span className="rounded-full bg-rose px-2 py-0.5 text-[11px] font-medium text-rose-foreground">International</span>}
-            <span className="ml-auto text-[11px] text-muted-foreground">Prices are estimated ranges</span>
+            <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+              <Radio className="h-3 w-3" /> Live
+            </span>
           </div>
 
-          {results.map((r) => (
-            <Card key={r.id} className={`border-border/60 shadow-soft ${r.best ? "ring-2 ring-primary" : ""}`}>
-              <CardContent className="p-4">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <ModeIcon className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-display text-base font-bold">{r.operator}</p>
-                      {r.best && <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[11px] font-semibold text-success"><Star className="h-3 w-3" />Best value</span>}
+          {results.map((r) => {
+            const duration = fmtDuration(r.durationMinutes);
+            return (
+              <Card key={r.id} className="border-border/60 shadow-soft">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <ModeIcon className="h-5 w-5" />
                     </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                      <span className="font-medium text-foreground">{r.depart}</span>
-                      <span>→</span>
-                      <span className="font-medium text-foreground">{r.arrive}</span>
-                      <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{r.duration}</span>
-                      <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{r.stops}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-display text-base font-bold">{r.operator}</p>
+                        {r.classOrSeat && <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium">{r.classOrSeat}</span>}
+                        {typeof r.seatsAvailable === "number" && (
+                          <span className="text-[11px] text-muted-foreground">{r.seatsAvailable} seats left</span>
+                        )}
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                        {r.departTime && <span className="font-medium text-foreground">{r.departTime}</span>}
+                        {r.departTime && r.arriveTime && <span>→</span>}
+                        {r.arriveTime && <span className="font-medium text-foreground">{r.arriveTime}</span>}
+                        {duration && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{duration}</span>}
+                        {r.stops && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{r.stops}</span>}
+                      </div>
+                      <p className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">Source: {r.source}</p>
+                    </div>
+                    <div className="text-right">
+                      {r.price != null ? (
+                        <>
+                          <p className="font-display text-lg font-bold text-primary leading-tight">
+                            {(r.currency || "INR") === "INR" ? "₹" : `${r.currency} `}{r.price.toLocaleString("en-IN")}
+                          </p>
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">live price</p>
+                        </>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Price unavailable</p>
+                      )}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-display text-lg font-bold text-primary leading-tight">
-                      ₹{r.priceMin.toLocaleString("en-IN")}–{r.priceMax.toLocaleString("en-IN")}
-                    </p>
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">est. range</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
+                    {r.bookingUrl && (
+                      <a href={r.bookingUrl} target="_blank" rel="noopener noreferrer"
+                         className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground hover:opacity-90">
+                        Book <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                    <span className="text-xs font-medium text-muted-foreground">Or via:</span>
+                    {PLATFORMS.map((p) => (
+                      <a
+                        key={p.name}
+                        href={p.href(params)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1 text-xs font-medium hover:bg-muted"
+                      >
+                        {p.name}<ExternalLink className="h-3 w-3" />
+                      </a>
+                    ))}
                   </div>
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
-                  <span className="text-xs font-medium text-muted-foreground">Book via:</span>
-                  {PLATFORMS.map((p) => (
-                    <a
-                      key={p.name}
-                      href={p.href(params)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1 text-xs font-medium hover:bg-muted"
-                    >
-                      {p.name}
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
