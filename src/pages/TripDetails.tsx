@@ -14,6 +14,7 @@ import { EditItineraryDialog, type ItineraryItem } from "@/components/EditItiner
 import { PlaceGalleryDialog } from "@/components/PlaceGalleryDialog";
 import { PlaceAboutSection } from "@/components/PlaceAboutSection";
 import { TripImage } from "@/components/TripImage";
+import { HostCard } from "@/components/HostCard";
 
 interface Trip {
   id: string;
