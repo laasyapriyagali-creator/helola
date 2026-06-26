@@ -173,7 +173,7 @@ async function resolveWikiTitle(name: string): Promise<string | null> {
   for (const v of variants) {
     try {
       const r = await safeFetch(`${WIKI_REST}/page/summary/${encodeURIComponent(v)}?redirect=true`);
-      if (!r.ok) continue;
+      if (!r || !r.ok) continue;
       const d = await r.json();
       if (d?.type === "disambiguation") continue;
       const t = d?.titles?.canonical || d?.title;
@@ -190,7 +190,7 @@ export async function getPlaceSummary(name: string): Promise<{ extract: string; 
   if (!title) { summaryCache.set(name, null); return null; }
   try {
     const r = await safeFetch(`${WIKI_REST}/page/summary/${encodeURIComponent(title)}?redirect=true`);
-    if (!r.ok) { summaryCache.set(name, null); return null; }
+    if (!r || !r.ok) { summaryCache.set(name, null); return null; }
     const d = await r.json();
     const image = d.originalimage?.source || d.thumbnail?.source;
     const thumb = d.thumbnail?.source || image;
