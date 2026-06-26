@@ -46,21 +46,30 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       setLoading(true);
+      const todayIso = new Date().toISOString().slice(0, 10);
       const { data, error } = await supabase
         .from("trips")
-        .select("id,destination,description,start_date,end_date,max_members,price_per_person,interests,creator_id")
+        .select("id,destination,description,start_date,end_date,max_members,price_per_person,interests,creator_id,status")
+        .gte("end_date", todayIso)
+        .in("status", ["upcoming", "ongoing"])
         .order("start_date", { ascending: true });
       if (error) { console.error(error); setLoading(false); return; }
-      const list = (data ?? []) as Trip[];
-      setTrips(list);
+      const raw = (data ?? []) as (Trip & { status?: string })[];
 
       // Member counts
-      if (list.length) {
-        const ids = list.map(t => t.id);
+      let counts: Record<string, number> = {};
+      if (raw.length) {
+        const ids = raw.map(t => t.id);
         const { data: ms } = await supabase.from("trip_members").select("trip_id").in("trip_id", ids);
-        const counts: Record<string, number> = {};
         (ms ?? []).forEach(m => { counts[m.trip_id] = (counts[m.trip_id] || 0) + 1; });
         setMembers(counts);
+      }
+
+      // Filter out full trips
+      const list = raw.filter(t => (counts[t.id] || 0) < t.max_members) as Trip[];
+      setTrips(list);
+
+      if (list.length) {
 
         // Creator profiles
         const creatorIds = Array.from(new Set(list.map(t => t.creator_id)));
