@@ -35,7 +35,7 @@ export function TripImage({ destination, coverUrl, className, rounded = "xl", al
   return (
     <div className={cn("relative overflow-hidden bg-gradient-warm", r, className)}>
       {src ? (
-        <img src={src} alt={alt || destination} className="h-full w-full object-cover" loading="lazy" />
+        <img src={src} alt={alt || destination} className="h-full w-full object-cover" loading="lazy" decoding="async" referrerPolicy="no-referrer" />
       ) : (
         <div className="flex h-full w-full items-center justify-center text-primary-foreground">
           <MapPin className="h-5 w-5 opacity-80" />
