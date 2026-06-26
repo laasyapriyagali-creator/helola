@@ -172,7 +172,7 @@ async function resolveWikiTitle(name: string): Promise<string | null> {
   ].filter(Boolean))) as string[];
   for (const v of variants) {
     try {
-      const r = await fetch(`${WIKI_REST}/page/summary/${encodeURIComponent(v)}?redirect=true`);
+      const r = await safeFetch(`${WIKI_REST}/page/summary/${encodeURIComponent(v)}?redirect=true`);
       if (!r.ok) continue;
       const d = await r.json();
       if (d?.type === "disambiguation") continue;
@@ -189,7 +189,7 @@ export async function getPlaceSummary(name: string): Promise<{ extract: string; 
   const title = await resolveWikiTitle(name);
   if (!title) { summaryCache.set(name, null); return null; }
   try {
-    const r = await fetch(`${WIKI_REST}/page/summary/${encodeURIComponent(title)}?redirect=true`);
+    const r = await safeFetch(`${WIKI_REST}/page/summary/${encodeURIComponent(title)}?redirect=true`);
     if (!r.ok) { summaryCache.set(name, null); return null; }
     const d = await r.json();
     const image = d.originalimage?.source || d.thumbnail?.source;
@@ -255,7 +255,7 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
 
   // 1) media-list = ordered list of images embedded in the article — most relevant.
   try {
-    const r = await fetch(`${WIKI_REST}/page/media-list/${encodeURIComponent(title)}`);
+    const r = await safeFetch(`${WIKI_REST}/page/media-list/${encodeURIComponent(title)}`);
     if (r.ok) {
       const d = await r.json();
       for (const item of (d?.items || []) as any[]) {
