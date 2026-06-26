@@ -14,6 +14,7 @@ import { EditItineraryDialog, type ItineraryItem } from "@/components/EditItiner
 import { PlaceGalleryDialog } from "@/components/PlaceGalleryDialog";
 import { PlaceAboutSection } from "@/components/PlaceAboutSection";
 import { TripImage } from "@/components/TripImage";
+import { HostCard } from "@/components/HostCard";
 
 interface Trip {
   id: string;
@@ -48,6 +49,7 @@ export default function TripDetails() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [trip, setTrip] = useState<Trip | null>(null);
+  const [host, setHost] = useState<any | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [isMember, setIsMember] = useState(false);
   const [inWishlist, setInWishlist] = useState(false);
@@ -64,7 +66,13 @@ export default function TripDetails() {
       setTrip(t as unknown as Trip);
       document.title = `${t.destination} · HELOLA Trips`;
 
-      const { data: tm } = await supabase.from("trip_members").select("user_id").eq("trip_id", id);
+      // Fetch host (trip creator) profile in parallel with member list.
+      const [{ data: hostData }, { data: tm }] = await Promise.all([
+        supabase.from("profiles").select("id,full_name,username,bio,age,location,hobbies,avatar_url,cover_url,is_verified").eq("id", t.creator_id).maybeSingle(),
+        supabase.from("trip_members").select("user_id").eq("trip_id", id),
+      ]);
+      setHost(hostData ?? null);
+
       const memberIds = (tm ?? []).map(m => m.user_id);
       if (memberIds.length) {
         const { data: ps } = await supabase.from("profiles").select("id,full_name,avatar_url,is_verified").in("id", memberIds);
@@ -204,13 +212,28 @@ export default function TripDetails() {
         {/* About the destination — photos + description */}
         <PlaceAboutSection place={trip.destination} />
 
-        {/* Members */}
-        <Section title="Members" icon={<Users className="h-4 w-4" />}>
-          {members.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No one has joined yet — be first!</p>
+        {/* Host */}
+        {host && (
+          <section className="mb-6">
+            <div className="mb-3 flex items-center gap-2">
+              <h2 className="flex items-center gap-2 font-display text-xl font-semibold text-foreground">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose text-rose-foreground">
+                  <Users className="h-4 w-4" />
+                </span>
+                Hosted by
+              </h2>
+            </div>
+            <HostCard host={host} />
+          </section>
+        )}
+
+        {/* Participants */}
+        <Section title={`Participants · ${members.filter(m => m.user_id !== trip.creator_id).length}`} icon={<Users className="h-4 w-4" />}>
+          {members.filter(m => m.user_id !== trip.creator_id).length === 0 ? (
+            <p className="text-sm text-muted-foreground">No one else has joined yet — be the first to travel with {host?.full_name?.split(" ")[0] ?? "the host"}.</p>
           ) : (
             <div className="flex flex-wrap gap-3">
-              {members.map(m => (
+              {members.filter(m => m.user_id !== trip.creator_id).map(m => (
                 <Link key={m.user_id} to={`/u/${m.user_id}`} className="group flex flex-col items-center gap-1.5">
                   <div className="relative">
                     <UserAvatar url={m.avatar_url} name={m.full_name} size={56} />

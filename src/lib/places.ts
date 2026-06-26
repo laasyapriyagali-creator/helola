@@ -92,9 +92,16 @@ const NOMINATIM = "https://nominatim.openstreetmap.org";
 const WIKI_REST = "https://en.wikipedia.org/api/rest_v1";
 const COMMONS_API = "https://commons.wikimedia.org/w/api.php";
 
-// In-memory caches (persist for the session) — avoids losing images on re-renders.
-const summaryCache = new Map<string, { extract: string; thumb?: string; image?: string } | null>();
-const imagesCache = new Map<string, PlaceImage[]>();
+// In-memory + sessionStorage caches — survive navigations within a session.
+function loadSS<T>(k: string): Map<string, T> {
+  try { const raw = sessionStorage.getItem(k); return raw ? new Map(JSON.parse(raw)) : new Map(); }
+  catch { return new Map(); }
+}
+function saveSS<T>(k: string, m: Map<string, T>) {
+  try { sessionStorage.setItem(k, JSON.stringify(Array.from(m.entries()).slice(-200))); } catch { /* quota */ }
+}
+const summaryCache = loadSS<{ extract: string; thumb?: string; image?: string } | null>("helola.placeSummary.v2");
+const imagesCache = loadSS<PlaceImage[]>("helola.placeImages.v2");
 
 export async function searchPlaces(query: string, limit = 6): Promise<PlaceSuggestion[]> {
   if (!query.trim()) return [];
@@ -166,10 +173,10 @@ export async function getPlaceSummary(name: string): Promise<{ extract: string; 
     const image = d.originalimage?.source || d.thumbnail?.source;
     const thumb = d.thumbnail?.source || image;
     const result = { extract: d.extract || "", thumb, image };
-    summaryCache.set(name, result);
+    summaryCache.set(name, result); saveSS("helola.placeSummary.v2", summaryCache);
     return result;
   } catch {
-    summaryCache.set(name, null);
+    summaryCache.set(name, null); saveSS("helola.placeSummary.v2", summaryCache);
     return null;
   }
 }
@@ -239,11 +246,14 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
         let src: string | undefined = srcset[0]?.src || item.original?.source;
         if (!src) continue;
         if (src.startsWith("//")) src = "https:" + src;
+        // Use Wikimedia's on-the-fly thumbnailer for a lightweight grid thumb (~480px).
+        // This drops grid images from MBs to tens of KB while keeping the full version for the lightbox.
+        const thumb = src.replace(/\/(\d+)px-([^/]+)$/, "/480px-$2");
         if (collected.find(c => c.url === src)) continue;
         if (key) seenKeys.add(key);
         collected.push({
           url: src,
-          thumb: src,
+          thumb,
           source: `https://commons.wikimedia.org/wiki/${encodeURIComponent(fileTitle)}`,
           title: fileTitle.replace(/^File:/, "").replace(/\.(jpe?g|png|webp)$/i, "").replace(/_/g, " "),
         });
@@ -261,6 +271,7 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
   } catch { /* ignore */ }
 
   imagesCache.set(cacheKey, collected.slice(0, limit));
+  saveSS("helola.placeImages.v2", imagesCache);
   return imagesCache.get(cacheKey)!;
 }
 

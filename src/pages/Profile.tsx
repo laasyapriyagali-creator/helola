@@ -13,6 +13,7 @@ import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { CoverUploader } from "@/components/CoverUploader";
 import { CoverViewerDialog } from "@/components/CoverViewerDialog";
 import { EditProfileSheet } from "@/components/EditProfileSheet";
+import { ProfilePublicSections } from "@/components/ProfilePublicSections";
 
 interface Profile {
   id: string;
@@ -209,7 +210,10 @@ export default function Profile() {
             ) : <span className="text-muted-foreground">No hobbies added.</span>
           } />
         </div>
+
+        <ProfilePublicSections userId={profile.id} />
       </div>
+
 
       <AvatarViewerDialog open={viewerOpen} onOpenChange={setViewerOpen} url={profile.avatar_url} name={profile.full_name} />
       <CoverViewerDialog open={coverViewerOpen} onOpenChange={setCoverViewerOpen} url={profile.cover_url} name={profile.full_name} />
