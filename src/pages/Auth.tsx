@@ -42,26 +42,51 @@ export default function Auth() {
     } finally { setLoading(false); }
   };
 
+  const friendlyAuthError = (msg: string) => {
+    const m = msg.toLowerCase();
+    if (m.includes("pwned") || m.includes("weak") || m.includes("known to be weak"))
+      return "That password has appeared in known data breaches. Please choose a stronger, unique password (mix of letters, numbers, and symbols).";
+    if (m.includes("invalid login")) return "Email or password is incorrect. Please try again.";
+    if (m.includes("already registered") || m.includes("user already")) return "An account with this email already exists. Try signing in instead.";
+    if (m.includes("email not confirmed")) return "Please confirm your email from the link we sent before signing in.";
+    if (m.includes("rate limit")) return "Too many attempts. Please wait a minute and try again.";
+    if (m.includes("password should be at least")) return msg;
+    return msg;
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
     setLoading(false);
-    if (error) toast({ title: "Sign-in failed", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Sign-in failed", description: friendlyAuthError(error.message), variant: "destructive" });
     else navigate("/", { replace: true });
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password.length < 8) {
+      toast({ title: "Password too short", description: "Use at least 8 characters.", variant: "destructive" });
+      return;
+    }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
       options: { emailRedirectTo: `${window.location.origin}/`, data: { full_name: fullName.trim() } },
     });
     setLoading(false);
-    if (error) toast({ title: "Sign-up failed", description: error.message, variant: "destructive" });
-    else toast({ title: "Welcome to Helola!", description: "Account created — you're signed in." });
+    if (error) {
+      toast({ title: "Sign-up failed", description: friendlyAuthError(error.message), variant: "destructive" });
+      return;
+    }
+    if (data.session) {
+      toast({ title: "Welcome to Helola!", description: "Account created — you're signed in." });
+      navigate("/", { replace: true });
+    } else {
+      toast({ title: "Check your inbox", description: "We sent a confirmation link to your email." });
+      setTab("signin");
+    }
   };
 
   const handleSendOtp = async (e: React.FormEvent) => {
