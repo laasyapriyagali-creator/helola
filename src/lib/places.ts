@@ -90,7 +90,15 @@ export interface PlaceImage {
 
 const NOMINATIM = "https://nominatim.openstreetmap.org";
 const WIKI_REST = "https://en.wikipedia.org/api/rest_v1";
-const COMMONS_API = "https://commons.wikimedia.org/w/api.php";
+
+/** Fetch wrapper with a strict timeout — prevents hung UI when a third party stalls. */
+async function safeFetch(url: string, opts: RequestInit = {}, timeoutMs = 6000): Promise<Response | null> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try { return await fetch(url, { ...opts, signal: ctrl.signal }); }
+  catch { return null; }
+  finally { clearTimeout(timer); }
+}
 
 // In-memory + sessionStorage caches — survive navigations within a session.
 function loadSS<T>(k: string): Map<string, T> {
@@ -102,16 +110,27 @@ function saveSS<T>(k: string, m: Map<string, T>) {
 }
 const summaryCache = loadSS<{ extract: string; thumb?: string; image?: string } | null>("helola.placeSummary.v2");
 const imagesCache = loadSS<PlaceImage[]>("helola.placeImages.v2");
+const searchCache = new Map<string, PlaceSuggestion[]>();
 
 export async function searchPlaces(query: string, limit = 6): Promise<PlaceSuggestion[]> {
-  if (!query.trim()) return [];
-  const url = `${NOMINATIM}/search?format=jsonv2&addressdetails=1&limit=${limit}&q=${encodeURIComponent(query)}`;
+  const q = query.trim();
+  if (!q) return [];
+  const cacheKey = `${q.toLowerCase()}::${limit}`;
+  const cached = searchCache.get(cacheKey);
+  if (cached) return cached;
+
+  const url = `${NOMINATIM}/search?format=jsonv2&addressdetails=1&limit=${limit}&q=${encodeURIComponent(q)}`;
+  const res = await safeFetch(url, { headers: { "Accept-Language": "en" } }, 5000);
+  const local = LOCAL_TRANSPORT_HUBS.filter(h => `${h.name} ${h.display_name} ${h.iata || ""}`.toLowerCase().includes(q.toLowerCase()));
+  if (!res || !res.ok) {
+    const fallback = local.slice(0, limit);
+    searchCache.set(cacheKey, fallback);
+    return fallback;
+  }
   try {
-    const res = await fetch(url, { headers: { "Accept-Language": "en" } });
-    if (!res.ok) return [];
     const data = await res.json();
     const remote = (data || []).map((d: any) => {
-      const name = d.name || d.display_name?.split(",")[0] || query;
+      const name = d.name || d.display_name?.split(",")[0] || q;
       const kind = classifyKind(d);
       return {
         display_name: d.display_name,
@@ -126,16 +145,19 @@ export async function searchPlaces(query: string, limit = 6): Promise<PlaceSugge
         iata: kind === "city" || kind === "airport" ? resolveIata(name) : undefined,
       } as PlaceSuggestion;
     });
-    const q = query.toLowerCase().trim();
-    const local = LOCAL_TRANSPORT_HUBS.filter(h => `${h.name} ${h.display_name} ${h.iata || ""}`.toLowerCase().includes(q));
     const seen = new Set<string>();
-    return [...local, ...remote].filter((p) => {
+    const merged = [...local, ...remote].filter((p) => {
       const key = `${p.name}-${p.kind}-${p.lat}`;
       if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
+      seen.add(key); return true;
     }).slice(0, limit);
-  } catch { return LOCAL_TRANSPORT_HUBS.filter(h => h.name.toLowerCase().includes(query.toLowerCase())).slice(0, limit); }
+    searchCache.set(cacheKey, merged);
+    return merged;
+  } catch {
+    const fallback = local.slice(0, limit);
+    searchCache.set(cacheKey, fallback);
+    return fallback;
+  }
 }
 
 // Resolve the canonical Wikipedia title for a query (handles redirects/disambig).
