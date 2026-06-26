@@ -52,13 +52,13 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-soft">
+    <div className="relative min-h-dvh overflow-hidden bg-gradient-soft">
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute -top-32 -right-20 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
         <div className="absolute -bottom-40 -left-20 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto flex min-h-screen max-w-md flex-col px-6 py-12">
+      <div className="relative mx-auto flex min-h-dvh max-w-md flex-col px-6 py-12">
         <Link to="/" className="mb-8 flex items-center gap-2">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-warm text-primary-foreground shadow-elegant">
             <Plane className="h-5 w-5" strokeWidth={2.5} />

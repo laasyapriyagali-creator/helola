@@ -64,7 +64,7 @@ export default function Profile() {
   if (!profile) return <div className="p-10 text-center">Profile not found.</div>;
 
   return (
-    <div className="min-h-screen min-w-0 overflow-x-hidden bg-background">
+    <div className="min-h-dvh min-w-0 overflow-x-hidden bg-background">
       {/* Cover banner — slim 4:1, edge-to-edge, no card chrome */}
       <div className="relative aspect-[4/1] w-full max-h-[140px]">
         {isOwn ? (
