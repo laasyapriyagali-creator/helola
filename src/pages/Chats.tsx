@@ -99,6 +99,25 @@ export function ChatRoom() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+
+  // Resolve a stored attachment reference (a storage path, or a legacy public URL)
+  // to a fresh signed URL from the now-private chat-media bucket.
+  async function resolveAttachmentUrl(ref: string): Promise<string> {
+    if (!ref) return ref;
+    if (signedUrls[ref]) return signedUrls[ref];
+    const legacyMarker = "/storage/v1/object/public/chat-media/";
+    let path = ref;
+    if (ref.startsWith("http")) {
+      const i = ref.indexOf(legacyMarker);
+      if (i === -1) return ref; // unknown external URL — leave as-is
+      path = ref.slice(i + legacyMarker.length).split("?")[0];
+    }
+    const { data, error } = await supabase.storage.from("chat-media").createSignedUrl(path, 60 * 60);
+    if (error || !data?.signedUrl) return "";
+    setSignedUrls(prev => ({ ...prev, [ref]: data.signedUrl }));
+    return data.signedUrl;
+  }
 
   function handleScroll() {
     const el = scrollRef.current;
@@ -167,12 +186,13 @@ export function ChatRoom() {
       setUploading(true);
       try {
         for (const f of files) {
+          if (f.size > 25 * 1024 * 1024) throw new Error("Files must be 25MB or less");
           const ext = (f.name.split(".").pop() || "bin").toLowerCase();
           const path = `${user.id}/${tripId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
           const { error } = await supabase.storage.from("chat-media").upload(path, f, { contentType: f.type, upsert: false });
           if (error) throw error;
-          const { data: pub } = supabase.storage.from("chat-media").getPublicUrl(path);
-          attachments.push({ type: f.type.startsWith("video/") ? "video" : "image", url: pub.publicUrl });
+          // Store the storage path (private bucket — resolved to signed URL at render time)
+          attachments.push({ type: f.type.startsWith("video/") ? "video" : "image", url: path });
         }
       } catch (e: any) {
         toast({ title: "Upload failed", description: e.message, variant: "destructive" });
@@ -236,11 +256,7 @@ export function ChatRoom() {
                       {atts.length > 0 && (
                         <div className={`grid gap-1 ${atts.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
                           {atts.map((a, i) => (
-                            a.type === "video"
-                              ? <video key={i} src={a.url} controls playsInline className="max-h-64 w-full rounded-lg object-cover" />
-                              : <a key={i} href={a.url} target="_blank" rel="noreferrer">
-                                  <img src={a.url} alt="attachment" className="max-h-64 w-full rounded-lg object-cover" loading="lazy" />
-                                </a>
+                            <ChatAttachment key={i} refUrl={a.url} type={a.type} resolve={resolveAttachmentUrl} />
                           ))}
                         </div>
                       )}
@@ -313,5 +329,22 @@ function PendingPreview({ files, onRemove }: { files: File[]; onRemove: (i: numb
         );
       })}
     </div>
+  );
+}
+
+/** Renders a chat attachment by resolving its private-bucket reference to a signed URL. */
+function ChatAttachment({ refUrl, type, resolve }: { refUrl: string; type: "image" | "video"; resolve: (r: string) => Promise<string> }) {
+  const [url, setUrl] = useState<string>("");
+  useEffect(() => {
+    let alive = true;
+    resolve(refUrl).then(u => { if (alive) setUrl(u); });
+    return () => { alive = false; };
+  }, [refUrl, resolve]);
+  if (!url) return <div className="h-40 w-full animate-pulse rounded-lg bg-muted/50" />;
+  if (type === "video") return <video src={url} controls playsInline className="max-h-64 w-full rounded-lg object-cover" />;
+  return (
+    <a href={url} target="_blank" rel="noreferrer">
+      <img src={url} alt="attachment" className="max-h-64 w-full rounded-lg object-cover" loading="lazy" />
+    </a>
   );
 }
