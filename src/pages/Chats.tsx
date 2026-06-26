@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Send, Lock, Users, Paperclip, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Lock, Users, Paperclip, X, Loader2, ChevronDown } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface ChatThread { trip_id: string; destination: string; start_date: string; max_members: number; member_count: number; cover_image_url: string | null }
@@ -98,6 +98,17 @@ export function ChatRoom() {
   const [uploading, setUploading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+
+  function handleScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    setShowScrollBtn(!nearBottom);
+  }
+  function scrollToBottom(smooth = true) {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+  }
 
   useEffect(() => { if (!authLoading && !user) navigate("/auth"); }, [user, authLoading, navigate]);
 
@@ -135,7 +146,7 @@ export function ChatRoom() {
     return () => { supabase.removeChannel(channel); };
   }, [tripId, user]);
 
-  useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }); }, [messages]);
+  useEffect(() => { scrollToBottom(true); }, [messages.length]);
 
   function pickFiles(files: FileList | null) {
     if (!files) return;
@@ -194,39 +205,63 @@ export function ChatRoom() {
 
       <TripGroupSheet open={groupOpen} onOpenChange={setGroupOpen} tripId={tripId ?? null} />
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-4">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-3 py-4 relative">
         {messages.length === 0 ? (
           <div className="mx-auto mt-10 max-w-xs text-center text-sm text-muted-foreground">
             Say hi 👋 — break the ice!
           </div>
         ) : (
           <div className="mx-auto max-w-2xl space-y-3">
-            {messages.map((m) => {
+            {messages.map((m, idx) => {
               const me = m.sender_id === user?.id;
               const prof = profiles[m.sender_id];
               const atts = (m.attachments ?? []) as Attachment[];
+              const dayKey = new Date(m.created_at).toDateString();
+              const prevDay = idx > 0 ? new Date(messages[idx - 1].created_at).toDateString() : null;
+              const showDay = dayKey !== prevDay;
+              const today = new Date().toDateString();
+              const yest = new Date(Date.now() - 86400000).toDateString();
+              const label = dayKey === today ? "Today" : dayKey === yest ? "Yesterday" : new Date(m.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" });
               return (
-                <div key={m.id} className={`flex items-end gap-2 ${me ? "flex-row-reverse" : ""}`}>
-                  <UserAvatar url={prof?.avatar_url} name={prof?.full_name} size={32} />
-                  <div className={`max-w-[78%] space-y-1.5 rounded-2xl px-3.5 py-2 text-sm ${me ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md bg-card shadow-soft"}`}>
-                    {!me && <p className="mb-0.5 text-[11px] font-semibold opacity-70">{prof?.full_name ?? "Friend"}</p>}
-                    {atts.length > 0 && (
-                      <div className={`grid gap-1 ${atts.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
-                        {atts.map((a, i) => (
-                          a.type === "video"
-                            ? <video key={i} src={a.url} controls playsInline className="max-h-64 w-full rounded-lg object-cover" />
-                            : <a key={i} href={a.url} target="_blank" rel="noreferrer">
-                                <img src={a.url} alt="attachment" className="max-h-64 w-full rounded-lg object-cover" loading="lazy" />
-                              </a>
-                        ))}
-                      </div>
-                    )}
-                    {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
+                <div key={m.id}>
+                  {showDay && (
+                    <div className="my-3 flex items-center justify-center">
+                      <span className="rounded-full bg-muted px-3 py-1 text-[11px] font-medium text-muted-foreground">{label}</span>
+                    </div>
+                  )}
+                  <div className={`flex items-end gap-2 ${me ? "flex-row-reverse" : ""}`}>
+                    <UserAvatar url={prof?.avatar_url} name={prof?.full_name} size={32} />
+                    <div className={`max-w-[78%] space-y-1.5 rounded-2xl px-3.5 py-2 text-sm ${me ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md bg-card shadow-soft"}`}>
+                      {!me && <p className="mb-0.5 text-[11px] font-semibold opacity-70">{prof?.full_name ?? "Friend"}</p>}
+                      {atts.length > 0 && (
+                        <div className={`grid gap-1 ${atts.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+                          {atts.map((a, i) => (
+                            a.type === "video"
+                              ? <video key={i} src={a.url} controls playsInline className="max-h-64 w-full rounded-lg object-cover" />
+                              : <a key={i} href={a.url} target="_blank" rel="noreferrer">
+                                  <img src={a.url} alt="attachment" className="max-h-64 w-full rounded-lg object-cover" loading="lazy" />
+                                </a>
+                          ))}
+                        </div>
+                      )}
+                      {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
+                      <p className={`text-[10px] opacity-60 ${me ? "text-right" : ""}`}>{new Date(m.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</p>
+                    </div>
                   </div>
                 </div>
               );
             })}
           </div>
+        )}
+        {showScrollBtn && (
+          <button
+            onClick={() => scrollToBottom(true)}
+            aria-label="Scroll to latest"
+            className="sticky bottom-3 ml-auto flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-elegant transition-opacity hover:opacity-90"
+            style={{ float: "right" }}
+          >
+            <ChevronDown className="h-5 w-5" />
+          </button>
         )}
       </div>
 

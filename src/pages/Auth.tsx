@@ -117,7 +117,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-texture-paper flex items-center justify-center p-4">
+    <div className="min-h-dvh bg-texture-paper flex items-center justify-center p-4">
       <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-elegant">
         <Link to="/" className="mb-6 flex items-center justify-center gap-2">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-warm text-primary-foreground shadow-soft">
