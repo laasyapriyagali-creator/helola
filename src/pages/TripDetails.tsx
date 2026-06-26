@@ -212,13 +212,28 @@ export default function TripDetails() {
         {/* About the destination — photos + description */}
         <PlaceAboutSection place={trip.destination} />
 
-        {/* Members */}
-        <Section title="Members" icon={<Users className="h-4 w-4" />}>
-          {members.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No one has joined yet — be first!</p>
+        {/* Host */}
+        {host && (
+          <section className="mb-6">
+            <div className="mb-3 flex items-center gap-2">
+              <h2 className="flex items-center gap-2 font-display text-xl font-semibold text-foreground">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose text-rose-foreground">
+                  <Users className="h-4 w-4" />
+                </span>
+                Hosted by
+              </h2>
+            </div>
+            <HostCard host={host} />
+          </section>
+        )}
+
+        {/* Participants */}
+        <Section title={`Participants · ${members.filter(m => m.user_id !== trip.creator_id).length}`} icon={<Users className="h-4 w-4" />}>
+          {members.filter(m => m.user_id !== trip.creator_id).length === 0 ? (
+            <p className="text-sm text-muted-foreground">No one else has joined yet — be the first to travel with {host?.full_name?.split(" ")[0] ?? "the host"}.</p>
           ) : (
             <div className="flex flex-wrap gap-3">
-              {members.map(m => (
+              {members.filter(m => m.user_id !== trip.creator_id).map(m => (
                 <Link key={m.user_id} to={`/u/${m.user_id}`} className="group flex flex-col items-center gap-1.5">
                   <div className="relative">
                     <UserAvatar url={m.avatar_url} name={m.full_name} size={56} />
