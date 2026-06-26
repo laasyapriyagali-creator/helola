@@ -256,7 +256,7 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
   // 1) media-list = ordered list of images embedded in the article — most relevant.
   try {
     const r = await safeFetch(`${WIKI_REST}/page/media-list/${encodeURIComponent(title)}`);
-    if (r.ok) {
+    if (r && r.ok) {
       const d = await r.json();
       for (const item of (d?.items || []) as any[]) {
         if (item.type !== "image") continue;
