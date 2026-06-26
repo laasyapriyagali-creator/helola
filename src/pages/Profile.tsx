@@ -122,7 +122,8 @@ export default function Profile() {
       <div className="px-4 pb-10 md:px-6">
         {/* Avatar overlap (40% cover / 60% white) */}
         <div className="flex items-center gap-4">
-          <div className="-mt-12 shrink-0">
+          <div className="-mt-8 shrink-0 rounded-full ring-[4px] ring-background shadow-elegant">
+
             {isOwn ? (
               <AvatarUploader
                 userId={user!.id}
