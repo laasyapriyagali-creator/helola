@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ImageIcon, MapPin, AlertCircle, RefreshCw, Loader2 } from "lucide-react";
 import { getPlaceImages, getPlaceSummary, type PlaceImage } from "@/lib/places";
-import { filterLoadable } from "@/lib/imagePreload";
+
 import { PlaceGalleryDialog } from "@/components/PlaceGalleryDialog";
 
 interface Props { place: string; }
