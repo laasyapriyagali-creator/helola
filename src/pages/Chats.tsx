@@ -99,6 +99,25 @@ export function ChatRoom() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+
+  // Resolve a stored attachment reference (a storage path, or a legacy public URL)
+  // to a fresh signed URL from the now-private chat-media bucket.
+  async function resolveAttachmentUrl(ref: string): Promise<string> {
+    if (!ref) return ref;
+    if (signedUrls[ref]) return signedUrls[ref];
+    const legacyMarker = "/storage/v1/object/public/chat-media/";
+    let path = ref;
+    if (ref.startsWith("http")) {
+      const i = ref.indexOf(legacyMarker);
+      if (i === -1) return ref; // unknown external URL — leave as-is
+      path = ref.slice(i + legacyMarker.length).split("?")[0];
+    }
+    const { data, error } = await supabase.storage.from("chat-media").createSignedUrl(path, 60 * 60);
+    if (error || !data?.signedUrl) return "";
+    setSignedUrls(prev => ({ ...prev, [ref]: data.signedUrl }));
+    return data.signedUrl;
+  }
 
   function handleScroll() {
     const el = scrollRef.current;
