@@ -49,6 +49,7 @@ export default function TripDetails() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [trip, setTrip] = useState<Trip | null>(null);
+  const [host, setHost] = useState<any | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [isMember, setIsMember] = useState(false);
   const [inWishlist, setInWishlist] = useState(false);
