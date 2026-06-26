@@ -66,7 +66,13 @@ export default function TripDetails() {
       setTrip(t as unknown as Trip);
       document.title = `${t.destination} · HELOLA Trips`;
 
-      const { data: tm } = await supabase.from("trip_members").select("user_id").eq("trip_id", id);
+      // Fetch host (trip creator) profile in parallel with member list.
+      const [{ data: hostData }, { data: tm }] = await Promise.all([
+        supabase.from("profiles").select("id,full_name,username,bio,age,location,hobbies,avatar_url,cover_url,is_verified").eq("id", t.creator_id).maybeSingle(),
+        supabase.from("trip_members").select("user_id").eq("trip_id", id),
+      ]);
+      setHost(hostData ?? null);
+
       const memberIds = (tm ?? []).map(m => m.user_id);
       if (memberIds.length) {
         const { data: ps } = await supabase.from("profiles").select("id,full_name,avatar_url,is_verified").in("id", memberIds);
