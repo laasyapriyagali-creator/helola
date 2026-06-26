@@ -290,3 +290,28 @@ export function ChatRoom() {
     </div>
   );
 }
+
+/** Stable object-URL previews — created once per file, revoked on unmount/remove. */
+function PendingPreview({ files, onRemove }: { files: File[]; onRemove: (i: number) => void }) {
+  const urls = useMemo(() => files.map(f => URL.createObjectURL(f)), [files]);
+  useEffect(() => () => { urls.forEach(u => URL.revokeObjectURL(u)); }, [urls]);
+  return (
+    <div className="mx-auto mb-2 flex max-w-2xl gap-2 overflow-x-auto">
+      {files.map((f, i) => {
+        const isVideo = f.type.startsWith("video/");
+        return (
+          <div key={i} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border">
+            {isVideo
+              ? <video src={urls[i]} className="h-full w-full object-cover" />
+              : <img src={urls[i]} alt="" className="h-full w-full object-cover" />}
+            <button onClick={() => onRemove(i)}
+              aria-label="Remove attachment"
+              className="absolute right-0.5 top-0.5 rounded-full bg-black/60 p-0.5 text-white">
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
