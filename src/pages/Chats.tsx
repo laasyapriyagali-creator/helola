@@ -256,11 +256,7 @@ export function ChatRoom() {
                       {atts.length > 0 && (
                         <div className={`grid gap-1 ${atts.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
                           {atts.map((a, i) => (
-                            a.type === "video"
-                              ? <video key={i} src={a.url} controls playsInline className="max-h-64 w-full rounded-lg object-cover" />
-                              : <a key={i} href={a.url} target="_blank" rel="noreferrer">
-                                  <img src={a.url} alt="attachment" className="max-h-64 w-full rounded-lg object-cover" loading="lazy" />
-                                </a>
+                            <ChatAttachment key={i} refUrl={a.url} type={a.type} resolve={resolveAttachmentUrl} />
                           ))}
                         </div>
                       )}
