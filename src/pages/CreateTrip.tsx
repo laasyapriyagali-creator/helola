@@ -101,7 +101,7 @@ export default function CreateTrip() {
         <ArrowLeft className="h-4 w-4" /> Back
       </button>
       <h1 className="font-display text-3xl font-bold md:text-4xl">Create a group trip</h1>
-      <p className="mt-1 text-sm text-muted-foreground">4 to 20 friendly faces. Share what makes it special.</p>
+      <p className="mt-1 text-sm text-muted-foreground">2 to 20 friendly faces. Share what makes it special.</p>
 
       <form onSubmit={submit} className="mt-6 max-w-2xl space-y-5">
         <Card className="border-border/60 shadow-soft"><CardContent className="space-y-4 p-5">
@@ -144,8 +144,8 @@ export default function CreateTrip() {
               <span>Max members</span>
               <span className="flex items-center gap-1 text-primary"><Users className="h-4 w-4" /> {maxMembers}</span>
             </Label>
-            <input type="range" min={4} max={20} value={maxMembers} onChange={(e) => setMaxMembers(Number(e.target.value))} className="w-full accent-primary" />
-            <div className="flex justify-between text-xs text-muted-foreground"><span>4</span><span>20</span></div>
+            <input type="range" min={2} max={20} value={maxMembers} onChange={(e) => setMaxMembers(Number(e.target.value))} className="w-full accent-primary" />
+            <div className="flex justify-between text-xs text-muted-foreground"><span>2</span><span>20</span></div>
           </div>
         </CardContent></Card>
 
