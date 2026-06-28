@@ -63,9 +63,18 @@ export default function Moments() {
       .order("created_at", { ascending: false })
       .limit(50);
     const list = (data ?? []) as unknown as Memory[];
+    // Render feed immediately with author=undefined (loading skeleton)
+    list.forEach(m => { m.author = undefined; });
+    setMemories(list);
+    setLoading(false);
+    setRefreshing(false);
+
     if (list.length) {
       const ids = Array.from(new Set(list.map(m => m.user_id)));
-      const { data: profs } = await supabase.from("profiles").select("id,full_name,avatar_url").in("id", ids);
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id,full_name,username,avatar_url")
+        .in("id", ids);
       const byId = new Map((profs ?? []).map(p => [p.id, p]));
       let likedSet = new Set<string>();
       if (user) {
@@ -76,16 +85,17 @@ export default function Moments() {
           .in("memory_id", list.map(m => m.id));
         likedSet = new Set((likes ?? []).map(l => l.memory_id));
       }
-      list.forEach(m => {
+      setMemories(prev => prev.map(m => {
         const p = byId.get(m.user_id) as any;
-        m.author = { full_name: p?.full_name ?? null, avatar_url: p?.avatar_url ?? null };
-        m.liked_by_me = likedSet.has(m.id);
-      });
+        // null => account deleted (no profile row); object => loaded
+        const author: Author | null = p
+          ? { full_name: p.full_name ?? null, username: p.username ?? null, avatar_url: p.avatar_url ?? null }
+          : null;
+        return { ...m, author, liked_by_me: likedSet.has(m.id) };
+      }));
     }
-    setMemories(list);
-    setLoading(false);
-    setRefreshing(false);
   }
+
 
   async function refresh() { setRefreshing(true); await load(); }
 
