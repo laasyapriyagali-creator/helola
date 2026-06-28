@@ -120,7 +120,18 @@ export default function DestinationDetail() {
                   src={img.thumb}
                   alt={img.title}
                   loading="lazy"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }}
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const el = e.currentTarget as HTMLImageElement;
+                    // First fall back to the full-resolution URL; if that fails too, hide the tile
+                    // rather than show the Lovable placeholder SVG (which stretches to giant text).
+                    if (el.dataset.fallback !== "1" && img.url && img.url !== el.src) {
+                      el.dataset.fallback = "1";
+                      el.src = img.url;
+                    } else {
+                      (el.parentElement as HTMLElement).style.display = "none";
+                    }
+                  }}
                   className="h-32 w-full object-cover transition-transform duration-500 group-hover:scale-105 md:h-40"
                 />
               </button>
