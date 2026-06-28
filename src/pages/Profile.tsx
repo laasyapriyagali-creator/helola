@@ -20,15 +20,15 @@ interface Profile {
   full_name: string | null;
   username: string | null;
   bio: string | null;
-  age: number | null;
-  gender: string | null;
+  age?: number | null;
+  gender?: string | null;
   location: string | null;
   hobbies: string[] | null;
   avatar_url: string | null;
   cover_url: string | null;
   is_verified: boolean;
-  identity_locked: boolean;
-  username_change_count: number;
+  identity_locked?: boolean;
+  username_change_count?: number;
 }
 
 export default function Profile() {
@@ -52,13 +52,37 @@ export default function Profile() {
   useEffect(() => {
     if (!targetId) return;
     setLoading(true);
-    supabase.from("profiles").select("*").eq("id", targetId).maybeSingle()
-      .then(({ data }) => {
-        setProfile((data as Profile) || null);
-        document.title = data?.full_name ? `${data.full_name} · HELOLA` : "Profile · HELOLA";
+    let cancelled = false;
+    (async () => {
+      const ownColumns = "id,full_name,username,bio,age,gender,location,hobbies,avatar_url,cover_url,is_verified,identity_locked,username_change_count";
+      const publicColumns = "id,full_name,username,bio,avatar_url,cover_url,is_verified";
+      const { data, error } = await supabase
+        .from("profiles")
+        .select(isOwn ? ownColumns : publicColumns)
+        .eq("id", targetId)
+        .maybeSingle();
+
+      let next = data as unknown as Profile | null;
+
+      if (!next && userId) {
+        const { data: momentProfile } = await supabase
+          .from("moment_author_profiles" as never)
+          .select(publicColumns)
+          .eq("id", targetId)
+          .maybeSingle();
+        next = (momentProfile as unknown as Profile) || null;
+      }
+
+      if (!cancelled) {
+        setProfile(next);
+        document.title = next?.full_name ? `${next.full_name} · HELOLA` : "Profile · HELOLA";
         setLoading(false);
-      });
-  }, [targetId]);
+      }
+
+      if (error) console.warn("Profile load restricted", error.message);
+    })();
+    return () => { cancelled = true; };
+  }, [targetId, isOwn, userId]);
 
   if (loading) return <div className="space-y-3 p-4"><Skeleton className="h-36 w-full" /><Skeleton className="h-32 w-full" /></div>;
   if (!profile) return <div className="p-10 text-center">Profile not found.</div>;
@@ -185,13 +209,15 @@ export default function Profile() {
             </span>
           } />
 
-          <DetailRow label="Age & gender" value={
-            <span>
-              {profile.age ? `${profile.age}` : <span className="text-muted-foreground">—</span>}
-              <span className="mx-2 text-muted-foreground/60">·</span>
-              <span className="capitalize">{profile.gender || <span className="text-muted-foreground">—</span>}</span>
-            </span>
-          } />
+          {isOwn && (
+            <DetailRow label="Age & gender" value={
+              <span>
+                {profile.age ? `${profile.age}` : <span className="text-muted-foreground">—</span>}
+                <span className="mx-2 text-muted-foreground/60">·</span>
+                <span className="capitalize">{profile.gender || <span className="text-muted-foreground">—</span>}</span>
+              </span>
+            } />
+          )}
 
           <DetailRow label="Bio" value={
             profile.bio
