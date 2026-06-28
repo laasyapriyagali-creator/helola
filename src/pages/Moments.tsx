@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 
 interface MediaItem { type: "image" | "video"; url: string }
+interface Author { full_name: string | null; username: string | null; avatar_url: string | null }
 interface Memory {
   id: string;
   user_id: string;
@@ -24,9 +25,16 @@ interface Memory {
   story: string | null;
   like_count: number;
   created_at: string;
-  author?: { full_name: string | null; avatar_url: string | null };
+  // undefined => still loading; null => account deleted; object => loaded
+  author?: Author | null;
   liked_by_me?: boolean;
 }
+
+function displayName(a?: Author | null): string {
+  if (!a) return "";
+  return (a.full_name && a.full_name.trim()) || (a.username ? `@${a.username}` : "Traveler");
+}
+
 
 function getMedia(m: Memory): MediaItem[] {
   if (Array.isArray(m.media) && m.media.length > 0) return m.media;
