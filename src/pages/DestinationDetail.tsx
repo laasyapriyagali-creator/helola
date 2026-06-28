@@ -54,15 +54,16 @@ export default function DestinationDetail() {
 
       <div className="mx-auto max-w-5xl">
         <Card className="overflow-hidden border-border/60 shadow-elegant">
-          <div className="relative h-64 bg-muted md:h-96">
-            {loading && !hero ? <Skeleton className="h-full w-full" /> : (
+          <div className="relative h-64 bg-gradient-to-br from-primary/20 to-muted md:h-96">
+            {loading && !hero ? <Skeleton className="h-full w-full" /> : hero ? (
               <img
-                src={hero?.url || "/placeholder.svg"}
+                src={hero.url}
                 alt={`${decoded} real photograph`}
                 className="h-full w-full object-cover"
                 loading="eager"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
               />
-            )}
+            ) : null}
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-5 md:p-7">
               <h1 className="font-display text-3xl font-bold text-white drop-shadow md:text-5xl">{decoded}</h1>
               <p className="mt-1 flex items-center gap-1 text-sm text-white/85">
@@ -119,7 +120,18 @@ export default function DestinationDetail() {
                   src={img.thumb}
                   alt={img.title}
                   loading="lazy"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }}
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const el = e.currentTarget as HTMLImageElement;
+                    // First fall back to the full-resolution URL; if that fails too, hide the tile
+                    // rather than show the Lovable placeholder SVG (which stretches to giant text).
+                    if (el.dataset.fallback !== "1" && img.url && img.url !== el.src) {
+                      el.dataset.fallback = "1";
+                      el.src = img.url;
+                    } else {
+                      (el.parentElement as HTMLElement).style.display = "none";
+                    }
+                  }}
                   className="h-32 w-full object-cover transition-transform duration-500 group-hover:scale-105 md:h-40"
                 />
               </button>
