@@ -469,6 +469,15 @@ export type Database = {
     }
     Functions: {
       cancel_account_deletion: { Args: never; Returns: undefined }
+      get_memory_authors: {
+        Args: { _ids: string[] }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          id: string
+          username: string
+        }[]
+      }
       is_trip_member: {
         Args: { _trip_id: string; _user_id: string }
         Returns: boolean
