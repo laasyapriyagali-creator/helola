@@ -465,42 +465,7 @@ export type Database = {
       }
     }
     Views: {
-      moment_author_profiles: {
-        Row: {
-          avatar_url: string | null
-          bio: string | null
-          cover_url: string | null
-          full_name: string | null
-          hobbies: string[] | null
-          id: string | null
-          is_verified: boolean | null
-          location: string | null
-          username: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          bio?: string | null
-          cover_url?: string | null
-          full_name?: string | null
-          hobbies?: string[] | null
-          id?: string | null
-          is_verified?: boolean | null
-          location?: string | null
-          username?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          bio?: string | null
-          cover_url?: string | null
-          full_name?: string | null
-          hobbies?: string[] | null
-          id?: string | null
-          is_verified?: boolean | null
-          location?: string | null
-          username?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       cancel_account_deletion: { Args: never; Returns: undefined }
