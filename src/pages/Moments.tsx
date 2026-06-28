@@ -71,11 +71,8 @@ export default function Moments() {
 
     if (list.length) {
       const ids = Array.from(new Set(list.map(m => m.user_id)));
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("id,full_name,username,avatar_url")
-        .in("id", ids);
-      const byId = new Map((profs ?? []).map(p => [p.id, p]));
+      const { data: profs } = await supabase.rpc("get_memory_authors", { _ids: ids });
+      const byId = new Map(((profs as any[]) ?? []).map(p => [p.id, p]));
       let likedSet = new Set<string>();
       if (user) {
         const { data: likes } = await supabase
