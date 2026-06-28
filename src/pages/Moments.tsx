@@ -234,7 +234,16 @@ export default function Moments() {
 
                 {/* Caption + story */}
                 <div className="space-y-1 px-4 pb-4 pt-2">
-                  {m.caption && <p className="text-sm leading-relaxed"><span className="font-semibold">{m.author?.full_name?.split(" ")[0] ?? "Traveler"}</span> {m.caption}</p>}
+                  {m.caption && m.author !== undefined && (
+                    <p className="text-sm leading-relaxed">
+                      <span className="font-semibold">
+                        {m.author === null
+                          ? "Deleted"
+                          : (m.author.full_name?.split(" ")[0] || (m.author.username ? `@${m.author.username}` : "Traveler"))}
+                      </span>{" "}
+                      {m.caption}
+                    </p>
+                  )}
                   {story && (
                     <div className="text-sm leading-relaxed text-foreground/85">
                       {isOpen ? story : preview}
