@@ -91,6 +91,10 @@ export interface PlaceImage {
 const NOMINATIM = "https://nominatim.openstreetmap.org";
 const WIKI_REST = "https://en.wikipedia.org/api/rest_v1";
 
+// Unsplash public Access Key — designed for client-side use (rate-limited per key).
+const UNSPLASH_ACCESS_KEY = "eUOrgIfI2JDJlcSM08aqcW01hSq9xusChqKxUuDbMmc";
+const UNSPLASH_API = "https://api.unsplash.com";
+
 /** Fetch wrapper with a strict timeout — prevents hung UI when a third party stalls. */
 async function safeFetch(url: string, opts: RequestInit = {}, timeoutMs = 6000): Promise<Response | null> {
   const ctrl = new AbortController();
@@ -108,9 +112,19 @@ function loadSS<T>(k: string): Map<string, T> {
 function saveSS<T>(k: string, m: Map<string, T>) {
   try { sessionStorage.setItem(k, JSON.stringify(Array.from(m.entries()).slice(-200))); } catch { /* quota */ }
 }
-const summaryCache = loadSS<{ extract: string; thumb?: string; image?: string } | null>("helola.placeSummary.v2");
-const imagesCache = loadSS<PlaceImage[]>("helola.placeImages.v2");
+function loadSet(k: string): Set<string> {
+  try { const raw = sessionStorage.getItem(k); return raw ? new Set(JSON.parse(raw)) : new Set(); }
+  catch { return new Set(); }
+}
+function saveSet(k: string, s: Set<string>) {
+  try { sessionStorage.setItem(k, JSON.stringify(Array.from(s).slice(-500))); } catch { /* quota */ }
+}
+
+const summaryTextCache = loadSS<string | null>("helola.placeExtract.v3");
+const imagesCache = loadSS<PlaceImage[]>("helola.placeImages.v3");
 const searchCache = new Map<string, PlaceSuggestion[]>();
+// Global dedupe so two different destinations never get the same photo.
+const usedImageIds = loadSet("helola.usedImg.v3");
 
 export async function searchPlaces(query: string, limit = 6): Promise<PlaceSuggestion[]> {
   const q = query.trim();
@@ -160,141 +174,173 @@ export async function searchPlaces(query: string, limit = 6): Promise<PlaceSugge
   }
 }
 
-// Resolve the canonical Wikipedia title for a query (handles redirects/disambig).
-const titleCache = new Map<string, string | null>();
-async function resolveWikiTitle(name: string): Promise<string | null> {
-  const key = name.trim();
-  if (titleCache.has(key)) return titleCache.get(key)!;
-  const variants = Array.from(new Set([
-    key,
-    key.split(",")[0]?.trim(),
-    key.replace(/,.*$/, "").trim(),
-  ].filter(Boolean))) as string[];
-  for (const v of variants) {
-    try {
-      const r = await safeFetch(`${WIKI_REST}/page/summary/${encodeURIComponent(v)}?redirect=true`);
-      if (!r || !r.ok) continue;
-      const d = await r.json();
-      if (d?.type === "disambiguation") continue;
-      const t = d?.titles?.canonical || d?.title;
-      if (t) { titleCache.set(key, t); return t; }
-    } catch { /* ignore */ }
+// ─── Unsplash-powered destination images ────────────────────────────────────
+// Wikipedia is no longer used for images — only for text summaries.
+
+function cleanPlaceName(name: string): string {
+  return (name || "").split(",")[0].replace(/\([^)]*\)/g, "").trim();
+}
+
+// Deterministic seed so the random rotation is stable per-session-per-place
+// but different across destinations.
+function seedFromString(s: string): number {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function mulberry32(a: number) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffle<T>(arr: T[], seed: number): T[] {
+  const rand = mulberry32(seed);
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  titleCache.set(key, null);
-  return null;
+  return a;
+}
+
+// Hand-tuned themes — drives "landmarks / beaches / mountains / skylines"
+// search terms per destination. Falls back to a generic travel theme.
+const PLACE_THEMES: { match: RegExp; queries: string[] }[] = [
+  { match: /goa/i,                    queries: ["Goa beach", "Goa palolem", "Goa sunset"] },
+  { match: /manali|himachal/i,        queries: ["Manali snow mountains", "Himachal Pradesh landscape", "Himalayas village"] },
+  { match: /leh|ladakh/i,             queries: ["Ladakh landscape", "Leh monastery", "Pangong lake"] },
+  { match: /jaipur/i,                 queries: ["Jaipur hawa mahal", "Amber fort Jaipur", "Jaipur city palace"] },
+  { match: /udaipur/i,                queries: ["Udaipur lake palace", "Udaipur city", "Pichola lake"] },
+  { match: /munnar|kerala/i,          queries: ["Munnar tea plantation", "Kerala backwaters", "Alleppey houseboat"] },
+  { match: /andaman|port blair/i,     queries: ["Andaman beach", "Havelock island", "Radhanagar beach"] },
+  { match: /rishikesh|uttarakhand/i,  queries: ["Rishikesh ganga", "Rishikesh bridge", "Ganges aarti"] },
+  { match: /bali|denpasar/i,          queries: ["Bali rice terraces", "Bali temple", "Ubud Bali"] },
+  { match: /bangkok|thailand/i,       queries: ["Bangkok temple", "Bangkok skyline", "Wat Arun"] },
+  { match: /dubai/i,                  queries: ["Dubai skyline", "Burj Khalifa", "Dubai desert"] },
+  { match: /singapore/i,              queries: ["Singapore marina bay", "Singapore gardens", "Singapore skyline"] },
+  { match: /paris/i,                  queries: ["Paris Eiffel tower", "Paris street", "Louvre Paris"] },
+  { match: /tokyo/i,                  queries: ["Tokyo skyline", "Shibuya Tokyo", "Tokyo street night"] },
+  { match: /london/i,                 queries: ["London Big Ben", "Tower Bridge London", "London skyline"] },
+  { match: /new york/i,               queries: ["New York skyline", "Manhattan", "Brooklyn bridge"] },
+  { match: /mumbai/i,                 queries: ["Mumbai gateway of india", "Marine drive Mumbai", "Mumbai skyline"] },
+  { match: /delhi/i,                  queries: ["India gate Delhi", "Red Fort Delhi", "Humayun tomb"] },
+  { match: /bengaluru|bangalore/i,    queries: ["Bangalore city", "Lalbagh Bangalore", "Vidhana Soudha"] },
+  { match: /chennai/i,                queries: ["Chennai marina beach", "Chennai temple", "Mahabalipuram"] },
+  { match: /kolkata/i,                queries: ["Howrah bridge Kolkata", "Victoria memorial Kolkata", "Kolkata street"] },
+  { match: /hyderabad/i,              queries: ["Charminar Hyderabad", "Hyderabad city", "Golconda fort"] },
+  { match: /visakhapatnam|vizag/i,    queries: ["Visakhapatnam beach", "RK beach Vizag", "Araku valley"] },
+  { match: /bhubaneswar/i,            queries: ["Bhubaneswar temple", "Lingaraj temple", "Konark sun temple"] },
+];
+
+function buildQueriesFor(name: string): string[] {
+  const cleaned = cleanPlaceName(name);
+  const theme = PLACE_THEMES.find(t => t.match.test(cleaned));
+  if (theme) return theme.queries;
+  // Generic high-quality travel themes — landmarks first, then nature/skyline.
+  return [
+    `${cleaned} landmark`,
+    `${cleaned} skyline`,
+    `${cleaned} travel`,
+    `${cleaned} nature`,
+  ];
+}
+
+interface UnsplashPhoto {
+  id: string;
+  description: string | null;
+  alt_description: string | null;
+  urls: { full: string; regular: string; small: string; thumb: string };
+  links: { html: string };
+  user?: { name: string };
+}
+
+async function unsplashSearch(query: string, perPage = 12, orientation: "landscape" | "squarish" = "landscape"): Promise<UnsplashPhoto[]> {
+  const url = `${UNSPLASH_API}/search/photos?query=${encodeURIComponent(query)}&per_page=${perPage}&orientation=${orientation}&content_filter=high&client_id=${UNSPLASH_ACCESS_KEY}`;
+  const res = await safeFetch(url, {}, 7000);
+  if (!res || !res.ok) return [];
+  try {
+    const data = await res.json();
+    return (data?.results || []) as UnsplashPhoto[];
+  } catch { return []; }
+}
+
+function toPlaceImage(p: UnsplashPhoto, place: string): PlaceImage {
+  return {
+    url: p.urls.regular,
+    thumb: p.urls.small,
+    source: p.links.html,
+    title: p.alt_description || p.description || place,
+  };
 }
 
 export async function getPlaceSummary(name: string): Promise<{ extract: string; thumb?: string; image?: string } | null> {
-  if (summaryCache.has(name)) return summaryCache.get(name)!;
-  const title = await resolveWikiTitle(name);
-  if (!title) { summaryCache.set(name, null); return null; }
-  try {
-    const r = await safeFetch(`${WIKI_REST}/page/summary/${encodeURIComponent(title)}?redirect=true`);
-    if (!r || !r.ok) { summaryCache.set(name, null); return null; }
-    const d = await r.json();
-    const image = d.originalimage?.source || d.thumbnail?.source;
-    const thumb = d.thumbnail?.source || image;
-    const result = { extract: d.extract || "", thumb, image };
-    summaryCache.set(name, result); saveSS("helola.placeSummary.v2", summaryCache);
-    return result;
-  } catch {
-    summaryCache.set(name, null); saveSS("helola.placeSummary.v2", summaryCache);
-    return null;
+  // Text from Wikipedia (no images from Wikipedia).
+  let extract = "";
+  if (summaryTextCache.has(name)) {
+    extract = summaryTextCache.get(name) || "";
+  } else {
+    try {
+      const title = name.split(",")[0].trim();
+      const r = await safeFetch(`${WIKI_REST}/page/summary/${encodeURIComponent(title)}?redirect=true`);
+      if (r && r.ok) {
+        const d = await r.json();
+        if (d?.type !== "disambiguation") extract = d?.extract || "";
+      }
+    } catch { /* ignore */ }
+    summaryTextCache.set(name, extract || null);
+    saveSS("helola.placeExtract.v3", summaryTextCache);
   }
+
+  // Hero image from Unsplash pool.
+  const imgs = await getPlaceImages(name, 6);
+  const hero = imgs[0];
+  return { extract, image: hero?.url, thumb: hero?.thumb };
 }
 
-// Filter out icons/logos/flags/maps/portraits/historical art that frequently appear in articles.
-function isLikelyPhoto(fileTitle: string): boolean {
-  const t = fileTitle.toLowerCase();
-  if (!/\.(jpe?g|png|webp)$/i.test(t)) return false;
-  const bad = [
-    // non-photo assets
-    "icon", "logo", "flag", "coat_of_arms", "coat of arms", "seal", "emblem",
-    "map", "locator", "location_map", "topographic", "symbol", "commons-logo",
-    "pictogram", "wiki", "diagram", "chart", "graph", "blason",
-    // people / portraits — avoid faces
-    "portrait", "headshot", "mugshot", "bust_of", "statue_of",
-    "president", "mayor", "governor", "minister", "senator", "official_portrait",
-    "ceo", "founder", "biographer", "actor", "actress", "singer", "musician",
-    // historical paintings / engravings instead of real photos
-    "painting", "engraving", "lithograph", "drawing_of", "illustration_of",
-    "1846", "1850", "1851", "1852", "1855", "1860", "1870", "1880", "1890",
-    "pre-1900", "19th_century", "18th_century",
-  ];
-  if (bad.some(b => t.includes(b))) return false;
-  // Heuristic: files like "John_Smith_2019.jpg" — two TitleCase tokens then year/number → likely a person
-  const base = fileTitle.replace(/^File:/, "").replace(/\.[^.]+$/, "");
-  if (/^[A-Z][a-z]+_[A-Z][a-z]+(_[A-Z]?[a-z0-9]+)?$/.test(base)) return false;
-  return true;
-}
-
-// Dedupe near-duplicate uploads (same scene, different size/version).
-function dedupeKey(fileTitle: string): string {
-  return fileTitle
-    .replace(/^File:/i, "")
-    .replace(/\.[^.]+$/, "")
-    .toLowerCase()
-    .replace(/[\s_-]+/g, " ")
-    .replace(/\b(\d{3,4}x\d{3,4}|\d+px|hdr|panorama|edit\d*|crop\d*|v\d+|version_?\d+|small|large|big|hi-?res)\b/g, "")
-    .replace(/\b(19|20)\d{2}\b/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 40);
-}
-
-// Pull images *belonging to the resolved Wikipedia article* — guarantees relevance.
 export async function getPlaceImages(name: string, limit = 12): Promise<PlaceImage[]> {
-  const cacheKey = `${name}::${limit}`;
+  const cacheKey = `${cleanPlaceName(name).toLowerCase()}::${limit}`;
   if (imagesCache.has(cacheKey)) return imagesCache.get(cacheKey)!;
 
-  const title = await resolveWikiTitle(name);
-  if (!title) { imagesCache.set(cacheKey, []); return []; }
+  const cleaned = cleanPlaceName(name);
+  const queries = buildQueriesFor(name);
+  const seed = seedFromString(cleaned.toLowerCase());
 
-  const collected: PlaceImage[] = [];
-  const seenKeys = new Set<string>();
+  // Run up to 3 themed queries in parallel, merge results.
+  const batches = await Promise.all(queries.slice(0, 3).map(q => unsplashSearch(q, 12)));
+  let pool: UnsplashPhoto[] = ([] as UnsplashPhoto[]).concat(...batches);
 
-  // 1) media-list = ordered list of images embedded in the article — most relevant.
-  try {
-    const r = await safeFetch(`${WIKI_REST}/page/media-list/${encodeURIComponent(title)}`);
-    if (r && r.ok) {
-      const d = await r.json();
-      for (const item of (d?.items || []) as any[]) {
-        if (item.type !== "image") continue;
-        const fileTitle: string = item.title || "";
-        if (!isLikelyPhoto(fileTitle)) continue;
-        const key = dedupeKey(fileTitle);
-        if (key && seenKeys.has(key)) continue;
-        const srcset = (item.srcset || []).slice().sort((a: any, b: any) => (b.scale || 1) - (a.scale || 1));
-        let src: string | undefined = srcset[0]?.src || item.original?.source;
-        if (!src) continue;
-        if (src.startsWith("//")) src = "https:" + src;
-        // Use Wikimedia's on-the-fly thumbnailer for a lightweight grid thumb (~480px).
-        // This drops grid images from MBs to tens of KB while keeping the full version for the lightbox.
-        const thumb = src.replace(/\/(\d+)px-([^/]+)$/, "/480px-$2");
-        if (collected.find(c => c.url === src)) continue;
-        if (key) seenKeys.add(key);
-        collected.push({
-          url: src,
-          thumb,
-          source: `https://commons.wikimedia.org/wiki/${encodeURIComponent(fileTitle)}`,
-          title: fileTitle.replace(/^File:/, "").replace(/\.(jpe?g|png|webp)$/i, "").replace(/_/g, " "),
-        });
-        if (collected.length >= limit) break;
-      }
-    }
-  } catch { /* ignore */ }
+  // Dedupe by Unsplash id.
+  const byId = new Map<string, UnsplashPhoto>();
+  for (const p of pool) if (!byId.has(p.id)) byId.set(p.id, p);
+  pool = Array.from(byId.values());
 
-  // 2) Prepend the summary hero if not already in.
-  try {
-    const sum = await getPlaceSummary(name);
-    if (sum?.image && !collected.find(c => c.url === sum.image)) {
-      collected.unshift({ url: sum.image, thumb: sum.thumb || sum.image, source: `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}`, title });
-    }
-  } catch { /* ignore */ }
+  // Prefer photos NOT already used by another destination.
+  const fresh = pool.filter(p => !usedImageIds.has(p.id));
+  const reused = pool.filter(p => usedImageIds.has(p.id));
+  let ordered = [...shuffle(fresh, seed), ...shuffle(reused, seed ^ 0x9e3779b9)];
 
-  imagesCache.set(cacheKey, collected.slice(0, limit));
-  saveSS("helola.placeImages.v2", imagesCache);
-  return imagesCache.get(cacheKey)!;
+  // Fallback chain if pool is empty.
+  if (ordered.length === 0) {
+    const fb = await unsplashSearch(`${cleaned} travel`, 12);
+    ordered = shuffle(fb, seed);
+  }
+  if (ordered.length === 0) {
+    const fb = await unsplashSearch("travel destination landscape", 12);
+    ordered = shuffle(fb, seed);
+  }
+
+  const final = ordered.slice(0, limit).map(p => toPlaceImage(p, cleaned));
+
+  // Track usage globally so other destinations skip these ids.
+  for (const p of ordered.slice(0, limit)) usedImageIds.add(p.id);
+  saveSet("helola.usedImg.v3", usedImageIds);
+
+  imagesCache.set(cacheKey, final);
+  saveSS("helola.placeImages.v3", imagesCache);
+  return final;
 }
 
 
