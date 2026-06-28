@@ -64,15 +64,6 @@ export default function Profile() {
 
       let next = data as unknown as Profile | null;
 
-      if (!next && userId) {
-        const { data: momentProfile } = await supabase
-          .from("moment_author_profiles" as never)
-          .select(publicColumns)
-          .eq("id", targetId)
-          .maybeSingle();
-        next = (momentProfile as unknown as Profile) || null;
-      }
-
       if (!cancelled) {
         setProfile(next);
         document.title = next?.full_name ? `${next.full_name} · HELOLA` : "Profile · HELOLA";
