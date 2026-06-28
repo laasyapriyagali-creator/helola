@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 
 interface MediaItem { type: "image" | "video"; url: string }
+interface Author { full_name: string | null; username: string | null; avatar_url: string | null }
 interface Memory {
   id: string;
   user_id: string;
@@ -24,9 +25,16 @@ interface Memory {
   story: string | null;
   like_count: number;
   created_at: string;
-  author?: { full_name: string | null; avatar_url: string | null };
+  // undefined => still loading; null => account deleted; object => loaded
+  author?: Author | null;
   liked_by_me?: boolean;
 }
+
+function displayName(a?: Author | null): string {
+  if (!a) return "";
+  return (a.full_name && a.full_name.trim()) || (a.username ? `@${a.username}` : "Traveler");
+}
+
 
 function getMedia(m: Memory): MediaItem[] {
   if (Array.isArray(m.media) && m.media.length > 0) return m.media;
@@ -55,9 +63,18 @@ export default function Moments() {
       .order("created_at", { ascending: false })
       .limit(50);
     const list = (data ?? []) as unknown as Memory[];
+    // Render feed immediately with author=undefined (loading skeleton)
+    list.forEach(m => { m.author = undefined; });
+    setMemories(list);
+    setLoading(false);
+    setRefreshing(false);
+
     if (list.length) {
       const ids = Array.from(new Set(list.map(m => m.user_id)));
-      const { data: profs } = await supabase.from("profiles").select("id,full_name,avatar_url").in("id", ids);
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id,full_name,username,avatar_url")
+        .in("id", ids);
       const byId = new Map((profs ?? []).map(p => [p.id, p]));
       let likedSet = new Set<string>();
       if (user) {
@@ -68,16 +85,17 @@ export default function Moments() {
           .in("memory_id", list.map(m => m.id));
         likedSet = new Set((likes ?? []).map(l => l.memory_id));
       }
-      list.forEach(m => {
+      setMemories(prev => prev.map(m => {
         const p = byId.get(m.user_id) as any;
-        m.author = { full_name: p?.full_name ?? null, avatar_url: p?.avatar_url ?? null };
-        m.liked_by_me = likedSet.has(m.id);
-      });
+        // null => account deleted (no profile row); object => loaded
+        const author: Author | null = p
+          ? { full_name: p.full_name ?? null, username: p.username ?? null, avatar_url: p.avatar_url ?? null }
+          : null;
+        return { ...m, author, liked_by_me: likedSet.has(m.id) };
+      }));
     }
-    setMemories(list);
-    setLoading(false);
-    setRefreshing(false);
   }
+
 
   async function refresh() { setRefreshing(true); await load(); }
 
@@ -154,13 +172,31 @@ export default function Moments() {
               <article key={m.id} className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
                 {/* Author */}
                 <div className="flex items-center gap-3 px-4 py-3">
-                  <Link to={`/u/${m.user_id}`} className="flex flex-1 items-center gap-3">
-                    <UserAvatar url={m.author?.avatar_url ?? null} name={m.author?.full_name} size={36} />
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold">{m.author?.full_name ?? "Traveler"}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}</p>
+                  {m.author === undefined ? (
+                    <div className="flex flex-1 items-center gap-3">
+                      <Skeleton className="h-9 w-9 rounded-full" />
+                      <div className="flex-1 space-y-1.5">
+                        <Skeleton className="h-3 w-28 rounded" />
+                        <Skeleton className="h-2.5 w-16 rounded" />
+                      </div>
                     </div>
-                  </Link>
+                  ) : m.author === null ? (
+                    <div className="flex flex-1 items-center gap-3 opacity-70">
+                      <UserAvatar url={null} name={null} size={36} />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold italic text-muted-foreground">Deleted account</p>
+                        <p className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <Link to={`/u/${m.user_id}`} className="flex flex-1 items-center gap-3">
+                      <UserAvatar url={m.author.avatar_url} name={m.author.full_name} size={36} />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold">{displayName(m.author)}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}</p>
+                      </div>
+                    </Link>
+                  )}
                   {isOwner && (
                     <DropdownMenu>
                       <DropdownMenuTrigger className="rounded-full p-1.5 text-muted-foreground hover:bg-muted">
@@ -177,6 +213,7 @@ export default function Moments() {
                     </DropdownMenu>
                   )}
                 </div>
+
 
                 {/* Media carousel — double-tap to like */}
                 <div onDoubleClick={() => { if (!m.liked_by_me) toggleLike(m); }} className="select-none">
@@ -197,7 +234,16 @@ export default function Moments() {
 
                 {/* Caption + story */}
                 <div className="space-y-1 px-4 pb-4 pt-2">
-                  {m.caption && <p className="text-sm leading-relaxed"><span className="font-semibold">{m.author?.full_name?.split(" ")[0] ?? "Traveler"}</span> {m.caption}</p>}
+                  {m.caption && m.author !== undefined && (
+                    <p className="text-sm leading-relaxed">
+                      <span className="font-semibold">
+                        {m.author === null
+                          ? "Deleted"
+                          : (m.author.full_name?.split(" ")[0] || (m.author.username ? `@${m.author.username}` : "Traveler"))}
+                      </span>{" "}
+                      {m.caption}
+                    </p>
+                  )}
                   {story && (
                     <div className="text-sm leading-relaxed text-foreground/85">
                       {isOpen ? story : preview}
