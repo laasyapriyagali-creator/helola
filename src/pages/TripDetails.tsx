@@ -15,6 +15,7 @@ import { PlaceGalleryDialog } from "@/components/PlaceGalleryDialog";
 import { PlaceAboutSection } from "@/components/PlaceAboutSection";
 import { TripImage } from "@/components/TripImage";
 import { HostCard } from "@/components/HostCard";
+import { friendlyJoinError } from "@/lib/joinErrors";
 
 interface Trip {
   id: string;
