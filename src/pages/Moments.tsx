@@ -172,13 +172,31 @@ export default function Moments() {
               <article key={m.id} className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
                 {/* Author */}
                 <div className="flex items-center gap-3 px-4 py-3">
-                  <Link to={`/u/${m.user_id}`} className="flex flex-1 items-center gap-3">
-                    <UserAvatar url={m.author?.avatar_url ?? null} name={m.author?.full_name} size={36} />
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold">{m.author?.full_name ?? "Traveler"}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}</p>
+                  {m.author === undefined ? (
+                    <div className="flex flex-1 items-center gap-3">
+                      <Skeleton className="h-9 w-9 rounded-full" />
+                      <div className="flex-1 space-y-1.5">
+                        <Skeleton className="h-3 w-28 rounded" />
+                        <Skeleton className="h-2.5 w-16 rounded" />
+                      </div>
                     </div>
-                  </Link>
+                  ) : m.author === null ? (
+                    <div className="flex flex-1 items-center gap-3 opacity-70">
+                      <UserAvatar url={null} name={null} size={36} />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold italic text-muted-foreground">Deleted account</p>
+                        <p className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <Link to={`/u/${m.user_id}`} className="flex flex-1 items-center gap-3">
+                      <UserAvatar url={m.author.avatar_url} name={m.author.full_name} size={36} />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold">{displayName(m.author)}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}</p>
+                      </div>
+                    </Link>
+                  )}
                   {isOwner && (
                     <DropdownMenu>
                       <DropdownMenuTrigger className="rounded-full p-1.5 text-muted-foreground hover:bg-muted">
@@ -195,6 +213,7 @@ export default function Moments() {
                     </DropdownMenu>
                   )}
                 </div>
+
 
                 {/* Media carousel — double-tap to like */}
                 <div onDoubleClick={() => { if (!m.liked_by_me) toggleLike(m); }} className="select-none">
