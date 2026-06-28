@@ -98,9 +98,17 @@ export default function TripDetails() {
   const join = async () => {
     if (!user) { navigate("/auth"); return; }
     if (!trip) return;
-    if (members.length >= trip.max_members) { toast({ title: "This trip is full", variant: "destructive" }); return; }
+    if (members.length >= trip.max_members) {
+      const f = friendlyJoinError({ message: "Trip is full" });
+      toast({ title: f.title, description: f.description, variant: "destructive" });
+      return;
+    }
     const { error } = await supabase.from("trip_members").insert({ trip_id: trip.id, user_id: user.id });
-    if (error) { toast({ title: "Couldn't join", description: error.message, variant: "destructive" }); return; }
+    if (error) {
+      const f = friendlyJoinError(error);
+      toast({ title: f.title, description: f.description, variant: "destructive" });
+      return;
+    }
     toast({ title: "You're in! 🎉", description: "Group chat unlocked." });
     setIsMember(true);
     setMembers([...members, { user_id: user.id, full_name: "You", avatar_url: null, is_verified: false }]);
