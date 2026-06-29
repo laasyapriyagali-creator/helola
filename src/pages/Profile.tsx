@@ -107,13 +107,13 @@ export default function Profile() {
           </button>
         )}
 
-        {/* Settings gear — top-right (cover edit pencil sits to its right via CoverUploader) */}
+        {/* Settings gear — top-right corner */}
         {isOwn && (
           <button
             type="button"
             onClick={() => navigate("/settings")}
             aria-label="Settings"
-            className="absolute right-14 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-background/85 text-primary shadow-soft backdrop-blur hover:bg-background"
+            className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-background/85 text-primary shadow-soft backdrop-blur hover:bg-background"
           >
             <SettingsIcon className="h-4 w-4" />
           </button>
