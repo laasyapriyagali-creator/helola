@@ -74,7 +74,13 @@ export function EditProfilePage() {
     setSaving(true);
     try {
       const hobbies = hobbiesText.split(",").map((s) => s.trim()).filter(Boolean);
-      const updates: Record<string, unknown> = {
+      const updates: {
+        bio?: string | null;
+        hobbies?: string[];
+        location_city?: string;
+        location_country?: string;
+        username?: string;
+      } = {
         bio: form.bio ?? null,
         hobbies,
       };
