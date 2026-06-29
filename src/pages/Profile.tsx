@@ -42,7 +42,7 @@ export default function Profile() {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [coverViewerOpen, setCoverViewerOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
-  const unread = useUnreadNotifications();
+  
 
   const targetId = userId || user?.id;
   const isOwn = !userId || userId === user?.id;
