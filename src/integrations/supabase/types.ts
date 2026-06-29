@@ -209,6 +209,7 @@ export type Database = {
           bio: string | null
           cover_url: string | null
           created_at: string
+          date_of_birth: string | null
           full_name: string | null
           gender: string | null
           hobbies: string[] | null
@@ -216,12 +217,16 @@ export type Database = {
           identity_locked: boolean
           is_verified: boolean
           location: string | null
+          location_city: string | null
+          location_country: string | null
           message_permission: string
           pending_deletion_at: string | null
+          previous_usernames: string[] | null
           profile_visibility: string
           updated_at: string
           username: string | null
           username_change_count: number
+          username_changed_at: string | null
         }
         Insert: {
           age?: number | null
@@ -230,6 +235,7 @@ export type Database = {
           bio?: string | null
           cover_url?: string | null
           created_at?: string
+          date_of_birth?: string | null
           full_name?: string | null
           gender?: string | null
           hobbies?: string[] | null
@@ -237,12 +243,16 @@ export type Database = {
           identity_locked?: boolean
           is_verified?: boolean
           location?: string | null
+          location_city?: string | null
+          location_country?: string | null
           message_permission?: string
           pending_deletion_at?: string | null
+          previous_usernames?: string[] | null
           profile_visibility?: string
           updated_at?: string
           username?: string | null
           username_change_count?: number
+          username_changed_at?: string | null
         }
         Update: {
           age?: number | null
@@ -251,6 +261,7 @@ export type Database = {
           bio?: string | null
           cover_url?: string | null
           created_at?: string
+          date_of_birth?: string | null
           full_name?: string | null
           gender?: string | null
           hobbies?: string[] | null
@@ -258,12 +269,16 @@ export type Database = {
           identity_locked?: boolean
           is_verified?: boolean
           location?: string | null
+          location_city?: string | null
+          location_country?: string | null
           message_permission?: string
           pending_deletion_at?: string | null
+          previous_usernames?: string[] | null
           profile_visibility?: string
           updated_at?: string
           username?: string | null
           username_change_count?: number
+          username_changed_at?: string | null
         }
         Relationships: []
       }
