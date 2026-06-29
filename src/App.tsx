@@ -26,7 +26,7 @@ const BookTickets = lazy(() => import("./pages/BookTickets"));
 const DestinationDetail = lazy(() => import("./pages/DestinationDetail"));
 const DestinationsSearch = lazy(() => import("./pages/DestinationsSearch"));
 const Moments = lazy(() => import("./pages/Moments"));
-const SecurityChecklist = lazy(() => import("./pages/SecurityChecklist"));
+
 const Notifications = lazy(() => import("./pages/Notifications"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
@@ -98,7 +98,7 @@ const App = () => (
                 <Route path="/legal/terms" element={<AppShell><Terms /></AppShell>} />
                 <Route path="/legal/community" element={<AppShell><CommunityGuidelines /></AppShell>} />
                 <Route path="/support" element={<AppShell><Support /></AppShell>} />
-                <Route path="/settings/security" element={<AppShell><SecurityChecklist /></AppShell>} />
+                
                 <Route path="/notifications" element={<AppShell><Notifications /></AppShell>} />
 
                 {/* Settings — full-screen */}
