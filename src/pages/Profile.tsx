@@ -55,7 +55,7 @@ export default function Profile() {
     let cancelled = false;
     (async () => {
       const ownColumns = "id,full_name,username,bio,age,gender,location,hobbies,avatar_url,cover_url,is_verified,identity_locked,username_change_count";
-      const publicColumns = "id,full_name,username,bio,avatar_url,cover_url,is_verified";
+      const publicColumns = "id,full_name,username,bio,location,hobbies,avatar_url,cover_url,is_verified";
       const { data, error } = await supabase
         .from("profiles")
         .select(isOwn ? ownColumns : publicColumns)
