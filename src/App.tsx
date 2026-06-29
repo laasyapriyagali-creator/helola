@@ -29,6 +29,7 @@ const Moments = lazy(() => import("./pages/Moments"));
 const SecurityChecklist = lazy(() => import("./pages/SecurityChecklist"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const Settings = lazy(() => import("./pages/Settings"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
 
 const About = lazy(() => import("./pages/Legal").then((m) => ({ default: m.About })));
 const CommunityGuidelines = lazy(() => import("./pages/Legal").then((m) => ({ default: m.CommunityGuidelines })));
