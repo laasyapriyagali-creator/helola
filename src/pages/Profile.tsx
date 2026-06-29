@@ -199,16 +199,16 @@ export default function Profile() {
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/8 text-primary">
                 <MapPin className="h-3.5 w-3.5" strokeWidth={1.5} />
               </span>
-              {profile.location || <span className="text-muted-foreground">Not set</span>}
+              {formatLocation(profile.location_city, profile.location_country) || <span className="text-muted-foreground">Not set</span>}
             </span>
           } />
 
           {isOwn && (
             <DetailRow label="Age & gender" value={
               <span>
-                {profile.age ? `${profile.age}` : <span className="text-muted-foreground">—</span>}
+                {computeAge(profile.date_of_birth) ?? <span className="text-muted-foreground">—</span>}
                 <span className="mx-2 text-muted-foreground/60">·</span>
-                <span className="capitalize">{profile.gender || <span className="text-muted-foreground">—</span>}</span>
+                <span className="capitalize">{(profile.gender || "").replace(/_/g, " ") || <span className="text-muted-foreground">—</span>}</span>
               </span>
             } />
           )}
