@@ -89,7 +89,7 @@ export function CoverUploader({ userId, currentUrl, onChange, className, compact
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20" />
 
       {!compact && (
-        <div className="absolute right-14 top-3">
+        <div className="absolute right-14 top-3 z-10">
           <DropdownMenu>
             <DropdownMenuTrigger
               disabled={busy}
