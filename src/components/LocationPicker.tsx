@@ -21,20 +21,21 @@ interface Props {
 export function LocationPicker({ value, onChange, compact }: Props) {
   const [open, setOpen] = useState(false);
   const [detecting, setDetecting] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
+
+  // Reset failure state whenever the dialog reopens.
+  useEffect(() => { if (open) setFailed(null); }, [open]);
 
   const detect = async () => {
     setDetecting(true);
+    setFailed(null);
     try {
       const loc = await detectDeviceLocation();
       onChange(loc);
       toast({ title: "Location set", description: formatLocation(loc.city, loc.country) });
       setOpen(false);
     } catch (e) {
-      toast({
-        title: "Couldn't detect location",
-        description: (e as Error).message + " You can pick from the list instead.",
-        variant: "destructive",
-      });
+      setFailed((e as Error).message || "Your location is not detectable.");
     } finally {
       setDetecting(false);
     }
@@ -74,9 +75,18 @@ export function LocationPicker({ value, onChange, compact }: Props) {
               {detecting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Navigation className="mr-2 h-4 w-4" />}
               Use my current location
             </Button>
-            <p className="text-center text-xs text-muted-foreground">or pick from the list below</p>
-            <CitySearch onSelect={(r) => { onChange(r); setOpen(false); }} />
-            {!compact && (
+
+            {failed && (
+              <div className="space-y-3">
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                  Your location is not detectable. {failed}
+                </div>
+                <p className="text-center text-xs text-muted-foreground">Search for your city instead</p>
+                <CitySearch onSelect={(r) => { onChange(r); setOpen(false); }} />
+              </div>
+            )}
+
+            {!compact && !failed && (
               <p className="text-[11px] leading-relaxed text-muted-foreground">
                 We only store your city and country. Free-text addresses aren't allowed — this keeps profiles honest and prevents fakes.
               </p>
