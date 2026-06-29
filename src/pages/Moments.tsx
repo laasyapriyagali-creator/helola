@@ -5,7 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, Plus, RefreshCw, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Bell, Heart, Plus, RefreshCw, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { toast } from "@/hooks/use-toast";
 import { CreateMemoryDialog } from "@/components/CreateMemoryDialog";
 import { EditMemoryDialog } from "@/components/EditMemoryDialog";
@@ -48,6 +49,7 @@ export default function Moments() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const unread = useUnreadNotifications();
   const [editing, setEditing] = useState<Memory | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const pullStartY = useRef<number | null>(null);
@@ -138,9 +140,19 @@ export default function Moments() {
       {/* Header */}
       <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
         <h1 className="font-display text-2xl font-bold text-primary">Moments</h1>
-        <Button variant="ghost" size="icon" onClick={refresh} aria-label="Refresh">
-          <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" onClick={refresh} aria-label="Refresh">
+            <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate("/notifications")} aria-label="Notifications" className="relative">
+            <Bell className="h-4 w-4" />
+            {unread > 0 && (
+              <span className="absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
+          </Button>
+        </div>
       </div>
 
       {pullDist > 0 && (
