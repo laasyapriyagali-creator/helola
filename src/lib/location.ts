@@ -101,6 +101,8 @@ export async function detectDeviceLocation(): Promise<CityResult> {
   const key = `${coords.latitude.toFixed(2)},${coords.longitude.toFixed(2)}`;
   if (reverseCache.has(key)) return reverseCache.get(key)!;
 
+  // zoom=10 = city. Combined with extractCity() preferring city/county over
+  // village/suburb, this returns the nearest well-known city, not a locality.
   const url = `${NOMINATIM}/reverse?format=jsonv2&lat=${coords.latitude}&lon=${coords.longitude}&zoom=10&addressdetails=1`;
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error("Couldn't look up that location. Try again.");
