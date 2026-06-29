@@ -135,9 +135,10 @@ export async function searchCities(query: string): Promise<CityResult[]> {
   const seen = new Set<string>();
   for (const item of data) {
     const addr = item.address || {};
-    const city = extractCity(addr);
-    const country = addr.country || "";
-    if (!city || !country) continue;
+    const rawCity = extractCity(addr);
+    const rawCountry = addr.country || "";
+    if (!rawCity || !rawCountry) continue;
+    const { city, country } = applyMetroOverride(addr, rawCity, rawCountry);
     const key = `${city.toLowerCase()}|${country.toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
