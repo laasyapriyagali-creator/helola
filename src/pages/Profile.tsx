@@ -14,21 +14,24 @@ import { CoverUploader } from "@/components/CoverUploader";
 import { CoverViewerDialog } from "@/components/CoverViewerDialog";
 import { EditProfileSheet } from "@/components/EditProfileSheet";
 import { ProfilePublicSections } from "@/components/ProfilePublicSections";
+import { computeAge } from "@/lib/age";
+import { formatLocation } from "@/lib/location";
 
 interface Profile {
   id: string;
   full_name: string | null;
   username: string | null;
   bio: string | null;
-  age?: number | null;
+  date_of_birth?: string | null;
   gender?: string | null;
-  location: string | null;
+  location_city?: string | null;
+  location_country?: string | null;
   hobbies: string[] | null;
   avatar_url: string | null;
   cover_url: string | null;
   is_verified: boolean;
   identity_locked?: boolean;
-  username_change_count?: number;
+  username_changed_at?: string | null;
 }
 
 export default function Profile() {
