@@ -57,8 +57,8 @@ export default function Profile() {
     setLoading(true);
     let cancelled = false;
     (async () => {
-      const ownColumns = "id,full_name,username,bio,age,gender,location,hobbies,avatar_url,cover_url,is_verified,identity_locked,username_change_count";
-      const publicColumns = "id,full_name,username,bio,location,hobbies,avatar_url,cover_url,is_verified";
+      const ownColumns = "id,full_name,username,bio,date_of_birth,gender,location_city,location_country,hobbies,avatar_url,cover_url,is_verified,identity_locked,username_changed_at";
+      const publicColumns = "id,full_name,username,bio,location_city,location_country,hobbies,avatar_url,cover_url,is_verified";
       const { data, error } = await supabase
         .from("profiles")
         .select(isOwn ? ownColumns : publicColumns)
