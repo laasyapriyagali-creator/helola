@@ -8,8 +8,7 @@ import { AvatarViewerDialog } from "@/components/AvatarViewerDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Settings as SettingsIcon, Bell } from "lucide-react";
-import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
+import { MapPin, Settings as SettingsIcon } from "lucide-react";
 import { CoverUploader } from "@/components/CoverUploader";
 import { CoverViewerDialog } from "@/components/CoverViewerDialog";
 import { EditProfileSheet } from "@/components/EditProfileSheet";
@@ -43,7 +42,7 @@ export default function Profile() {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [coverViewerOpen, setCoverViewerOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
-  const unread = useUnreadNotifications();
+  
 
   const targetId = userId || user?.id;
   const isOwn = !userId || userId === user?.id;
@@ -108,31 +107,16 @@ export default function Profile() {
           </button>
         )}
 
-        {/* Settings gear — top-right, only on own profile */}
+        {/* Settings gear — top-right (cover edit pencil sits to its right via CoverUploader) */}
         {isOwn && (
-          <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => navigate("/notifications")}
-              aria-label="Notifications"
-              className="relative flex h-9 w-9 items-center justify-center rounded-full bg-background/85 text-primary shadow-soft backdrop-blur hover:bg-background"
-            >
-              <Bell className="h-4 w-4" />
-              {unread > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
-                  {unread > 9 ? "9+" : unread}
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate("/settings")}
-              aria-label="Settings"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-background/85 text-primary shadow-soft backdrop-blur hover:bg-background"
-            >
-              <SettingsIcon className="h-4 w-4" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => navigate("/settings")}
+            aria-label="Settings"
+            className="absolute right-14 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-background/85 text-primary shadow-soft backdrop-blur hover:bg-background"
+          >
+            <SettingsIcon className="h-4 w-4" />
+          </button>
         )}
       </div>
 
