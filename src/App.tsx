@@ -29,6 +29,7 @@ const Moments = lazy(() => import("./pages/Moments"));
 const SecurityChecklist = lazy(() => import("./pages/SecurityChecklist"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const Settings = lazy(() => import("./pages/Settings"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
 
 const About = lazy(() => import("./pages/Legal").then((m) => ({ default: m.About })));
 const CommunityGuidelines = lazy(() => import("./pages/Legal").then((m) => ({ default: m.CommunityGuidelines })));
@@ -78,6 +79,7 @@ const App = () => (
               <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/chats/:tripId" element={<AppShell><ChatRoom /></AppShell>} />
                 <Route path="/" element={<AppShell><Index /></AppShell>} />
                 <Route path="/trips" element={<AppShell><MyTrips /></AppShell>} />

@@ -12,19 +12,30 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { UserAvatar } from "@/components/UserAvatar";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Lock as LockIcon, Trash2, ShieldCheck, Mail, Phone } from "lucide-react";
+import { LocationPicker } from "@/components/LocationPicker";
+import type { CityResult } from "@/lib/location";
+import { formatLocation } from "@/lib/location";
+import { computeAge } from "@/lib/age";
 
 /* ----------------------------- EDIT PROFILE ----------------------------- */
 
 interface ProfileForm {
   full_name: string | null;
   username: string | null;
-  age: number | null;
+  date_of_birth: string | null;
   gender: string | null;
-  location: string | null;
+  location_city: string | null;
+  location_country: string | null;
   bio: string | null;
   hobbies: string[] | null;
   identity_locked: boolean;
-  username_change_count: number;
+  username_changed_at: string | null;
+}
+
+function daysUntilUsernameChange(changedAt: string | null): number {
+  if (!changedAt) return 0;
+  const next = new Date(changedAt).getTime() + 30 * 24 * 60 * 60 * 1000;
+  return Math.max(0, Math.ceil((next - Date.now()) / (24 * 60 * 60 * 1000)));
 }
 
 export function EditProfilePage() {
@@ -35,7 +46,8 @@ export function EditProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [identityLocked, setIdentityLocked] = useState(false);
-  const [usernameChangeCount, setUsernameChangeCount] = useState(0);
+  const [usernameChangedAt, setUsernameChangedAt] = useState<string | null>(null);
+  const [city, setCity] = useState<CityResult | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -44,53 +56,59 @@ export function EditProfilePage() {
         setForm(data as Partial<ProfileForm>);
         setHobbiesText(((data as ProfileForm).hobbies || []).join(", "));
         setIdentityLocked(!!data.identity_locked);
-        setUsernameChangeCount(data.username_change_count || 0);
+        setUsernameChangedAt(data.username_changed_at || null);
+        if (data.location_city && data.location_country) {
+          setCity({ city: data.location_city, country: data.location_country });
+        }
       }
       setLoading(false);
     });
   }, [user]);
 
-  const usernameLeft = Math.max(0, 2 - usernameChangeCount);
+  const usernameCooldown = daysUntilUsernameChange(usernameChangedAt);
+  const usernameDisabled = usernameCooldown > 0;
+  const age = computeAge(form.date_of_birth);
 
   const save = async () => {
     if (!user) return;
     setSaving(true);
     try {
-      const hobbies = hobbiesText.split(",").map(s => s.trim()).filter(Boolean);
-      const newUsername = (form.username || "").trim().toLowerCase().replace(/\s+/g, "_");
-
-      if (newUsername && newUsername !== (form.username || "").toLowerCase()) {
-        // normalised
-      }
-
+      const hobbies = hobbiesText.split(",").map((s) => s.trim()).filter(Boolean);
       const updates: {
-        bio?: string | null; location?: string | null; hobbies?: string[];
-        username?: string; full_name?: string | null; age?: number | null; gender?: string | null;
+        bio?: string | null;
+        hobbies?: string[];
+        location_city?: string;
+        location_country?: string;
+        username?: string;
       } = {
         bio: form.bio ?? null,
-        location: form.location ?? null,
         hobbies,
       };
 
-      // Username uniqueness
-      if (newUsername) {
-        if (!/^[a-z0-9_]{3,20}$/.test(newUsername)) {
+      if (city) {
+        updates.location_city = city.city;
+        updates.location_country = city.country;
+      }
+
+      // Username — only if changed and cooldown allows
+      const currentUsername = (form.username || "").toLowerCase();
+      const inputUsername = (form.username || "").trim().toLowerCase().replace(/\s+/g, "_");
+      if (inputUsername && inputUsername !== currentUsername) {
+        if (usernameDisabled) {
+          toast({ title: "Username locked", description: `You can change it again in ${usernameCooldown} day${usernameCooldown === 1 ? "" : "s"}.`, variant: "destructive" });
+          setSaving(false); return;
+        }
+        if (!/^[a-z0-9_]{3,20}$/.test(inputUsername)) {
           toast({ title: "Invalid username", description: "Use 3–20 lowercase letters, numbers, or underscores.", variant: "destructive" });
           setSaving(false); return;
         }
         const { data: existing } = await supabase
-          .from("profiles").select("id").ilike("username", newUsername).neq("id", user.id).maybeSingle();
+          .from("profiles").select("id").ilike("username", inputUsername).neq("id", user.id).maybeSingle();
         if (existing) {
           toast({ title: "This username already exists", description: "Try another one.", variant: "destructive" });
           setSaving(false); return;
         }
-        updates.username = newUsername;
-      }
-
-      if (!identityLocked) {
-        updates.full_name = form.full_name ?? null;
-        updates.age = form.age ?? null;
-        updates.gender = form.gender ?? null;
+        updates.username = inputUsername;
       }
 
       const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
@@ -109,38 +127,61 @@ export function EditProfilePage() {
 
   return (
     <SettingsPage title="Edit profile">
-      <div className="space-y-5">
-        <div className="space-y-1.5">
-          <Label className="flex items-center gap-1">Full name {identityLocked && <LockIcon className="h-3 w-3 text-muted-foreground" />}</Label>
-          <Input value={form.full_name || ""} disabled={identityLocked} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
-          {identityLocked && <p className="text-xs text-muted-foreground">Name is locked and can't be changed.</p>}
-        </div>
-        <div className="space-y-1.5">
-          <Label>Username {usernameLeft > 0 ? <span className="text-xs text-muted-foreground">({usernameLeft} change{usernameLeft === 1 ? "" : "s"} left)</span> : <span className="text-xs text-destructive">(locked)</span>}</Label>
-          <Input value={form.username || ""} disabled={usernameLeft === 0} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="username_only" />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label className="flex items-center gap-1">Age {identityLocked && <LockIcon className="h-3 w-3 text-muted-foreground" />}</Label>
-            <Input type="number" disabled={identityLocked} value={form.age || ""} onChange={(e) => setForm({ ...form, age: e.target.value ? Number(e.target.value) : null })} />
+      <div className="space-y-6">
+
+        {/* Locked identity fields — read only */}
+        <div className="rounded-2xl border border-border bg-muted/30 p-4">
+          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <LockIcon className="h-3.5 w-3.5" /> Locked identity
           </div>
-          <div className="space-y-1.5">
-            <Label className="flex items-center gap-1">Gender {identityLocked && <LockIcon className="h-3 w-3 text-muted-foreground" />}</Label>
-            <Input value={form.gender || ""} disabled={identityLocked} onChange={(e) => setForm({ ...form, gender: e.target.value })} placeholder="Female / Male / Non-binary..." />
-          </div>
+          <ReadOnlyRow label="Full name" value={form.full_name || "—"} />
+          <ReadOnlyRow label="Gender" value={(form.gender || "—").replace(/_/g, " ")} />
+          <ReadOnlyRow label="Date of birth" value={form.date_of_birth || "—"} />
+          <ReadOnlyRow label="Age" value={age !== null ? `${age}` : "—"} />
+          {identityLocked && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              These fields are permanent for your safety and to prevent fake profiles. Need a correction? <a href="/support" className="underline">Contact support</a>.
+            </p>
+          )}
         </div>
+
+        {/* Username */}
+        <div className="space-y-1.5">
+          <Label>
+            Username{" "}
+            {usernameDisabled
+              ? <span className="text-xs text-muted-foreground">(changeable in {usernameCooldown} day{usernameCooldown === 1 ? "" : "s"})</span>
+              : <span className="text-xs text-muted-foreground">(can be changed once every 30 days)</span>}
+          </Label>
+          <Input
+            value={form.username || ""}
+            disabled={usernameDisabled}
+            onChange={(e) => setForm({ ...form, username: e.target.value })}
+            placeholder="username_only"
+          />
+        </div>
+
+        {/* Location — structured only */}
         <div className="space-y-1.5">
           <Label>Location</Label>
-          <Input value={form.location || ""} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Mumbai, India" />
+          <LocationPicker value={city} onChange={setCity} compact />
+          {city && (
+            <p className="text-xs text-muted-foreground">Saved as <strong>{formatLocation(city.city, city.country)}</strong>.</p>
+          )}
         </div>
+
+        {/* Editable bio */}
         <div className="space-y-1.5">
           <Label>Bio</Label>
           <Textarea rows={4} value={form.bio || ""} onChange={(e) => setForm({ ...form, bio: e.target.value })} placeholder="I like travelling and making friends!" />
         </div>
+
+        {/* Hobbies */}
         <div className="space-y-1.5">
           <Label>Hobbies (comma separated)</Label>
           <Input value={hobbiesText} onChange={(e) => setHobbiesText(e.target.value)} placeholder="Swimming, drawing, reading..." />
         </div>
+
         <div className="flex gap-2 pt-2">
           <Button onClick={save} disabled={saving} className="rounded-full">
             {saving && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}Save changes
@@ -153,6 +194,16 @@ export function EditProfilePage() {
     </SettingsPage>
   );
 }
+
+function ReadOnlyRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between border-b border-border/60 py-2 text-sm last:border-0">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium capitalize">{value}</span>
+    </div>
+  );
+}
+
 
 /* ------------------------ ACCOUNT INFORMATION ------------------------ */
 

@@ -14,21 +14,24 @@ import { CoverUploader } from "@/components/CoverUploader";
 import { CoverViewerDialog } from "@/components/CoverViewerDialog";
 import { EditProfileSheet } from "@/components/EditProfileSheet";
 import { ProfilePublicSections } from "@/components/ProfilePublicSections";
+import { computeAge } from "@/lib/age";
+import { formatLocation } from "@/lib/location";
 
 interface Profile {
   id: string;
   full_name: string | null;
   username: string | null;
   bio: string | null;
-  age?: number | null;
+  date_of_birth?: string | null;
   gender?: string | null;
-  location: string | null;
+  location_city?: string | null;
+  location_country?: string | null;
   hobbies: string[] | null;
   avatar_url: string | null;
   cover_url: string | null;
   is_verified: boolean;
   identity_locked?: boolean;
-  username_change_count?: number;
+  username_changed_at?: string | null;
 }
 
 export default function Profile() {
@@ -54,8 +57,8 @@ export default function Profile() {
     setLoading(true);
     let cancelled = false;
     (async () => {
-      const ownColumns = "id,full_name,username,bio,age,gender,location,hobbies,avatar_url,cover_url,is_verified,identity_locked,username_change_count";
-      const publicColumns = "id,full_name,username,bio,location,hobbies,avatar_url,cover_url,is_verified";
+      const ownColumns = "id,full_name,username,bio,date_of_birth,gender,location_city,location_country,hobbies,avatar_url,cover_url,is_verified,identity_locked,username_changed_at";
+      const publicColumns = "id,full_name,username,bio,location_city,location_country,hobbies,avatar_url,cover_url,is_verified";
       const { data, error } = await supabase
         .from("profiles")
         .select(isOwn ? ownColumns : publicColumns)
@@ -196,16 +199,16 @@ export default function Profile() {
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/8 text-primary">
                 <MapPin className="h-3.5 w-3.5" strokeWidth={1.5} />
               </span>
-              {profile.location || <span className="text-muted-foreground">Not set</span>}
+              {formatLocation(profile.location_city, profile.location_country) || <span className="text-muted-foreground">Not set</span>}
             </span>
           } />
 
           {isOwn && (
             <DetailRow label="Age & gender" value={
               <span>
-                {profile.age ? `${profile.age}` : <span className="text-muted-foreground">—</span>}
+                {computeAge(profile.date_of_birth) ?? <span className="text-muted-foreground">—</span>}
                 <span className="mx-2 text-muted-foreground/60">·</span>
-                <span className="capitalize">{profile.gender || <span className="text-muted-foreground">—</span>}</span>
+                <span className="capitalize">{(profile.gender || "").replace(/_/g, " ") || <span className="text-muted-foreground">—</span>}</span>
               </span>
             } />
           )}
