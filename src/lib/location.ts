@@ -106,9 +106,10 @@ export async function detectDeviceLocation(): Promise<CityResult> {
   if (!res.ok) throw new Error("Couldn't look up that location. Try again.");
   const data = await res.json();
   const addr = data?.address || {};
-  const city = extractCity(addr);
-  const country = addr.country || "";
-  if (!city || !country) throw new Error("Couldn't determine your city. Please pick one manually.");
+  const rawCity = extractCity(addr);
+  const rawCountry = addr.country || "";
+  if (!rawCity || !rawCountry) throw new Error("Couldn't determine your city. Please pick one manually.");
+  const { city, country } = applyMetroOverride(addr, rawCity, rawCountry);
   const result: CityResult = {
     city,
     country,
