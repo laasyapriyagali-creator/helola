@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Mail, Phone, Plane } from "lucide-react";
+import { Loader2, Mail, Phone, Plane, MailCheck } from "lucide-react";
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 48 48" className="h-5 w-5" aria-hidden="true">
@@ -31,6 +31,8 @@ export default function Auth() {
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState("");
 
   useEffect(() => { if (user) navigate("/", { replace: true }); }, [user, navigate]);
 
@@ -42,25 +44,40 @@ export default function Auth() {
     } finally { setLoading(false); }
   };
 
+  // Generic, enumeration-safe message for any signup/reset response.
+  const genericSentMessage = "If that email is valid, we've sent you a message. Please check your inbox (and spam folder).";
+
   const friendlyAuthError = (msg: string) => {
     const m = msg.toLowerCase();
     if (m.includes("pwned") || m.includes("weak") || m.includes("known to be weak"))
-      return "That password has appeared in known data breaches. Please choose a stronger, unique password (mix of letters, numbers, and symbols).";
-    if (m.includes("invalid login")) return "Email or password is incorrect. Please try again.";
-    if (m.includes("already registered") || m.includes("user already")) return "An account with this email already exists. Try signing in instead.";
-    if (m.includes("email not confirmed")) return "Please confirm your email from the link we sent before signing in.";
-    if (m.includes("rate limit")) return "Too many attempts. Please wait a minute and try again.";
+      return "That password has appeared in known data breaches. Choose a stronger, unique password.";
+    if (m.includes("invalid login") || m.includes("invalid credentials"))
+      return "Email or password is incorrect.";
+    if (m.includes("email not confirmed"))
+      return "Please verify your email before continuing. Check your inbox for the verification link.";
+    if (m.includes("rate limit") || m.includes("too many"))
+      return "Too many attempts. Please wait a minute and try again.";
     if (m.includes("password should be at least")) return msg;
-    return msg;
+    return "Something went wrong. Please try again.";
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+    const cleanEmail = email.trim().toLowerCase();
+    const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
     setLoading(false);
-    if (error) toast({ title: "Sign-in failed", description: friendlyAuthError(error.message), variant: "destructive" });
-    else navigate("/", { replace: true });
+    if (error) {
+      const isUnverified = error.message.toLowerCase().includes("email not confirmed");
+      if (isUnverified) {
+        setPendingEmail(cleanEmail);
+        setNeedsVerification(true);
+        return;
+      }
+      toast({ title: "Sign-in failed", description: friendlyAuthError(error.message), variant: "destructive" });
+    } else {
+      navigate("/", { replace: true });
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -70,22 +87,41 @@ export default function Auth() {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
+    const cleanEmail = email.trim().toLowerCase();
+    const { error } = await supabase.auth.signUp({
+      email: cleanEmail,
       password,
       options: { emailRedirectTo: `${window.location.origin}/`, data: { full_name: fullName.trim() } },
     });
     setLoading(false);
+
+    // Always show the same generic message — never reveal whether the email already exists.
     if (error) {
-      toast({ title: "Sign-up failed", description: friendlyAuthError(error.message), variant: "destructive" });
-      return;
+      const m = error.message.toLowerCase();
+      // Surface only password strength issues; everything else stays generic.
+      if (m.includes("pwned") || m.includes("weak") || m.includes("password should be at least")) {
+        toast({ title: "Password not accepted", description: friendlyAuthError(error.message), variant: "destructive" });
+        return;
+      }
     }
-    if (data.session) {
-      toast({ title: "Welcome to Helola!", description: "Account created — you're signed in." });
-      navigate("/", { replace: true });
-    } else {
-      toast({ title: "Check your inbox", description: "We sent a confirmation link to your email." });
-      setTab("signin");
+    setPendingEmail(cleanEmail);
+    setNeedsVerification(true);
+    toast({ title: "Check your inbox", description: genericSentMessage });
+  };
+
+  const handleResendVerification = async () => {
+    if (!pendingEmail) return;
+    setLoading(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: pendingEmail,
+      options: { emailRedirectTo: `${window.location.origin}/` },
+    });
+    setLoading(false);
+    // Stay generic regardless of outcome (anti-enumeration & anti-abuse).
+    toast({ title: "Verification email", description: genericSentMessage });
+    if (error && error.message.toLowerCase().includes("rate")) {
+      toast({ title: "Please wait", description: "You can request another email in a moment.", variant: "destructive" });
     }
   };
 
@@ -94,8 +130,8 @@ export default function Auth() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithOtp({ phone: phone.trim() });
     setLoading(false);
-    if (error) toast({ title: "Could not send OTP", description: error.message, variant: "destructive" });
-    else { setOtpSent(true); toast({ title: "OTP sent", description: `Code sent to ${phone}` }); }
+    if (error) toast({ title: "Could not send code", description: friendlyAuthError(error.message), variant: "destructive" });
+    else { setOtpSent(true); toast({ title: "Code sent", description: `Code sent to ${phone}` }); }
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
@@ -103,18 +139,51 @@ export default function Auth() {
     setLoading(true);
     const { error } = await supabase.auth.verifyOtp({ phone: phone.trim(), token: otp.trim(), type: "sms" });
     setLoading(false);
-    if (error) toast({ title: "Invalid code", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Invalid code", description: "Please re-check the code and try again.", variant: "destructive" });
     else navigate("/", { replace: true });
   };
 
   const handleForgot = async () => {
-    if (!email.trim()) { toast({ title: "Enter your email first" }); return; }
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+    const target = (email || pendingEmail).trim().toLowerCase();
+    if (!target) { toast({ title: "Enter your email first" }); return; }
+    await supabase.auth.resetPasswordForEmail(target, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    if (error) toast({ title: "Could not send reset", description: error.message, variant: "destructive" });
-    else toast({ title: "Reset email sent", description: "Check your inbox." });
+    // Always generic — do not confirm whether the account exists.
+    toast({ title: "Password reset", description: genericSentMessage });
   };
+
+  // Verification waiting screen
+  if (needsVerification) {
+    return (
+      <div className="min-h-dvh bg-texture-paper flex items-center justify-center p-4">
+        <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-elegant text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+            <MailCheck className="h-7 w-7 text-primary" />
+          </div>
+          <h1 className="mb-2 font-display text-2xl font-semibold">Verify your email</h1>
+          <p className="mb-1 text-sm text-muted-foreground">
+            We've sent a verification link to
+          </p>
+          <p className="mb-4 break-all font-medium">{pendingEmail}</p>
+          <p className="mb-6 text-sm text-muted-foreground">
+            Please verify your email before continuing. The link expires after 24 hours.
+            Check your spam folder if you don't see it.
+          </p>
+          <Button onClick={handleResendVerification} disabled={loading} className="h-11 w-full rounded-xl">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Resend verification email"}
+          </Button>
+          <button
+            type="button"
+            onClick={() => { setNeedsVerification(false); setTab("signin"); }}
+            className="mt-4 text-sm text-muted-foreground hover:text-primary"
+          >
+            Back to sign in
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-dvh bg-texture-paper flex items-center justify-center p-4">
@@ -165,11 +234,14 @@ export default function Auth() {
               <div>
                 <Label>Password</Label>
                 <Input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
-                <p className="mt-1 text-xs text-muted-foreground">At least 8 characters. Avoid common passwords like "password" or "12345678".</p>
+                <p className="mt-1 text-xs text-muted-foreground">At least 8 characters. Avoid common passwords.</p>
               </div>
               <Button type="submit" disabled={loading} className="h-11 w-full rounded-xl">
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create account"}
               </Button>
+              <p className="text-center text-xs text-muted-foreground">
+                You'll receive a verification email. You must verify before signing in.
+              </p>
             </form>
           </TabsContent>
 
@@ -182,7 +254,7 @@ export default function Auth() {
                   <p className="mt-1 text-xs text-muted-foreground">Include country code (e.g. +91, +1)</p>
                 </div>
                 <Button type="submit" disabled={loading} className="h-11 w-full rounded-xl">
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send OTP"}
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send code"}
                 </Button>
               </form>
             ) : (
