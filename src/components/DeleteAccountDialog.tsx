@@ -51,8 +51,9 @@ export function DeleteAccountDialog({ open, onOpenChange }: Props) {
               <DialogTitle className="flex items-center gap-2 text-destructive">
                 <AlertTriangle className="h-5 w-5" /> Are you sure you want to delete the account?
               </DialogTitle>
-              <DialogDescription>
-                This will start the account deletion process.
+              <DialogDescription className="space-y-2 text-foreground/80">
+                <span className="block">Your profile, trips, moments, messages, saved places, and uploaded photos will be permanently deleted.</span>
+                <span className="block">You have <strong>30 days</strong> to sign in and restore your account before everything is erased forever.</span>
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="gap-2 sm:gap-2">
