@@ -47,6 +47,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <OnboardingGate>{children}</OnboardingGate>
       </main>
       <BottomNav />
+      <PendingDeletionGate />
     </div>
   );
 }
