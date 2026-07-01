@@ -174,6 +174,42 @@
   /* Hide scrollbars on horizontal carousels */
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { scrollbar-width: none; }
+
+  /* Premium gold gradient + shimmer */
+  .bg-gold-luxe {
+    background-image: linear-gradient(135deg, #7a5a1e 0%, #c9a24a 22%, #f4dc94 48%, #d9b25a 74%, #8a6a26 100%);
+  }
+  .text-gold-luxe {
+    background-image: linear-gradient(135deg, #d9b25a 0%, #f4dc94 50%, #c9a24a 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .ring-gold-luxe {
+    box-shadow: 0 0 0 1px rgba(212, 175, 90, 0.35);
+  }
+  .shadow-gold {
+    box-shadow:
+      0 10px 26px -12px rgba(201, 162, 74, 0.6),
+      0 2px 6px -2px rgba(0, 0, 0, 0.28),
+      inset 0 1px 0 rgba(255, 236, 179, 0.6),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  }
+  .gold-shimmer { position: relative; overflow: hidden; isolation: isolate; }
+  .gold-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg, transparent 30%, rgba(255, 250, 220, 0.55) 48%, rgba(255,255,255,0) 62%);
+    transform: translateX(-120%);
+    animation: gold-sweep 4.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes gold-sweep {
+    0%   { transform: translateX(-120%); }
+    55%  { transform: translateX(140%); }
+    100% { transform: translateX(140%); }
+  }
 }
 
 @layer base {
