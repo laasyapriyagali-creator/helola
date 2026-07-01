@@ -158,6 +158,11 @@ export default function Home() {
           </Button>
         </div>
 
+        {/* Premium invite */}
+        <div className="mx-auto mt-5 max-w-3xl">
+          <PremiumInviteCard variant="home" />
+        </div>
+
         {/* Budget filter */}
         <div className="mx-auto mt-5 max-w-5xl">
           <div className="flex items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-soft">
