@@ -312,6 +312,101 @@ export type Database = {
         }
         Relationships: []
       }
+      premium_payment_history: {
+        Row: {
+          amount_inr: number
+          created_at: string
+          id: string
+          paid_at: string
+          plan: Database["public"]["Enums"]["premium_plan"]
+          provider: string | null
+          provider_payment_id: string | null
+          status: string
+          subscription_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_inr: number
+          created_at?: string
+          id?: string
+          paid_at?: string
+          plan: Database["public"]["Enums"]["premium_plan"]
+          provider?: string | null
+          provider_payment_id?: string | null
+          status?: string
+          subscription_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_inr?: number
+          created_at?: string
+          id?: string
+          paid_at?: string
+          plan?: Database["public"]["Enums"]["premium_plan"]
+          provider?: string | null
+          provider_payment_id?: string | null
+          status?: string
+          subscription_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premium_payment_history_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "premium_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      premium_subscriptions: {
+        Row: {
+          auto_renew: boolean
+          cancelled_at: string | null
+          created_at: string
+          expiry_date: string | null
+          id: string
+          plan: Database["public"]["Enums"]["premium_plan"]
+          provider: string | null
+          provider_subscription_id: string | null
+          renewal_date: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["premium_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_renew?: boolean
+          cancelled_at?: string | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          plan: Database["public"]["Enums"]["premium_plan"]
+          provider?: string | null
+          provider_subscription_id?: string | null
+          renewal_date?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["premium_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_renew?: boolean
+          cancelled_at?: string | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          plan?: Database["public"]["Enums"]["premium_plan"]
+          provider?: string | null
+          provider_subscription_id?: string | null
+          renewal_date?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["premium_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           age: number | null
@@ -649,6 +744,7 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      email_queue_dispatch: { Args: never; Returns: undefined }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
@@ -688,6 +784,8 @@ export type Database = {
       request_account_deletion: { Args: never; Returns: undefined }
     }
     Enums: {
+      premium_plan: "monthly" | "six_month" | "yearly"
+      premium_status: "active" | "cancelled" | "expired" | "pending"
       trip_status: "upcoming" | "ongoing" | "completed" | "cancelled"
     }
     CompositeTypes: {
@@ -816,6 +914,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      premium_plan: ["monthly", "six_month", "yearly"],
+      premium_status: ["active", "cancelled", "expired", "pending"],
       trip_status: ["upcoming", "ongoing", "completed", "cancelled"],
     },
   },

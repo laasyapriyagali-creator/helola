@@ -13,6 +13,7 @@ import { CoverUploader } from "@/components/CoverUploader";
 import { CoverViewerDialog } from "@/components/CoverViewerDialog";
 import { EditProfileSheet } from "@/components/EditProfileSheet";
 import { ProfilePublicSections } from "@/components/ProfilePublicSections";
+import { PremiumInviteCard } from "@/components/premium/PremiumInviteCard";
 import { computeAge } from "@/lib/age";
 import { formatLocation } from "@/lib/location";
 
@@ -217,6 +218,12 @@ export default function Profile() {
         </div>
 
         <ProfilePublicSections userId={profile.id} />
+
+        {isOwn && (
+          <div className="mt-10">
+            <PremiumInviteCard variant="profile" />
+          </div>
+        )}
       </div>
 
 

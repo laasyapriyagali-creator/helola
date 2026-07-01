@@ -46,6 +46,7 @@ const BlockedUsersPage = lazy(() => settingsImport().then((m) => ({ default: m.B
 const ReportIssuePage = lazy(() => settingsImport().then((m) => ({ default: m.ReportIssuePage })));
 const NotificationsSettingsPage = lazy(() => settingsImport().then((m) => ({ default: m.NotificationsPage })));
 const PreferencesPage = lazy(() => settingsImport().then((m) => ({ default: m.PreferencesPage })));
+const PremiumSettings = lazy(() => import("./pages/settings/PremiumSettings"));
 
 // React Query defaults tuned for a high-traffic app: aggressive cache reuse,
 // no aggressive refetch storms, smarter retry policy.
@@ -119,6 +120,7 @@ const App = () => (
                 <Route path="/settings/preferences/destinations" element={<PreferencesPage focusKey="destinations" />} />
                 <Route path="/settings/preferences/budget" element={<PreferencesPage focusKey="budget" />} />
                 <Route path="/settings/preferences/interests" element={<PreferencesPage focusKey="interests" />} />
+                <Route path="/settings/premium" element={<PremiumSettings />} />
 
                 <Route path="*" element={<NotFound />} />
               </Routes>

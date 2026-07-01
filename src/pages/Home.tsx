@@ -11,6 +11,7 @@ import { Search, Plus, MapPin, Calendar, Users, IndianRupee, Sparkles, TrendingU
 import { Skeleton } from "@/components/ui/skeleton";
 import { DestinationsExplorer } from "@/components/DestinationsExplorer";
 import { TripImage } from "@/components/TripImage";
+import { PremiumInviteCard } from "@/components/premium/PremiumInviteCard";
 import helolaMapHeader from "@/assets/helola-map-header.png.asset.json";
 
 interface Trip {
@@ -155,6 +156,11 @@ export default function Home() {
           >
             <Plus className="mr-1.5 h-5 w-5" /> Create a group for trips
           </Button>
+        </div>
+
+        {/* Premium invite */}
+        <div className="mx-auto mt-5 max-w-3xl">
+          <PremiumInviteCard variant="home" />
         </div>
 
         {/* Budget filter */}
