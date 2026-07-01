@@ -740,6 +740,7 @@ export type Database = {
     }
     Functions: {
       cancel_account_deletion: { Args: never; Returns: undefined }
+      cancel_premium_subscription: { Args: never; Returns: undefined }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -786,6 +787,7 @@ export type Database = {
         }[]
       }
       request_account_deletion: { Args: never; Returns: undefined }
+      set_premium_auto_renew: { Args: { _value: boolean }; Returns: undefined }
     }
     Enums: {
       premium_plan: "monthly" | "six_month" | "yearly"
