@@ -26,12 +26,14 @@ export function PremiumSheet({ open, onOpenChange }: Props) {
     if (!user) { onOpenChange(false); navigate("/auth"); return; }
     setBusy(true);
     try {
+      // Payments are gated to a server-side gateway. Until it ships,
+      // subscribeToPlan throws with a friendly "coming soon" message.
       await subscribeToPlan(user.id, selected);
       await reload();
       toast.success("Welcome to Helola Premium ✨");
       onOpenChange(false);
     } catch (e: any) {
-      toast.error(e?.message ?? "Could not activate premium");
+      toast.info(e?.message ?? "Checkout is coming soon.");
     } finally {
       setBusy(false);
     }
