@@ -615,7 +615,33 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      my_profile_private: {
+        Row: {
+          date_of_birth: string | null
+          id: string | null
+          identity_locked: boolean | null
+          pending_deletion_at: string | null
+          previous_usernames: string[] | null
+          username_changed_at: string | null
+        }
+        Insert: {
+          date_of_birth?: string | null
+          id?: string | null
+          identity_locked?: boolean | null
+          pending_deletion_at?: string | null
+          previous_usernames?: string[] | null
+          username_changed_at?: string | null
+        }
+        Update: {
+          date_of_birth?: string | null
+          id?: string | null
+          identity_locked?: boolean | null
+          pending_deletion_at?: string | null
+          previous_usernames?: string[] | null
+          username_changed_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cancel_account_deletion: { Args: never; Returns: undefined }
