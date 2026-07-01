@@ -108,57 +108,26 @@ export function usePremium() {
   return { sub, isPremium: isActive(sub), loading, reload: load };
 }
 
-/** Simulated subscribe — payment gateway integration point. */
-export async function subscribeToPlan(userId: string, plan: PremiumPlan) {
-  const def = planById(plan);
-  const now = new Date();
-  const end = new Date(now);
-  end.setMonth(end.getMonth() + def.months);
-
-  const payload = {
-    user_id: userId,
-    plan,
-    status: "active" as PremiumStatus,
-    start_date: now.toISOString(),
-    renewal_date: end.toISOString(),
-    expiry_date: end.toISOString(),
-    auto_renew: true,
-    cancelled_at: null,
-    provider: "simulated",
-  };
-
-  const { data, error } = await supabase
-    .from("premium_subscriptions")
-    .upsert(payload, { onConflict: "user_id" })
-    .select()
-    .maybeSingle();
-  if (error) throw error;
-
-  await supabase.from("premium_payment_history").insert({
-    user_id: userId,
-    subscription_id: data?.id,
-    plan,
-    amount_inr: def.price,
-    status: "succeeded",
-    provider: "simulated",
-  });
-
-  return data as unknown as PremiumSubscription;
+/**
+ * Premium activation is intentionally NOT available from the client.
+ * A real payment gateway (Stripe/Paddle/Razorpay) must verify payment
+ * server-side and insert the row using the service role. Until that
+ * integration ships, subscribe attempts throw. Direct INSERT on
+ * premium_subscriptions is revoked from the client anyway (defense in depth).
+ */
+export async function subscribeToPlan(_userId: string, _plan: PremiumPlan): Promise<never> {
+  throw new Error("Payments are coming soon — checkout will open here once billing is live.");
 }
 
-export async function cancelSubscription(userId: string) {
-  const { error } = await supabase
-    .from("premium_subscriptions")
-    .update({ status: "cancelled", auto_renew: false, cancelled_at: new Date().toISOString() })
-    .eq("user_id", userId);
+/** Cancel the caller's own active subscription via server-side RPC (auth.uid() check inside). */
+export async function cancelSubscription(_userId: string) {
+  const { error } = await supabase.rpc("cancel_premium_subscription");
   if (error) throw error;
 }
 
-export async function setAutoRenew(userId: string, value: boolean) {
-  const { error } = await supabase
-    .from("premium_subscriptions")
-    .update({ auto_renew: value })
-    .eq("user_id", userId);
+/** Toggle auto-renew on the caller's own subscription via server-side RPC (auth.uid() check inside). */
+export async function setAutoRenew(_userId: string, value: boolean) {
+  const { error } = await supabase.rpc("set_premium_auto_renew", { _value: value });
   if (error) throw error;
 }
 
