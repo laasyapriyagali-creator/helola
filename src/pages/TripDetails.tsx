@@ -62,9 +62,15 @@ export default function TripDetails() {
     if (!id) return;
     (async () => {
       setLoading(true);
-      const { data: t } = await supabase.from("trips").select("*").eq("id", id).maybeSingle();
+      const { data: t } = await supabase
+        .from("trips")
+        .select("id,destination,description,start_date,end_date,max_members,price_per_person,cost_stay,cost_travel,cost_food,cost_other,interests,itinerary,stay_details,travel_details,important_notes,coordinator_name,status,creator_id")
+        .eq("id", id)
+        .maybeSingle();
       if (!t) { setLoading(false); return; }
-      setTrip(t as unknown as Trip);
+      // coordinator_contact is column-restricted; fetch via secure RPC (returns null for non-members)
+      const { data: contact } = await supabase.rpc("get_trip_coordinator_contact", { _trip_id: id });
+      setTrip({ ...(t as any), coordinator_contact: (contact as string | null) ?? null } as unknown as Trip);
       document.title = `${t.destination} · HELOLA Trips`;
 
       // Fetch host (trip creator) profile in parallel with member list.
