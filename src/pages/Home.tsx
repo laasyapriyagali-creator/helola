@@ -13,6 +13,7 @@ import { PremiumInviteCard } from "@/components/premium/PremiumInviteCard";
 import { PlaceSearchInput } from "@/components/PlaceSearchInput";
 import type { PlaceSuggestion } from "@/lib/places";
 import helolaMapHeader from "@/assets/helola-map-header.png.asset.json";
+import { formatPriceFromINR } from "@/lib/i18n";
 
 interface Trip {
   id: string;
@@ -338,7 +339,7 @@ function TripCard({ trip, creator }: {
           </div>
         </div>
         <div className="text-right shrink-0">
-          <p className="font-display text-xl font-bold text-primary md:text-2xl">₹{Number(trip.price_per_person).toLocaleString("en-IN")}</p>
+          <p className="font-display text-xl font-bold text-primary md:text-2xl">{formatPriceFromINR(Number(trip.price_per_person))}</p>
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground">per person</p>
         </div>
       </CardContent>

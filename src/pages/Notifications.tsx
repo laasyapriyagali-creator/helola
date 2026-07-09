@@ -119,7 +119,7 @@ function NotifItem({ n }: { n: Notif }) {
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm"><span className="font-semibold">{name}</span> {text}</p>
-        <p className="text-xs text-muted-foreground">{new Date(n.created_at).toLocaleString("en-IN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+        <p className="text-xs text-muted-foreground">{new Date(n.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
       </div>
     </Link>
   );

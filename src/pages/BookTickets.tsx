@@ -8,6 +8,7 @@ import { ArrowLeft, Plane, Train, Bus, Car, ExternalLink, Ban, Clock, MapPin, Lo
 import { PlaceSearchInput } from "@/components/PlaceSearchInput";
 import { getKnownIndianCity, isInternationalRoute, normalizePlaceKey, resolveIata, type PlaceSuggestion, type PlaceKind } from "@/lib/places";
 import { searchLiveTransport, type LiveTransportOption, type Mode } from "@/lib/transportProviders";
+import { formatPriceFromINR } from "@/lib/i18n";
 
 interface BookingPlatform { name: string; href: (q: SearchParams) => string; }
 interface SearchParams { from: string; to: string; date: string; mode: Mode; }
@@ -325,7 +326,9 @@ export default function BookTickets() {
                       {r.price != null ? (
                         <>
                           <p className="font-display text-lg font-bold text-primary leading-tight">
-                            {(r.currency || "INR") === "INR" ? "₹" : `${r.currency} `}{r.price.toLocaleString("en-IN")}
+                            {(r.currency || "INR") === "INR"
+                              ? formatPriceFromINR(r.price)
+                              : `${r.currency} ${r.price.toLocaleString(undefined)}`}
                           </p>
                           <p className="text-[10px] uppercase tracking-wide text-muted-foreground">live price</p>
                         </>

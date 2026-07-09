@@ -99,7 +99,7 @@ export function PremiumSheet({ open, onOpenChange }: Props) {
                     <p className="font-semibold">{p.name}</p>
                   </div>
                   <p className="mt-1 text-xs text-primary-foreground/70">
-                    {p.savingsVsMonthly ? `Save ₹${p.savingsVsMonthly.toLocaleString("en-IN")} vs monthly` : "Flexible, cancel anytime"}
+                    {p.savingsLabel ? `Save ${p.savingsLabel} vs monthly` : "Flexible, cancel anytime"}
                   </p>
                 </div>
                 <div className="text-right">

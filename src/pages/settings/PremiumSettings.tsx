@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePremium, planById, formatDate, cancelSubscription, setAutoRenew, PLANS, PREMIUM_BENEFITS } from "@/lib/premium";
 import { PremiumSheet } from "@/components/premium/PremiumSheet";
 import { toast } from "sonner";
+import { formatPriceFromINR } from "@/lib/i18n";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -152,7 +153,7 @@ export default function PremiumSettings() {
                   <p className="text-sm font-medium">{planById(p.plan).name}</p>
                   <p className="text-xs text-muted-foreground">{formatDate(p.paid_at)} · {p.status}</p>
                 </div>
-                <p className="text-sm font-semibold">₹{p.amount_inr.toLocaleString("en-IN")}</p>
+                <p className="text-sm font-semibold">{formatPriceFromINR(p.amount_inr)}</p>
               </li>
             ))}
           </ul>

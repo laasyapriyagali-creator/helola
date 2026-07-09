@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { formatPriceFromINR } from "@/lib/i18n";
 
 export type PremiumPlan = "monthly" | "six_month" | "yearly";
 export type PremiumStatus = "active" | "cancelled" | "expired" | "pending";
@@ -22,22 +23,24 @@ export interface PlanDef {
   id: PremiumPlan;
   name: string;
   emoji: string;
+  /** Base price in INR (storage currency). Display converts to viewer's locale. */
   price: number;
+  /** Localized display string derived from `price`. */
   priceLabel: string;
   cadence: string;
   monthlyEquivalent: number;
   savingsVsMonthly?: number;
+  savingsLabel?: string;
   badge?: "Most Popular" | "Best Value";
   months: number;
 }
 
-export const PLANS: PlanDef[] = [
+const RAW_PLANS: Omit<PlanDef, "priceLabel" | "savingsLabel">[] = [
   {
     id: "monthly",
     name: "Monthly",
     emoji: "🌙",
     price: 299,
-    priceLabel: "₹299",
     cadence: "/month",
     monthlyEquivalent: 299,
     months: 1,
@@ -47,7 +50,6 @@ export const PLANS: PlanDef[] = [
     name: "6-Month Saver",
     emoji: "💼",
     price: 1499,
-    priceLabel: "₹1,499",
     cadence: "every 6 months",
     monthlyEquivalent: Math.round(1499 / 6),
     savingsVsMonthly: 299 * 6 - 1499,
@@ -59,7 +61,6 @@ export const PLANS: PlanDef[] = [
     name: "Yearly",
     emoji: "👑",
     price: 1999,
-    priceLabel: "₹1,999",
     cadence: "/year",
     monthlyEquivalent: Math.round(1999 / 12),
     savingsVsMonthly: 299 * 12 - 1999,
@@ -67,6 +68,12 @@ export const PLANS: PlanDef[] = [
     months: 12,
   },
 ];
+
+export const PLANS: PlanDef[] = RAW_PLANS.map(p => ({
+  ...p,
+  priceLabel: formatPriceFromINR(p.price),
+  savingsLabel: p.savingsVsMonthly ? formatPriceFromINR(p.savingsVsMonthly) : undefined,
+}));
 
 export const PREMIUM_BENEFITS = [
   { icon: "🎟️", title: "Exclusive Helola Community Events", desc: "Curated meetups, dinners, and travel gatherings only for members." },
@@ -131,7 +138,4 @@ export async function setAutoRenew(_userId: string, value: boolean) {
   if (error) throw error;
 }
 
-export function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-}
+export { formatMediumDate as formatDate } from "@/lib/i18n";

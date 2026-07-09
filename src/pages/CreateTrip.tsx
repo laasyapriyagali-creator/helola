@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Users, ImageOff } from "lucide-react";
 import { PlaceSearchInput } from "@/components/PlaceSearchInput";
 import { getPlaceSummary } from "@/lib/places";
+import { formatPriceFromINR } from "@/lib/i18n";
 
 const INTERESTS = ["Beach", "Mountains", "Adventure", "Culture", "Food", "Nightlife", "Wellness", "Wildlife", "Road Trip"];
 
@@ -175,14 +176,14 @@ export default function CreateTrip() {
               { label: "Other", v: other, set: setOther },
             ].map(({ label, v, set }) => (
               <div key={label} className="space-y-2">
-                <Label>{label} (₹)</Label>
+                <Label>{label} (INR)</Label>
                 <Input type="number" min={0} value={v} onChange={(e) => set(e.target.value === "" ? "" : Number(e.target.value))} placeholder="0" />
               </div>
             ))}
           </div>
           <div className="flex items-center justify-between rounded-xl bg-rose px-4 py-3">
             <span className="text-sm font-medium text-rose-foreground">Total per person</span>
-            <span className="font-display text-2xl font-bold text-primary">₹{total.toLocaleString("en-IN")}</span>
+            <span className="font-display text-2xl font-bold text-primary">{formatPriceFromINR(total)}</span>
           </div>
         </CardContent></Card>
 
