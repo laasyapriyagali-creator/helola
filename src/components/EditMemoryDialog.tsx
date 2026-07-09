@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { reportError } from "@/lib/reportError";
 
 interface Props {
   open: boolean;
@@ -33,7 +34,8 @@ export function EditMemoryDialog({ open, onOpenChange, memoryId, initialCaption,
       story: story.trim() || null,
     }).eq("id", memoryId);
     setBusy(false);
-    if (error) { toast({ title: "Couldn't save", description: error.message, variant: "destructive" }); return; }
+    reportError("src/components/EditMemoryDialog.tsx", error);
+    if (error) { toast({ title: "Couldn't save", description: "Please try again in a moment.", variant: "destructive" }); return; }
     toast({ title: "Updated" });
     onSaved();
     onOpenChange(false);

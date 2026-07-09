@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
+import { reportError } from "@/lib/reportError";
 
 interface Props {
   open: boolean;
@@ -29,7 +30,8 @@ export function DeleteAccountDialog({ open, onOpenChange }: Props) {
     const { error } = await supabase.rpc("request_account_deletion");
     setBusy(false);
     if (error) {
-      toast({ title: "Couldn't schedule deletion", description: error.message, variant: "destructive" });
+      reportError("src/components/DeleteAccountDialog.tsx", error);
+      toast({ title: "Couldn't schedule deletion", description: "Please try again in a moment.", variant: "destructive" });
       return;
     }
     toast({

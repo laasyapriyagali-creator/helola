@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Mail, Phone, Plane, MailCheck } from "lucide-react";
+import { reportError } from "@/lib/reportError";
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 48 48" className="h-5 w-5" aria-hidden="true">
@@ -40,7 +41,8 @@ export default function Auth() {
     setLoading(true);
     try {
       const res = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-      if (res.error) toast({ title: "Google sign-in failed", description: res.error.message, variant: "destructive" });
+      reportError("src/pages/Auth.tsx", res.error);
+      if (res.error) toast({ title: "Google sign-in failed", description: "Please try again in a moment.", variant: "destructive" });
     } finally { setLoading(false); }
   };
 

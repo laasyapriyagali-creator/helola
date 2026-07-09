@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { reportError } from "@/lib/reportError";
 
 type FocusKey = "location" | "destinations" | "budget" | "interests";
 
@@ -46,7 +47,8 @@ export function PreferencesDialog({ open, onOpenChange, focusKey }: { open: bool
     const { error } = await supabase.from("travel_prefs").upsert(payload);
     if (locationAccess && navigator.geolocation) navigator.geolocation.getCurrentPosition(() => {}, () => {});
     setBusy(false);
-    if (error) return toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+    reportError("src/components/settings/PreferencesDialog.tsx", error);
+    if (error) return toast({ title: "Couldn't save", description: "Please try again in a moment.", variant: "destructive" });
     toast({ title: "Preferences saved" });
     onOpenChange(false);
   };

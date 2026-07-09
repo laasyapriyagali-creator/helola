@@ -12,6 +12,7 @@ import { ArrowLeft, Users, ImageOff } from "lucide-react";
 import { PlaceSearchInput } from "@/components/PlaceSearchInput";
 import { getPlaceSummary } from "@/lib/places";
 import { formatPriceFromINR } from "@/lib/i18n";
+import { reportError } from "@/lib/reportError";
 
 const INTERESTS = ["Beach", "Mountains", "Adventure", "Culture", "Food", "Nightlife", "Wellness", "Wildlife", "Road Trip"];
 
@@ -90,7 +91,8 @@ export default function CreateTrip() {
       toast({ title: "Trip created!", description: `${destination} is live. Share it with friends.` });
       navigate(`/trips/${data.id}`);
     } catch (err: unknown) {
-      toast({ title: "Couldn't create trip", description: err instanceof Error ? err.message : "Try again", variant: "destructive" });
+      reportError("src/pages/CreateTrip.tsx", err);
+      toast({ title: "Couldn't create trip", description: "Try again", variant: "destructive" });
     } finally {
       setBusy(false);
     }
