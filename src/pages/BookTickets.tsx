@@ -334,7 +334,7 @@ export default function BookTickets() {
                           <p className="font-display text-lg font-bold text-primary leading-tight">
                             {(r.currency || "INR") === "INR"
                               ? formatPriceFromINR(r.price)
-                              : `${r.currency} ${r.price.toLocaleString(undefined)}`}
+                              : formatCurrency(r.price, r.currency as never)}
                           </p>
                           <p className="text-[10px] uppercase tracking-wide text-muted-foreground">live price</p>
                         </>
