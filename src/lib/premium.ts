@@ -131,7 +131,4 @@ export async function setAutoRenew(_userId: string, value: boolean) {
   if (error) throw error;
 }
 
-export function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-}
+export { formatMediumDate as formatDate } from "@/lib/i18n";
