@@ -277,14 +277,15 @@ function toPlaceImage(p: UnsplashPhoto, place: string): PlaceImage {
 }
 
 export async function getPlaceSummary(name: string): Promise<{ extract: string; thumb?: string; image?: string } | null> {
-  // Text from Wikipedia (no images from Wikipedia).
+  // Text from Wikipedia. Images are fetched separately by callers so the
+  // description isn't blocked waiting on Unsplash.
   let extract = "";
   if (summaryTextCache.has(name)) {
     extract = summaryTextCache.get(name) || "";
   } else {
     try {
       const title = name.split(",")[0].trim();
-      const r = await safeFetch(`${WIKI_REST}/page/summary/${encodeURIComponent(title)}?redirect=true`);
+      const r = await safeFetch(`${WIKI_REST}/page/summary/${encodeURIComponent(title)}?redirect=true`, {}, 4000);
       if (r && r.ok) {
         const d = await r.json();
         if (d?.type !== "disambiguation") extract = d?.extract || "";
@@ -294,9 +295,9 @@ export async function getPlaceSummary(name: string): Promise<{ extract: string; 
     saveSS("helola.placeExtract.v3", summaryTextCache);
   }
 
-  // Hero image from Unsplash pool.
-  const imgs = await getPlaceImages(name, 6);
-  const hero = imgs[0];
+  // Opportunistically include a hero image only if already cached — never block on it.
+  const cachedImgs = imagesCache.get(`${cleanPlaceName(name).toLowerCase()}::6`) || imagesCache.get(`${cleanPlaceName(name).toLowerCase()}::12`);
+  const hero = cachedImgs?.[0];
   return { extract, image: hero?.url, thumb: hero?.thumb };
 }
 
