@@ -280,7 +280,7 @@ export function AccountInfoPage() {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Phone className="h-4 w-4 text-muted-foreground" />
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 90000 00000" className="max-w-xs" />
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+[country code] phone number" className="max-w-xs" />
               {phoneConfirmed && <span className="inline-flex items-center gap-1 text-xs text-success"><ShieldCheck className="h-3 w-3" />Verified</span>}
             </div>
             {!phoneConfirmed && (
