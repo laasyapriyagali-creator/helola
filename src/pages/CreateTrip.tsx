@@ -176,7 +176,7 @@ export default function CreateTrip() {
               { label: "Other", v: other, set: setOther },
             ].map(({ label, v, set }) => (
               <div key={label} className="space-y-2">
-                <Label>{label} (INR)</Label>
+                <Label>{label} <span className="text-[10px] font-normal text-muted-foreground">(INR — shown to travelers in their local currency)</span></Label>
                 <Input type="number" min={0} value={v} onChange={(e) => set(e.target.value === "" ? "" : Number(e.target.value))} placeholder="0" />
               </div>
             ))}

@@ -8,18 +8,24 @@ import { ArrowLeft, Plane, Train, Bus, Car, ExternalLink, Ban, Clock, MapPin, Lo
 import { PlaceSearchInput } from "@/components/PlaceSearchInput";
 import { getKnownIndianCity, isInternationalRoute, normalizePlaceKey, resolveIata, type PlaceSuggestion, type PlaceKind } from "@/lib/places";
 import { searchLiveTransport, type LiveTransportOption, type Mode } from "@/lib/transportProviders";
-import { formatPriceFromINR } from "@/lib/i18n";
+import { formatPriceFromINR, formatCurrency } from "@/lib/i18n";
 
 interface BookingPlatform { name: string; href: (q: SearchParams) => string; }
 interface SearchParams { from: string; to: string; date: string; mode: Mode; }
 
 const PLATFORMS: BookingPlatform[] = [
+  // Global partners — work from any country
+  { name: "Skyscanner",  href: ({ mode }) => mode === "flight" ? "https://www.skyscanner.net/" : mode === "train" ? "https://www.skyscanner.net/g/eco-trains/" : mode === "bus" ? "https://www.skyscanner.net/g/eco-buses/" : "https://www.skyscanner.net/carhire/" },
+  { name: "Google Flights", href: ({ mode }) => mode === "flight" ? "https://www.google.com/travel/flights" : mode === "train" ? "https://www.google.com/travel" : mode === "bus" ? "https://www.google.com/travel" : "https://www.google.com/travel" },
+  { name: "Kayak",       href: ({ mode }) => mode === "flight" ? "https://www.kayak.com/flights" : mode === "train" ? "https://www.kayak.com/trains" : mode === "bus" ? "https://www.kayak.com/buses" : "https://www.kayak.com/cars" },
+  { name: "Omio",        href: ({ mode }) => mode === "flight" ? "https://www.omio.com/flights" : mode === "train" ? "https://www.omio.com/trains" : mode === "bus" ? "https://www.omio.com/buses" : "https://www.omio.com/" },
+  { name: "Booking.com", href: ({ mode }) => mode === "cab" ? "https://www.booking.com/cars/" : "https://flights.booking.com/" },
+  { name: "Uber",        href: ({ mode }) => mode === "cab" ? "https://m.uber.com/" : "https://m.uber.com/" },
+  // Regional partners (Asia / India)
   { name: "EaseMyTrip", href: ({ mode }) => mode === "flight" ? "https://www.easemytrip.com/flights.html" : mode === "train" ? "https://www.easemytrip.com/railways/" : mode === "bus" ? "https://www.easemytrip.com/bus.html" : "https://www.easemytrip.com/cabs.html" },
   { name: "ixigo",      href: ({ mode }) => mode === "flight" ? "https://www.ixigo.com/flights" : mode === "train" ? "https://www.ixigo.com/trains" : mode === "bus" ? "https://www.ixigo.com/bus" : "https://www.ixigo.com/cabs" },
   { name: "MakeMyTrip", href: ({ mode }) => mode === "flight" ? "https://www.makemytrip.com/flights/" : mode === "train" ? "https://www.makemytrip.com/railways/" : mode === "bus" ? "https://www.makemytrip.com/bus-tickets/" : "https://www.makemytrip.com/cabs/" },
   { name: "Yatra", href: ({ mode }) => mode === "flight" ? "https://www.yatra.com/flights" : mode === "train" ? "https://www.yatra.com/trains" : mode === "bus" ? "https://www.yatra.com/bus" : "https://www.yatra.com/cabs" },
-  { name: "Goibibo", href: ({ mode }) => mode === "flight" ? "https://www.goibibo.com/flights/" : mode === "train" ? "https://www.goibibo.com/trains/" : mode === "bus" ? "https://www.goibibo.com/bus/" : "https://www.goibibo.com/cars/" },
-  { name: "Cleartrip", href: ({ mode }) => mode === "flight" ? "https://www.cleartrip.com/flights" : mode === "train" ? "https://www.cleartrip.com/trains" : mode === "bus" ? "https://www.cleartrip.com/bus" : "https://www.cleartrip.com/cabs" },
 ];
 
 const MODE_META: Record<Mode, { label: string; icon: typeof Plane }> = {
@@ -328,7 +334,7 @@ export default function BookTickets() {
                           <p className="font-display text-lg font-bold text-primary leading-tight">
                             {(r.currency || "INR") === "INR"
                               ? formatPriceFromINR(r.price)
-                              : `${r.currency} ${r.price.toLocaleString(undefined)}`}
+                              : formatCurrency(r.price, r.currency as never)}
                           </p>
                           <p className="text-[10px] uppercase tracking-wide text-muted-foreground">live price</p>
                         </>

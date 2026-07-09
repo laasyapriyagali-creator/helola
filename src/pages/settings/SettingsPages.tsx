@@ -280,7 +280,7 @@ export function AccountInfoPage() {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Phone className="h-4 w-4 text-muted-foreground" />
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 90000 00000" className="max-w-xs" />
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+[country code] phone number" className="max-w-xs" />
               {phoneConfirmed && <span className="inline-flex items-center gap-1 text-xs text-success"><ShieldCheck className="h-3 w-3" />Verified</span>}
             </div>
             {!phoneConfirmed && (
@@ -616,11 +616,12 @@ export function PreferencesPage({ focusKey }: { focusKey?: PrefFocus }) {
         )}
         {show("budget") && (
           <div className="space-y-1.5">
-            <Label>Budget range (INR)</Label>
+            <Label>Budget range</Label>
             <div className="flex gap-2">
               <Input type="number" value={budgetMin} onChange={(e) => setBudgetMin(e.target.value)} placeholder="Min" />
               <Input type="number" value={budgetMax} onChange={(e) => setBudgetMax(e.target.value)} placeholder="Max" />
             </div>
+            <p className="text-xs text-muted-foreground">Enter amounts in INR — we'll show prices in your local currency across the app.</p>
           </div>
         )}
         {show("interests") && (

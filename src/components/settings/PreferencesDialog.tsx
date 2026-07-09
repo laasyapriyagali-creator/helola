@@ -68,11 +68,12 @@ export function PreferencesDialog({ open, onOpenChange, focusKey }: { open: bool
             <p className="text-xs text-muted-foreground">Comma separated.</p>
           </div>
           <div className={`space-y-1.5 rounded-xl ${ring("budget")} ${focusKey === "budget" ? "p-3" : ""}`}>
-            <Label>Budget range (INR)</Label>
+            <Label>Budget range</Label>
             <div className="flex gap-2">
               <Input type="number" value={budgetMin} onChange={(e) => setBudgetMin(e.target.value)} placeholder="Min" />
               <Input type="number" value={budgetMax} onChange={(e) => setBudgetMax(e.target.value)} placeholder="Max" />
             </div>
+            <p className="text-xs text-muted-foreground">Enter amounts in INR — prices display in your local currency.</p>
           </div>
           <div className={`space-y-1.5 rounded-xl ${ring("interests")} ${focusKey === "interests" ? "p-3" : ""}`}>
             <Label>Travel interests</Label>
