@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, MapPin, Calendar, Users, IndianRupee, Sparkles, TrendingUp, Plane, X } from "lucide-react";
+import { Plus, MapPin, Calendar, Users, Sparkles, TrendingUp, Plane, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DestinationsExplorer } from "@/components/DestinationsExplorer";
 import { TripImage } from "@/components/TripImage";
@@ -74,7 +74,7 @@ export default function Home() {
   const [destPick, setDestPick] = useState<PlaceSuggestion | null>(null);
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-  const [maxBudget, setMaxBudget] = useState<number>(50000);
+
 
   const [trips, setTrips] = useState<Trip[]>([]);
   const [members, setMembers] = useState<Record<string, number>>({});
@@ -134,13 +134,11 @@ export default function Home() {
       const isFull = seatsLeft === 0;
       const destScore = queryTokens.length ? destinationScore(t.destination, queryTokens, queryName) : 1;
       const overlap = hasDateFilter ? overlapDays(t.start_date, t.end_date, startDate, endDate) : 1;
-      const budgetOk = Number(t.price_per_person) <= maxBudget ? 1 : 0;
       const score =
         destScore * 100 +
         Math.min(overlap, 14) * 4 +
         (isFull ? 0 : 6) +
-        seatsLeft * 0.5 +
-        budgetOk * 5;
+        seatsLeft * 0.5;
       return { ...t, memberCount, seatsLeft, isFull, destinationScore: destScore, overlapDays: overlap, score };
     });
 
@@ -152,7 +150,8 @@ export default function Home() {
 
     filtered.sort((a, b) => b.score - a.score || a.start_date.localeCompare(b.start_date));
     return filtered;
-  }, [trips, members, destPick, destText, startDate, endDate, maxBudget, hasDestFilter, hasDateFilter]);
+  }, [trips, members, destPick, destText, startDate, endDate, hasDestFilter, hasDateFilter]);
+
 
   const clearFilters = () => { setDestPick(null); setDestText(""); setStartDate(""); setEndDate(""); };
   const filtersActive = hasDestFilter || hasDateFilter;
@@ -248,20 +247,6 @@ export default function Home() {
           <PremiumInviteCard variant="home" />
         </div>
 
-        {/* Budget filter */}
-        <div className="mx-auto mt-5 max-w-5xl">
-          <div className="flex items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-soft">
-            <IndianRupee className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Up to ₹{maxBudget.toLocaleString("en-IN")}</span>
-            <input
-              type="range" min={2000} max={100000} step={1000}
-              value={maxBudget}
-              onChange={(e) => setMaxBudget(Number(e.target.value))}
-              aria-label="Maximum budget per person"
-              className="ml-auto flex-1 max-w-[60%] accent-primary"
-            />
-          </div>
-        </div>
 
         <div className="mx-auto mt-6 max-w-5xl">
           <BookTicketsCard />
