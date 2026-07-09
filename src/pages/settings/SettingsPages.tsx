@@ -616,11 +616,12 @@ export function PreferencesPage({ focusKey }: { focusKey?: PrefFocus }) {
         )}
         {show("budget") && (
           <div className="space-y-1.5">
-            <Label>Budget range (INR)</Label>
+            <Label>Budget range</Label>
             <div className="flex gap-2">
               <Input type="number" value={budgetMin} onChange={(e) => setBudgetMin(e.target.value)} placeholder="Min" />
               <Input type="number" value={budgetMax} onChange={(e) => setBudgetMax(e.target.value)} placeholder="Max" />
             </div>
+            <p className="text-xs text-muted-foreground">Enter amounts in INR — we'll show prices in your local currency across the app.</p>
           </div>
         )}
         {show("interests") && (
