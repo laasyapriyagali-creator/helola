@@ -6,7 +6,13 @@
 
 export function getLocale(): string {
   if (typeof navigator === "undefined") return "en";
-  return navigator.language || (navigator.languages && navigator.languages[0]) || "en";
+  const raw = (navigator.languages && navigator.languages[0]) || navigator.language || "en";
+  const normalized = raw.replace(/_/g, "-").replace(/@.*$/, "");
+  try {
+    return Intl.DateTimeFormat.supportedLocalesOf([normalized])[0] || "en";
+  } catch {
+    return "en";
+  }
 }
 
 export function getTimeZone(): string {
