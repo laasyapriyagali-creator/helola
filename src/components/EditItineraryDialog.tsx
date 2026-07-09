@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, GripVertical, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { reportError } from "@/lib/reportError";
 
 export interface ItineraryItem {
   day: string;
@@ -50,7 +51,8 @@ export function EditItineraryDialog({ open, onOpenChange, tripId, initial, onSav
       .map((it, i) => ({ ...it, day: it.day?.trim() || `Day ${i + 1}` }));
     const { error } = await supabase.from("trips").update({ itinerary: cleaned as any }).eq("id", tripId);
     setSaving(false);
-    if (error) return toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+    reportError("src/components/EditItineraryDialog.tsx", error);
+    if (error) return toast({ title: "Couldn't save", description: "Please try again in a moment.", variant: "destructive" });
     toast({ title: "Itinerary updated" });
     onSaved(cleaned);
     onOpenChange(false);

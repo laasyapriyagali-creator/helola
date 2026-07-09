@@ -16,6 +16,7 @@ import { LocationPicker } from "@/components/LocationPicker";
 import type { CityResult } from "@/lib/location";
 import { formatLocation } from "@/lib/location";
 import { computeAge } from "@/lib/age";
+import { reportError } from "@/lib/reportError";
 
 /* ----------------------------- EDIT PROFILE ----------------------------- */
 
@@ -113,7 +114,8 @@ export function EditProfilePage() {
 
       const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
       if (error) {
-        toast({ title: "Save failed", description: error.message, variant: "destructive" });
+        reportError("src/pages/settings/SettingsPages.tsx", error);
+        toast({ title: "Save failed", description: "Please try again in a moment.", variant: "destructive" });
         setSaving(false); return;
       }
       toast({ title: "Profile updated ✨" });
@@ -232,7 +234,8 @@ export function AccountInfoPage() {
     setVerifyingEmail(true);
     const { error } = await supabase.auth.resend({ type: "signup", email: user.email });
     setVerifyingEmail(false);
-    if (error) return toast({ title: "Couldn't send email", description: error.message, variant: "destructive" });
+    reportError("src/pages/settings/SettingsPages.tsx", error);
+    if (error) return toast({ title: "Couldn't send email", description: "Please try again in a moment.", variant: "destructive" });
     toast({ title: "Verification link sent", description: `Check ${user.email} for a confirmation link.` });
   };
 
@@ -241,7 +244,8 @@ export function AccountInfoPage() {
     setVerifyingPhone(true);
     const { error } = await supabase.auth.updateUser({ phone });
     setVerifyingPhone(false);
-    if (error) return toast({ title: "Couldn't send OTP", description: error.message, variant: "destructive" });
+    reportError("src/pages/settings/SettingsPages.tsx", error);
+    if (error) return toast({ title: "Couldn't send OTP", description: "Please try again in a moment.", variant: "destructive" });
     toast({ title: "OTP sent", description: "We sent a one-time code to your phone." });
   };
 
@@ -327,7 +331,8 @@ export function VisibilityPage() {
     setBusy(true);
     const { error } = await supabase.from("profiles").update({ profile_visibility: value }).eq("id", user.id);
     setBusy(false);
-    if (error) return toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+    reportError("src/pages/settings/SettingsPages.tsx", error);
+    if (error) return toast({ title: "Couldn't save", description: "Please try again in a moment.", variant: "destructive" });
     toast({ title: "Visibility updated" });
   };
 
@@ -369,7 +374,8 @@ export function MessagePermissionPage() {
     setBusy(true);
     const { error } = await supabase.from("profiles").update({ message_permission: value }).eq("id", user.id);
     setBusy(false);
-    if (error) return toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+    reportError("src/pages/settings/SettingsPages.tsx", error);
+    if (error) return toast({ title: "Couldn't save", description: "Please try again in a moment.", variant: "destructive" });
     toast({ title: "Updated" });
   };
 
@@ -420,7 +426,8 @@ export function BlockedUsersPage() {
 
   const unblock = async (id: string) => {
     const { error } = await supabase.from("blocked_users").delete().eq("id", id);
-    if (error) return toast({ title: "Failed", description: error.message, variant: "destructive" });
+    reportError("src/pages/settings/SettingsPages.tsx", error);
+    if (error) return toast({ title: "Failed", description: "Please try again in a moment.", variant: "destructive" });
     toast({ title: "Unblocked" });
     load();
   };
@@ -460,7 +467,8 @@ export function ReportIssuePage() {
       reporter_id: user.id, reported_id: user.id, reason, details, status: "pending",
     });
     setBusy(false);
-    if (error) return toast({ title: "Couldn't submit", description: error.message, variant: "destructive" });
+    reportError("src/pages/settings/SettingsPages.tsx", error);
+    if (error) return toast({ title: "Couldn't submit", description: "Please try again in a moment.", variant: "destructive" });
     toast({ title: "Report submitted ❤️", description: "Our team will look into it." });
     setDetails("");
     navigate(-1);
@@ -521,7 +529,8 @@ export function NotificationsPage({ focusKey }: { focusKey?: keyof Prefs }) {
     setBusy(true);
     const { error } = await supabase.from("notification_prefs").upsert({ user_id: user.id, ...prefs });
     setBusy(false);
-    if (error) return toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+    reportError("src/pages/settings/SettingsPages.tsx", error);
+    if (error) return toast({ title: "Couldn't save", description: "Please try again in a moment.", variant: "destructive" });
     toast({ title: "Notifications updated" });
   };
 
@@ -592,7 +601,8 @@ export function PreferencesPage({ focusKey }: { focusKey?: PrefFocus }) {
     const { error } = await supabase.from("travel_prefs").upsert(payload);
     if (locationAccess && navigator.geolocation) navigator.geolocation.getCurrentPosition(() => {}, () => {});
     setBusy(false);
-    if (error) return toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+    reportError("src/pages/settings/SettingsPages.tsx", error);
+    if (error) return toast({ title: "Couldn't save", description: "Please try again in a moment.", variant: "destructive" });
     toast({ title: "Preferences saved" });
   };
 

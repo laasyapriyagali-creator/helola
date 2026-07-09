@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Send, Lock, Users, Paperclip, X, Loader2, ChevronDown } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { reportError } from "@/lib/reportError";
 
 interface ChatThread { trip_id: string; destination: string; start_date: string; max_members: number; member_count: number; cover_image_url: string | null }
 
@@ -195,7 +196,8 @@ export function ChatRoom() {
           attachments.push({ type: f.type.startsWith("video/") ? "video" : "image", url: path });
         }
       } catch (e: any) {
-        toast({ title: "Upload failed", description: e.message, variant: "destructive" });
+        reportError("src/pages/Chats.tsx", e);
+        toast({ title: "Upload failed", description: "Please try again in a moment.", variant: "destructive" });
         setInput(text); setPendingFiles(files); setSending(false); setUploading(false); return;
       }
       setUploading(false);

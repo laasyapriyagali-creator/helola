@@ -17,6 +17,7 @@ import { TripImage } from "@/components/TripImage";
 import { HostCard } from "@/components/HostCard";
 import { friendlyJoinError } from "@/lib/joinErrors";
 import { formatPriceFromINR } from "@/lib/i18n";
+import { reportError } from "@/lib/reportError";
 
 interface Trip {
   id: string;
@@ -145,7 +146,8 @@ export default function TripDetails() {
     if (!user || !trip) return;
     if (!confirm("Delete this trip? This can't be undone.")) return;
     const { error } = await supabase.from("trips").delete().eq("id", trip.id);
-    if (error) return toast({ title: "Couldn't delete", description: error.message, variant: "destructive" });
+    reportError("src/pages/TripDetails.tsx", error);
+    if (error) return toast({ title: "Couldn't delete", description: "Please try again in a moment.", variant: "destructive" });
     toast({ title: "Trip deleted" });
     navigate("/trips");
   };

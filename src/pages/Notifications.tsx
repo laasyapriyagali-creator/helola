@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Bell, Heart, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { reportError } from "@/lib/reportError";
 
 interface Notif {
   id: string;
@@ -60,7 +61,8 @@ export default function Notifications() {
     if (!user || !items.length) return;
     if (!confirm("Clear all notifications?")) return;
     const { error } = await supabase.from("notifications").delete().eq("recipient_id", user.id);
-    if (error) return toast({ title: "Couldn't clear", description: error.message, variant: "destructive" });
+    reportError("src/pages/Notifications.tsx", error);
+    if (error) return toast({ title: "Couldn't clear", description: "Please try again in a moment.", variant: "destructive" });
     setItems([]);
   }
 

@@ -11,6 +11,7 @@ import { Loader2, ShieldAlert, Lock, ChevronRight, ChevronLeft } from "lucide-re
 import { LocationPicker } from "@/components/LocationPicker";
 import type { CityResult } from "@/lib/location";
 import { computeAge, maxDob, minDob } from "@/lib/age";
+import { reportError } from "@/lib/reportError";
 
 type Gender = "female" | "male" | "non_binary" | "prefer_not_to_say";
 const GENDERS: { value: Gender; label: string }[] = [
@@ -95,7 +96,8 @@ export default function Onboarding() {
       .eq("id", user.id);
     setSaving(false);
     if (error) {
-      toast({ title: "Couldn't finish onboarding", description: error.message, variant: "destructive" });
+      reportError("src/pages/Onboarding.tsx", error);
+      toast({ title: "Couldn't finish onboarding", description: "Please try again in a moment.", variant: "destructive" });
       return;
     }
     toast({ title: "Welcome aboard ✨", description: "Your profile is set up." });

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Eye, Image as ImageIcon, Loader2, Pencil, Trash2 } from "lucide-react";
 import { CoverEditorDialog } from "@/components/CoverEditorDialog";
+import { reportError } from "@/lib/reportError";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
@@ -52,7 +53,8 @@ export function CoverUploader({ userId, currentUrl, onChange, className, compact
       setEditorSrc(null);
       toast({ title: "Cover updated ✨" });
     } catch (err) {
-      toast({ title: "Upload failed", description: err instanceof Error ? err.message : "Try again", variant: "destructive" });
+      reportError("src/components/CoverUploader.tsx", err);
+      toast({ title: "Upload failed", description: "Try again", variant: "destructive" });
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -67,7 +69,8 @@ export function CoverUploader({ userId, currentUrl, onChange, className, compact
       onChange(null);
       toast({ title: "Cover removed" });
     } catch (err) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Couldn't remove", variant: "destructive" });
+      reportError("src/components/CoverUploader.tsx", err);
+      toast({ title: "Error", description: "Couldn't remove", variant: "destructive" });
     } finally { setBusy(false); }
   };
 

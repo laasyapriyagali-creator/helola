@@ -14,6 +14,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { reportError } from "@/lib/reportError";
 
 interface MediaItem { type: "image" | "video"; url: string }
 interface Author { full_name: string | null; username: string | null; avatar_url: string | null }
@@ -115,7 +116,8 @@ export default function Moments() {
     if (!user || user.id !== m.user_id) return;
     if (!confirm("Delete this moment?")) return;
     const { error } = await supabase.from("memories").delete().eq("id", m.id);
-    if (error) { toast({ title: "Couldn't delete", description: error.message, variant: "destructive" }); return; }
+    reportError("src/pages/Moments.tsx", error);
+    if (error) { toast({ title: "Couldn't delete", description: "Please try again in a moment.", variant: "destructive" }); return; }
     setMemories(prev => prev.filter(x => x.id !== m.id));
     toast({ title: "Deleted" });
   }

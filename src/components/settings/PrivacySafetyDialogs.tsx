@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Trash2, Loader2 } from "lucide-react";
+import { reportError } from "@/lib/reportError";
 
 type Visibility = "public" | "friends" | "private";
 type MessagePerm = "everyone" | "friends" | "nobody";
@@ -30,7 +31,8 @@ export function VisibilityDialog({ open, onOpenChange }: { open: boolean; onOpen
     setBusy(true);
     const { error } = await supabase.from("profiles").update({ profile_visibility: value }).eq("id", user.id);
     setBusy(false);
-    if (error) return toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+    reportError("src/components/settings/PrivacySafetyDialogs.tsx", error);
+    if (error) return toast({ title: "Couldn't save", description: "Please try again in a moment.", variant: "destructive" });
     toast({ title: "Visibility updated" });
     onOpenChange(false);
   };
@@ -78,7 +80,8 @@ export function MessagePermissionDialog({ open, onOpenChange }: { open: boolean;
     setBusy(true);
     const { error } = await supabase.from("profiles").update({ message_permission: value }).eq("id", user.id);
     setBusy(false);
-    if (error) return toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+    reportError("src/components/settings/PrivacySafetyDialogs.tsx", error);
+    if (error) return toast({ title: "Couldn't save", description: "Please try again in a moment.", variant: "destructive" });
     toast({ title: "Updated" });
     onOpenChange(false);
   };
@@ -135,7 +138,8 @@ export function BlockedUsersDialog({ open, onOpenChange }: { open: boolean; onOp
 
   const unblock = async (id: string) => {
     const { error } = await supabase.from("blocked_users").delete().eq("id", id);
-    if (error) return toast({ title: "Failed", description: error.message, variant: "destructive" });
+    reportError("src/components/settings/PrivacySafetyDialogs.tsx", error);
+    if (error) return toast({ title: "Failed", description: "Please try again in a moment.", variant: "destructive" });
     toast({ title: "Unblocked" });
     load();
   };
@@ -179,7 +183,8 @@ export function ReportIssueDialog({ open, onOpenChange }: { open: boolean; onOpe
       reporter_id: user.id, reported_id: user.id, reason, details, status: "pending",
     });
     setBusy(false);
-    if (error) return toast({ title: "Couldn't submit", description: error.message, variant: "destructive" });
+    reportError("src/components/settings/PrivacySafetyDialogs.tsx", error);
+    if (error) return toast({ title: "Couldn't submit", description: "Please try again in a moment.", variant: "destructive" });
     toast({ title: "Report submitted ❤️", description: "Our team will look into it." });
     setDetails("");
     onOpenChange(false);
