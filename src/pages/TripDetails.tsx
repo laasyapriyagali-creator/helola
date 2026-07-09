@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Calendar, MapPin, Users, MessageCircle, Heart, Share2, Phone, Plane, Hotel, Cloud, ListChecks, ShieldAlert, Download, X, IndianRupee, Trash2, Pencil, AlertTriangle, ImageIcon } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Users, MessageCircle, Heart, Share2, Phone, Plane, Hotel, Cloud, ListChecks, ShieldAlert, Download, X, Wallet, Trash2, Pencil, AlertTriangle, ImageIcon } from "lucide-react";
 import { computeLiveStatus, statusLabel, statusToneClass, transportBanner } from "@/lib/tripStatus";
 import { EditItineraryDialog, type ItineraryItem } from "@/components/EditItineraryDialog";
 import { PlaceGalleryDialog } from "@/components/PlaceGalleryDialog";
@@ -263,7 +263,7 @@ export default function TripDetails() {
         </Section>
 
         {/* Cost breakdown */}
-        <Section title="Cost breakdown" icon={<IndianRupee className="h-4 w-4" />}>
+        <Section title="Cost breakdown" icon={<Wallet className="h-4 w-4" />}>
           <div className="space-y-2">
             {[
               ["Stay", trip.cost_stay], ["Travel", trip.cost_travel],
