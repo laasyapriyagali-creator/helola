@@ -54,7 +54,7 @@ export default function Wishlist() {
                   <p className="font-display text-lg font-bold">{t.destination}</p>
                   <p className="text-xs text-muted-foreground"><Calendar className="mr-1 inline h-3 w-3" />{new Date(t.start_date).toLocaleDateString(undefined, { month: "long", day: "numeric" })}</p>
                 </div>
-                <p className="font-display text-lg font-bold text-primary">₹{Number(t.price_per_person).toLocaleString(undefined)}</p>
+                <p className="font-display text-lg font-bold text-primary">{formatPriceFromINR(Number(t.price_per_person))}</p>
               </CardContent>
             </Card>
           </Link>

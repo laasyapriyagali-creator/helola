@@ -270,12 +270,12 @@ export default function TripDetails() {
             ].map(([label, v]) => (
               <div key={label as string} className="flex items-center justify-between border-b border-dashed border-border py-1.5 text-sm">
                 <span className="text-foreground/70">{label}</span>
-                <span className="font-medium">₹{Number(v).toLocaleString(undefined)}</span>
+                <span className="font-medium">{formatPriceFromINR(Number(v))}</span>
               </div>
             ))}
             <div className="flex items-center justify-between pt-2">
               <span className="font-semibold">Total per person</span>
-              <span className="font-display text-2xl font-bold text-primary">₹{total.toLocaleString(undefined)}</span>
+              <span className="font-display text-2xl font-bold text-primary">{formatPriceFromINR(total)}</span>
             </div>
           </div>
         </Section>

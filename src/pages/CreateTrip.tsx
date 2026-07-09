@@ -182,7 +182,7 @@ export default function CreateTrip() {
           </div>
           <div className="flex items-center justify-between rounded-xl bg-rose px-4 py-3">
             <span className="text-sm font-medium text-rose-foreground">Total per person</span>
-            <span className="font-display text-2xl font-bold text-primary">₹{total.toLocaleString(undefined)}</span>
+            <span className="font-display text-2xl font-bold text-primary">{formatPriceFromINR(total)}</span>
           </div>
         </CardContent></Card>
 
