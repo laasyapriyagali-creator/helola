@@ -28,25 +28,35 @@ export default function DestinationDetail() {
     setCoords(null);
 
     // Fire all three in parallel and update the UI as each resolves — no waterfall.
-    getPlaceSummary(decoded).then((sum) => {
-      if (cancelled) return;
-      if (sum) setSummary({ extract: sum.extract, image: sum.image });
-      setLoading(false); // text drives the primary skeleton
-    });
-
-    getPlaceImages(decoded, 12).then((imgs) => {
-      if (cancelled) return;
-      setImages((prev) => {
-        const combined: PlaceImage[] = [...prev];
-        for (const i of imgs) if (!combined.find(c => c.url === i.url)) combined.push(i);
-        return combined;
+    getPlaceSummary(decoded)
+      .then((sum) => {
+        if (cancelled) return;
+        setSummary({ extract: sum?.extract || "", image: sum?.image });
+      })
+      .catch(() => {
+        if (!cancelled) setSummary({ extract: "" });
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false); // text drives the primary skeleton
       });
-    });
 
-    searchPlaces(decoded, 1).then((geo) => {
-      if (cancelled || !geo[0]) return;
-      setCoords({ lat: geo[0].lat, lon: geo[0].lon });
-    });
+    getPlaceImages(decoded, 12)
+      .then((imgs) => {
+        if (cancelled) return;
+        setImages((prev) => {
+          const combined: PlaceImage[] = [...prev];
+          for (const i of imgs) if (!combined.find(c => c.url === i.url)) combined.push(i);
+          return combined;
+        });
+      })
+      .catch(() => undefined);
+
+    searchPlaces(decoded, 1)
+      .then((geo) => {
+        if (cancelled || !geo[0]) return;
+        setCoords({ lat: geo[0].lat, lon: geo[0].lon });
+      })
+      .catch(() => undefined);
 
     return () => { cancelled = true; };
   }, [decoded]);

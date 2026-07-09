@@ -16,33 +16,40 @@ export function PlaceGalleryDialog({ open, onOpenChange, place }: Props) {
   const [images, setImages] = useState<PlaceImage[]>([]);
   const [summary, setSummary] = useState<string>("");
   const [showFull, setShowFull] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [imagesLoading, setImagesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
-  const load = useCallback(async () => {
+  const load = useCallback((isCancelled: () => boolean) => {
     if (!place) return;
-    setLoading(true);
+    setSummaryLoading(true);
+    setImagesLoading(true);
     setError(null);
-    try {
-      const [rawImgs, sum] = await Promise.all([
-        getPlaceImages(place, 32).catch(() => [] as PlaceImage[]),
-        getPlaceSummary(place).catch(() => null),
-      ]);
-      const candidates: PlaceImage[] = [];
-      if (sum?.image) candidates.push({ url: sum.image, thumb: sum.image, source: `https://en.wikipedia.org/wiki/${encodeURIComponent(place)}`, title: place });
-      for (const i of rawImgs) if (!candidates.find(c => c.url === i.url)) candidates.push(i);
+    getPlaceSummary(place)
+      .then((sum) => {
+        if (!isCancelled()) setSummary(sum?.extract || "");
+      })
+      .catch(() => {
+        if (!isCancelled()) setSummary("");
+      })
+      .finally(() => {
+        if (!isCancelled()) setSummaryLoading(false);
+      });
 
-      const verified = await filterLoadable(candidates, 24);
-
-      setImages(verified);
-      setSummary(sum?.extract || "");
-      if (verified.length === 0) setError("No verified photos found for this place.");
-    } catch (e: any) {
-      setError(e?.message || "Couldn't load photos.");
-    } finally {
-      setLoading(false);
-    }
+    getPlaceImages(place, 32)
+      .then(async (rawImgs) => {
+        const verified = await filterLoadable(rawImgs, 24);
+        if (isCancelled()) return;
+        setImages(verified);
+        if (verified.length === 0) setError("No photos found for this place yet.");
+      })
+      .catch(() => {
+        if (!isCancelled()) setError("Couldn't load photos right now.");
+      })
+      .finally(() => {
+        if (!isCancelled()) setImagesLoading(false);
+      });
   }, [place]);
 
   useEffect(() => {
@@ -50,7 +57,9 @@ export function PlaceGalleryDialog({ open, onOpenChange, place }: Props) {
     setShowFull(false);
     setImages([]);
     setSummary("");
-    load();
+    let cancelled = false;
+    load(() => cancelled);
+    return () => { cancelled = true; };
   }, [open, load, attempt]);
 
   const short = summary.length > 220 ? summary.slice(0, 220).trimEnd() + "…" : summary;
@@ -64,21 +73,10 @@ export function PlaceGalleryDialog({ open, onOpenChange, place }: Props) {
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 pb-24">
-          {loading ? (
-            <>
-              <Skeleton className="mb-3 h-20 w-full rounded-xl" />
-              <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-                {Array.from({ length: 9 }).map((_, i) => (
-                  <div key={i} className="relative h-32 overflow-hidden rounded-xl bg-muted md:h-44">
-                    <Skeleton className="h-full w-full" />
-                    <Loader2 className="absolute inset-0 m-auto h-5 w-5 animate-spin text-muted-foreground" />
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <>
-              {summary ? (
+          <>
+              {summaryLoading ? (
+                <Skeleton className="mb-4 h-20 w-full rounded-xl" />
+              ) : summary ? (
                 <div className="mb-4 rounded-xl bg-muted/40 p-3">
                   <p className="text-sm leading-relaxed text-foreground/90">
                     {showFull ? summary : short}
@@ -106,7 +104,16 @@ export function PlaceGalleryDialog({ open, onOpenChange, place }: Props) {
                 </Button>
               </div>
 
-              {error && images.length === 0 ? (
+              {imagesLoading && images.length === 0 ? (
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                  {Array.from({ length: 9 }).map((_, i) => (
+                    <div key={i} className="relative h-32 overflow-hidden rounded-xl bg-muted md:h-44">
+                      <Skeleton className="h-full w-full" />
+                      <Loader2 className="absolute inset-0 m-auto h-5 w-5 animate-spin text-muted-foreground" />
+                    </div>
+                  ))}
+                </div>
+              ) : error && images.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-muted/30 p-10 text-center">
                   <AlertCircle className="h-6 w-6 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">{error}</p>
@@ -143,7 +150,6 @@ export function PlaceGalleryDialog({ open, onOpenChange, place }: Props) {
               )}
               <p className="mt-3 text-[11px] text-muted-foreground">Photos via Wikimedia Commons, Wikipedia.</p>
             </>
-          )}
         </div>
       </DialogContent>
     </Dialog>
