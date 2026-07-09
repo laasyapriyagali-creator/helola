@@ -250,8 +250,8 @@ export default function Auth() {
               <form onSubmit={handleSendOtp} className="space-y-3">
                 <div>
                   <Label>Phone number</Label>
-                  <Input type="tel" required placeholder="+91 98xxxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} />
-                  <p className="mt-1 text-xs text-muted-foreground">Include country code (e.g. +91, +1)</p>
+                  <Input type="tel" required placeholder="+[country code] phone number" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  <p className="mt-1 text-xs text-muted-foreground">Include your country code in international format (e.g. +1, +44, +91, +81).</p>
                 </div>
                 <Button type="submit" disabled={loading} className="h-11 w-full rounded-xl">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send code"}
