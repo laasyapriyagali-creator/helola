@@ -152,7 +152,7 @@ export default function PremiumSettings() {
                   <p className="text-sm font-medium">{planById(p.plan).name}</p>
                   <p className="text-xs text-muted-foreground">{formatDate(p.paid_at)} · {p.status}</p>
                 </div>
-                <p className="text-sm font-semibold">₹{p.amount_inr.toLocaleString("en-IN")}</p>
+                <p className="text-sm font-semibold">₹{p.amount_inr.toLocaleString(undefined)}</p>
               </li>
             ))}
           </ul>

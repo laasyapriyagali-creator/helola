@@ -194,7 +194,7 @@ export default function Moments() {
                       <UserAvatar url={null} name={null} size={36} />
                       <div className="flex-1">
                         <p className="text-sm font-semibold italic text-muted-foreground">Deleted account</p>
-                        <p className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</p>
                       </div>
                     </div>
                   ) : (
@@ -202,7 +202,7 @@ export default function Moments() {
                       <UserAvatar url={m.author.avatar_url} name={m.author.full_name} size={36} />
                       <div className="flex-1">
                         <p className="text-sm font-semibold">{displayName(m.author)}</p>
-                        <p className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</p>
                       </div>
                     </Link>
                   )}

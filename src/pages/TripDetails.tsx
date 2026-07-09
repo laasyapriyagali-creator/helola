@@ -158,7 +158,7 @@ export default function TripDetails() {
 
   const start = new Date(trip.start_date);
   const end = new Date(trip.end_date);
-  const dateLabel = `${start.toLocaleDateString("en-IN", { month: "long", day: "numeric" })} – ${end.toLocaleDateString("en-IN", { month: "long", day: "numeric", year: "numeric" })}`;
+  const dateLabel = `${start.toLocaleDateString(undefined, { month: "long", day: "numeric" })} – ${end.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}`;
   const total = Number(trip.cost_stay) + Number(trip.cost_travel) + Number(trip.cost_food) + Number(trip.cost_other);
   const itinerary = (Array.isArray(trip.itinerary) && trip.itinerary.length ? trip.itinerary : DEFAULT_ITINERARY);
   const liveStatus = computeLiveStatus(trip);
@@ -270,12 +270,12 @@ export default function TripDetails() {
             ].map(([label, v]) => (
               <div key={label as string} className="flex items-center justify-between border-b border-dashed border-border py-1.5 text-sm">
                 <span className="text-foreground/70">{label}</span>
-                <span className="font-medium">₹{Number(v).toLocaleString("en-IN")}</span>
+                <span className="font-medium">₹{Number(v).toLocaleString(undefined)}</span>
               </div>
             ))}
             <div className="flex items-center justify-between pt-2">
               <span className="font-semibold">Total per person</span>
-              <span className="font-display text-2xl font-bold text-primary">₹{total.toLocaleString("en-IN")}</span>
+              <span className="font-display text-2xl font-bold text-primary">₹{total.toLocaleString(undefined)}</span>
             </div>
           </div>
         </Section>
@@ -335,8 +335,8 @@ export default function TripDetails() {
         <Section title="Stay details" icon={<Hotel className="h-4 w-4" />}>
           <KV k="Hotel" v={trip.stay_details?.hotel ?? "To be confirmed"} />
           <KV k="Room" v={trip.stay_details?.room ?? "Twin sharing"} />
-          <KV k="Check-in" v={trip.stay_details?.checkin ?? start.toLocaleDateString("en-IN")} />
-          <KV k="Check-out" v={trip.stay_details?.checkout ?? end.toLocaleDateString("en-IN")} />
+          <KV k="Check-in" v={trip.stay_details?.checkin ?? start.toLocaleDateString(undefined)} />
+          <KV k="Check-out" v={trip.stay_details?.checkout ?? end.toLocaleDateString(undefined)} />
         </Section>
 
         {/* Travel */}

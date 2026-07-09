@@ -52,9 +52,9 @@ export default function Wishlist() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-display text-lg font-bold">{t.destination}</p>
-                  <p className="text-xs text-muted-foreground"><Calendar className="mr-1 inline h-3 w-3" />{new Date(t.start_date).toLocaleDateString("en-IN", { month: "long", day: "numeric" })}</p>
+                  <p className="text-xs text-muted-foreground"><Calendar className="mr-1 inline h-3 w-3" />{new Date(t.start_date).toLocaleDateString(undefined, { month: "long", day: "numeric" })}</p>
                 </div>
-                <p className="font-display text-lg font-bold text-primary">₹{Number(t.price_per_person).toLocaleString("en-IN")}</p>
+                <p className="font-display text-lg font-bold text-primary">₹{Number(t.price_per_person).toLocaleString(undefined)}</p>
               </CardContent>
             </Card>
           </Link>

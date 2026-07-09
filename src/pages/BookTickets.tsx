@@ -325,7 +325,7 @@ export default function BookTickets() {
                       {r.price != null ? (
                         <>
                           <p className="font-display text-lg font-bold text-primary leading-tight">
-                            {(r.currency || "INR") === "INR" ? "₹" : `${r.currency} `}{r.price.toLocaleString("en-IN")}
+                            {(r.currency || "INR") === "INR" ? "₹" : `${r.currency} `}{r.price.toLocaleString(undefined)}
                           </p>
                           <p className="text-[10px] uppercase tracking-wide text-muted-foreground">live price</p>
                         </>
