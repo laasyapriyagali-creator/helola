@@ -8,7 +8,7 @@ import { ArrowLeft, Plane, Train, Bus, Car, ExternalLink, Ban, Clock, MapPin, Lo
 import { PlaceSearchInput } from "@/components/PlaceSearchInput";
 import { getKnownIndianCity, isInternationalRoute, normalizePlaceKey, resolveIata, type PlaceSuggestion, type PlaceKind } from "@/lib/places";
 import { searchLiveTransport, type LiveTransportOption, type Mode } from "@/lib/transportProviders";
-import { formatPriceFromINR } from "@/lib/i18n";
+import { formatPriceFromINR, formatCurrency } from "@/lib/i18n";
 
 interface BookingPlatform { name: string; href: (q: SearchParams) => string; }
 interface SearchParams { from: string; to: string; date: string; mode: Mode; }
