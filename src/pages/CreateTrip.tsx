@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Users, ImageOff } from "lucide-react";
 import { PlaceSearchInput } from "@/components/PlaceSearchInput";
 import { getPlaceSummary } from "@/lib/places";
+import { formatPriceFromINR } from "@/lib/i18n";
 
 const INTERESTS = ["Beach", "Mountains", "Adventure", "Culture", "Food", "Nightlife", "Wellness", "Wildlife", "Road Trip"];
 

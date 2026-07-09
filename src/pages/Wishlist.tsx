@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Heart, Calendar } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatPriceFromINR } from "@/lib/i18n";
 
 interface Item { id: string; destination: string; start_date: string; price_per_person: number; }
 

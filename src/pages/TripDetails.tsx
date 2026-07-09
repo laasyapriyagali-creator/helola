@@ -16,6 +16,7 @@ import { PlaceAboutSection } from "@/components/PlaceAboutSection";
 import { TripImage } from "@/components/TripImage";
 import { HostCard } from "@/components/HostCard";
 import { friendlyJoinError } from "@/lib/joinErrors";
+import { formatPriceFromINR } from "@/lib/i18n";
 
 interface Trip {
   id: string;
