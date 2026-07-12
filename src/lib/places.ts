@@ -446,45 +446,6 @@ function evaluateTravelPhoto(p: UnsplashPhoto, placeName: string, query: string)
   };
 }
 
-function isRelevantTravelPhoto(p: UnsplashPhoto, placeName: string): boolean {
-  return evaluateTravelPhoto(p, placeName, getDestinationPhotoProfile(placeName).exact).accepted;
-}
-
-function legacyIsRelevantTravelPhoto(p: UnsplashPhoto, placeName: string): boolean {
-  const haystack = [
-    p.description || "",
-    p.alt_description || "",
-    ...(p.tags || []).map(t => t.title || ""),
-  ].join(" ").toLowerCase();
-
-  // Empty metadata → we can't verify, but Unsplash's "high" content_filter
-  // is already applied server-side. Allow it through.
-  if (!haystack.trim()) return true;
-
-  for (const bad of REJECT_TOKENS) {
-    if (haystack.includes(bad)) return false;
-  }
-
-  // Extra guard: shots that read as pure people/food closeups with no
-  // destination anchor are almost never good hero images.
-  const placeKey = cleanPlaceName(placeName).toLowerCase();
-  const mentionsPlace = placeKey && haystack.includes(placeKey);
-  const mentionsPreferred = PREFER_TOKENS.some(t => haystack.includes(t));
-  const looksLikePerson = /\b(man|woman|boy|girl|kid|baby|face|smiling|posing|wearing)\b/.test(haystack);
-  if (looksLikePerson && !mentionsPlace && !mentionsPreferred) return false;
-
-  return true;
-}
-
-function scorePhoto(p: UnsplashPhoto, placeName: string): number {
-  const haystack = photoHaystack(p);
-  const placeKey = cleanPlaceName(placeName).toLowerCase();
-  let score = 0;
-  if (placeKey && haystack.includes(placeKey)) score += 5;
-  for (const t of PREFER_TOKENS) if (haystack.includes(t)) score += 1;
-  return score;
-}
-
 function toPlaceImage(p: UnsplashPhoto, place: string): PlaceImage {
   return {
     url: p.urls.regular,
