@@ -130,12 +130,12 @@ function saveSet(k: string, s: Set<string>) {
   try { sessionStorage.setItem(k, JSON.stringify(Array.from(s).slice(-500))); } catch { /* quota */ }
 }
 
-const summaryTextCache = loadSS<string | null>("helola.placeExtract.v4");
-const summaryImageCache = loadSS<{ image?: string; thumb?: string } | null>("helola.placeSummaryImage.v1");
-const imagesCache = loadSS<PlaceImage[]>("helola.placeImages.v4");
+const summaryTextCache = loadSS<string | null>("helola.placeExtract.v5");
+const summaryImageCache = loadSS<{ image?: string; thumb?: string } | null>("helola.placeSummaryImage.v2");
+const imagesCache = loadSS<PlaceImage[]>("helola.placeImages.v5");
 const searchCache = new Map<string, PlaceSuggestion[]>();
 // Global dedupe so two different destinations never get the same photo.
-const usedImageIds = loadSet("helola.usedImg.v4");
+const usedImageIds = loadSet("helola.usedImg.v5");
 
 export async function searchPlaces(query: string, limit = 6): Promise<PlaceSuggestion[]> {
   const q = query.trim();
