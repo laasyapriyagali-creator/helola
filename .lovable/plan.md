@@ -1,55 +1,41 @@
-# HELOLA Passport — Profile section
 
-A new "coming soon" teaser section on the Profile page, styled after the selected **Hardcover Foil Passport v4** direction (deep midnight cover, silver foil typography, constellation motif, coordinates + north star).
+## Goal
 
-## Placement
+Destination cards must only display real travel photography from Unsplash. Wikipedia and Wikimedia Commons stay in the codebase for text summaries and (unrelated) map data only — never for images. Unsuitable Unsplash results (booths, posters, logos, indoor events, maps, documents) are rejected client-side, and if nothing suitable remains we show a bundled scenic placeholder.
 
-`src/pages/Profile.tsx`: insert between `<ProfilePublicSections />` and the `<PremiumInviteCard />` block. Show on **own profile only** (framed as "your adventures").
+## Changes
 
-## Files to create
+### 1. `supabase/functions/unsplash-search/index.ts`
+- Project `tags` from each Unsplash photo (array of `{ title }`) in the response, so the client can validate content. Everything else stays the same.
+- Redeploy.
 
-1. `src/components/passport/PassportCard.tsx` — the tappable cover, styled per v4.
-2. `src/components/passport/PassportPreviewDialog.tsx` — the modal opened on tap.
+### 2. `src/lib/places.ts` — remove all non-Unsplash image sources
+- `UnsplashPhoto` type: add `tags?: { title: string }[]`.
+- **Delete `commonsImageSearch`** and every call to it.
+- **Keep `fetchWikiSummary`** but only expose its `extract`. Stop returning `thumb`/`image` from `WikiSummary`; drop those fields.
+- `getPlaceSummary`: no longer sets or returns `image`/`thumb` from Wikipedia. It returns the extract plus (optionally) the hero image sourced from the Unsplash `imagesCache`.
+- `getPlaceImages`: remove the Commons batches, `wikiImage`, and `genericCommons` blocks. The only sources are Unsplash themed queries → Unsplash `"<place> travel"` fallback → Unsplash `"travel destination landscape"` fallback. If all three still return zero after validation, return a single placeholder entry (see step 4).
 
-## Cover (`PassportCard`)
+### 3. New Unsplash relevance filter (in `places.ts`)
+Add `isRelevantTravelPhoto(photo, placeName)`:
+- Build a lowercase haystack from `description`, `alt_description`, `tags[].title`, and `user.name`.
+- **Reject** if the haystack contains any denylist token:
+  `booth, expo, exhibition, exhibit, convention, conference, trade show, fair stall, indoor, showroom, poster, brochure, flyer, document, paper, logo, sign, signage, billboard, screenshot, map, atlas, diagram, chart, portrait, headshot, selfie, closeup, close-up, food plate, dish, menu, restaurant interior, product, mockup, illustration, drawing, cartoon, vector, 3d render`.
+- **Reject** if landscape orientation was requested but the photo's `alt_description` clearly names a person (`man`, `woman`, `boy`, `girl`, `people wearing`) with no destination keyword.
+- **Prefer** (bonus score, not required) haystack terms like `beach, mountain, skyline, city, temple, palace, fort, sunset, valley, harbor, harbour, coast, landscape, aerial, street, architecture` — used to sort surviving photos so the strongest matches come first.
+- Applied to every Unsplash batch before dedupe/shuffle. Log nothing (silent filter).
 
-Faithful port of v4 into the project's stack:
+### 4. Scenic placeholder
+- Generate one bundled asset at `src/assets/destination-placeholder.jpg` (a wide, generic mountains-and-coast scene, no text, no people).
+- Import it in `places.ts` and export a helper `DEFAULT_DESTINATION_IMAGE` used by both `getPlaceSummary` (as `image`/`thumb` when the Unsplash cache is empty) and `getPlaceImages` (as the sole entry when all Unsplash attempts return zero valid photos). The placeholder entry has `source = ""` so UI code that treats an empty source as "no attribution link" continues to work.
 
-- Full-width, `aspect-[16/10]`, `rounded-2xl`, dark base `bg-[#020617]` with layered shadow + `ring-1 ring-white/10`.
-- Constellation SVG background at `opacity-25` — star points with staggered `animate-pulse` durations, faint constellation lines.
-- North-star icon bottom-right, monospace "Origin — 51.5074° N, 0.1278° W" coordinate label top-left.
-- Left "spine" gradient strip.
-- Silver-foil title **HELOLA Passport** using `font-display` (project's existing serif — no new Google Font import needed) with `bg-gradient-to-b from-white via-slate-300 to-slate-500 bg-clip-text text-transparent`.
-- Tagline "*Your adventures, beautifully preserved.*" flanked by short slate hairlines.
-- Top-right "In Development" pill: pulsing dot, `bg-white/5 border-white/20 backdrop-blur`.
-- Hover shimmer sweep, `hover:scale-[1.01] active:scale-[0.99]` press feedback.
+### 5. Cache bump
+- Bump cache keys from `v4` → `v5` for `helola.placeImages` and add `helola.placeSummaryImage.v2`, so users don't keep seeing the current (already-cached) Wikipedia booth photo for Goa. Old caches are ignored automatically because the key changed.
 
-Whole card is a `<button>` that opens the dialog.
+### 6. Verification
+- Deploy the edge function.
+- Drive Playwright to `/`, wait for the destinations rail, screenshot the Goa card, and confirm the image is a beach/coast (not the booth). Sample two more cards (Paris, Bali) to confirm nothing regressed. If any card falls back to the placeholder, that's acceptable behavior — but log which one for the response.
 
-## Modal (`PassportPreviewDialog`)
-
-Uses existing `Dialog` from `@/components/ui/dialog`. Visually echoes the cover (same midnight + silver palette on the header, cream body for readability).
-
-- Header row: 🛂 **HELOLA Passport** in `font-display`.
-- Slim divider (silver gradient line + tiny star glyph centered).
-- Pull-quote (serif italic): *"Every journey tells a story."*
-- Body copy (verbatim from the request):
-  - "Soon, every completed trip will automatically become part of your personal travel passport. You'll collect destination stamps, preserve memories, unlock travel achievements, revisit your travel timeline, reconnect with people you've traveled with, and relive every adventure through AI-generated journals and memories."
-  - "In the future, you'll also be able to order a beautifully printed hardcover version of your passport to keep your travel story forever."
-- Footer buttons:
-  - Primary **Notify Me** — solid button; on click, `toast.success("We'll let you know the moment HELOLA Passport is ready.")` and close.
-  - Secondary **Close** — `variant="ghost"`.
-
-No backend / no waitlist table (MVP teaser). If you'd like the "Notify Me" click persisted later, I'll add a `passport_waitlist` table with RLS in a follow-up.
-
-## Styling notes
-
-- Colors used are scoped locally to the card (celestial silver + midnight) — no changes to global tokens, no theme drift.
-- Reuses `font-display` (project serif) — no new font import.
-- Pure Tailwind + inline SVG; no new dependencies.
-- Respects mobile viewport (360px): 16:10 aspect ratio scales cleanly; typography drops to `text-4xl` on small screens.
-
-## Not in scope
-
-- Real trip→stamp generation, achievements, AI journals, ordering printed passports (all mentioned in modal copy as future).
-- Showing the card on other users' profiles.
+## Out of scope
+- Adding Pexels as a secondary source. Unsplash + placeholder covers the requirement; Pexels can be added later if coverage gaps appear.
+- Any UI/layout changes to the destination cards themselves.

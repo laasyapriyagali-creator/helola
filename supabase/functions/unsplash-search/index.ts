@@ -60,6 +60,7 @@ Deno.serve(async (req) => {
       urls: { full: p.urls?.full, regular: p.urls?.regular, small: p.urls?.small, thumb: p.urls?.thumb },
       links: { html: p.links?.html },
       user: p.user ? { name: p.user.name } : undefined,
+      tags: Array.isArray(p.tags) ? p.tags.map((t: any) => ({ title: t?.title })).filter((t: any) => t.title) : [],
     }));
     return new Response(JSON.stringify({ results }), {
       status: 200,
