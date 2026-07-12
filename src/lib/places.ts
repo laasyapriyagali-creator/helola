@@ -133,16 +133,17 @@ function saveSet(k: string, s: Set<string>) {
 
 const summaryTextCache = loadSS<string | null>("helola.placeExtract.v5");
 const summaryImageCache = loadSS<{ image?: string; thumb?: string } | null>("helola.placeSummaryImage.v4");
-const imagesCache = loadSS<PlaceImage[]>("helola.placeImages.v7");
+const imagesCache = loadSS<PlaceImage[]>("helola.placeImages.v8");
 const searchCache = new Map<string, PlaceSuggestion[]>();
 // Global dedupe so two different destinations never get the same photo.
-const usedImageIds = loadSet("helola.usedImg.v7");
+const usedImageIds = loadSet("helola.usedImg.v8");
 
 const photoQueue: Array<() => void> = [];
 let activePhotoRequests = 0;
 const MAX_PHOTO_REQUESTS = 2;
 let photoServiceDisabledUntil = 0;
-const PHOTO_SERVICE_COOLDOWN_MS = 10 * 60 * 1000;
+const PHOTO_SERVICE_COOLDOWN_MS = 2 * 60 * 1000;
+const PHOTO_SERVICE_TRANSIENT_COOLDOWN_MS = 30 * 1000;
 
 async function queuePhotoRequest<T>(task: () => Promise<T>): Promise<T> {
   if (activePhotoRequests >= MAX_PHOTO_REQUESTS) {
@@ -333,20 +334,25 @@ async function unsplashSearch(query: string, perPage = 12, orientation: "landsca
         body: JSON.stringify({ query, per_page: perPage, orientation }),
       });
       if (!res.ok) {
-        if (res.status === 404 || res.status === 429 || res.status >= 500) {
+        if (res.status === 429 || res.status >= 500) {
+          photoServiceDisabledUntil = Date.now() + PHOTO_SERVICE_TRANSIENT_COOLDOWN_MS;
+        } else if (res.status === 401 || res.status === 403 || res.status === 404) {
           photoServiceDisabledUntil = Date.now() + PHOTO_SERVICE_COOLDOWN_MS;
         }
         return [];
       }
       const data = await res.json().catch(() => null);
-      if (data?.error || data?.status === 403 || data?.status === 429) {
+      if (data?.fallback) {
+        photoServiceDisabledUntil = Date.now() + PHOTO_SERVICE_TRANSIENT_COOLDOWN_MS;
+        return [];
+      }
+      if (data?.error || data?.status === 401 || data?.status === 403 || data?.status === 429) {
         photoServiceDisabledUntil = Date.now() + PHOTO_SERVICE_COOLDOWN_MS;
         return [];
       }
-      if (data?.fallback) return [];
       return (data?.results || []) as UnsplashPhoto[];
     } catch {
-      photoServiceDisabledUntil = Date.now() + PHOTO_SERVICE_COOLDOWN_MS;
+      photoServiceDisabledUntil = Date.now() + PHOTO_SERVICE_TRANSIENT_COOLDOWN_MS;
       return [];
     }
   });
@@ -488,17 +494,19 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
 
   // Track usage globally so other destinations skip these ids.
   for (const p of ordered.slice(0, limit)) usedImageIds.add(p.id);
-  saveSet("helola.usedImg.v7", usedImageIds);
+  saveSet("helola.usedImg.v8", usedImageIds);
 
   // If Unsplash returned nothing suitable, show the bundled scenic
   // placeholder rather than an unrelated Wikipedia image.
-  const final = unsplashImages.length > 0
-    ? unsplashImages
-    : [DEFAULT_DESTINATION_IMAGE];
+  if (unsplashImages.length > 0) {
+    imagesCache.set(cacheKey, unsplashImages);
+    saveSS("helola.placeImages.v8", imagesCache);
+    return unsplashImages;
+  }
 
-  imagesCache.set(cacheKey, final);
-  saveSS("helola.placeImages.v7", imagesCache);
-  return final;
+  // Do not cache the placeholder. If the API key was just replaced or the
+  // photo service had a temporary hiccup, the next load should try again.
+  return [DEFAULT_DESTINATION_IMAGE];
 }
 
 
