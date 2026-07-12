@@ -141,6 +141,8 @@ const usedImageIds = loadSet("helola.usedImg.v7");
 const photoQueue: Array<() => void> = [];
 let activePhotoRequests = 0;
 const MAX_PHOTO_REQUESTS = 2;
+let photoServiceDisabledUntil = 0;
+const PHOTO_SERVICE_COOLDOWN_MS = 10 * 60 * 1000;
 
 async function queuePhotoRequest<T>(task: () => Promise<T>): Promise<T> {
   if (activePhotoRequests >= MAX_PHOTO_REQUESTS) {
@@ -315,6 +317,8 @@ async function fetchWikiSummary(name: string): Promise<WikiSummary> {
 }
 
 async function unsplashSearch(query: string, perPage = 12, orientation: "landscape" | "squarish" = "landscape"): Promise<UnsplashPhoto[]> {
+  if (Date.now() < photoServiceDisabledUntil) return [];
+
   return queuePhotoRequest(async () => {
     try {
       const session = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
@@ -328,11 +332,21 @@ async function unsplashSearch(query: string, perPage = 12, orientation: "landsca
         },
         body: JSON.stringify({ query, per_page: perPage, orientation }),
       });
-      if (!res.ok) return [];
+      if (!res.ok) {
+        if (res.status === 404 || res.status === 429 || res.status >= 500) {
+          photoServiceDisabledUntil = Date.now() + PHOTO_SERVICE_COOLDOWN_MS;
+        }
+        return [];
+      }
       const data = await res.json().catch(() => null);
+      if (data?.error || data?.status === 403 || data?.status === 429) {
+        photoServiceDisabledUntil = Date.now() + PHOTO_SERVICE_COOLDOWN_MS;
+        return [];
+      }
       if (data?.fallback) return [];
       return (data?.results || []) as UnsplashPhoto[];
     } catch {
+      photoServiceDisabledUntil = Date.now() + PHOTO_SERVICE_COOLDOWN_MS;
       return [];
     }
   });
@@ -482,10 +496,8 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
     ? unsplashImages
     : [DEFAULT_DESTINATION_IMAGE];
 
-  if (unsplashImages.length > 0) {
-    imagesCache.set(cacheKey, final);
-    saveSS("helola.placeImages.v7", imagesCache);
-  }
+  imagesCache.set(cacheKey, final);
+  saveSS("helola.placeImages.v7", imagesCache);
   return final;
 }
 
