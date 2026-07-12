@@ -1,0 +1,60 @@
+// Server-side proxy for Unsplash search so the access key never ships in the client bundle.
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+
+const UNSPLASH_API = "https://api.unsplash.com";
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  try {
+    const url = new URL(req.url);
+    const query = (url.searchParams.get("query") || "").trim();
+    const perPage = Math.min(Math.max(parseInt(url.searchParams.get("per_page") || "12", 10) || 12, 1), 30);
+    const orientation = url.searchParams.get("orientation") === "squarish" ? "squarish" : "landscape";
+
+    if (!query) {
+      return new Response(JSON.stringify({ error: "query is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const key = Deno.env.get("UNSPLASH_ACCESS_KEY");
+    if (!key) {
+      return new Response(JSON.stringify({ error: "Unsplash key not configured", results: [] }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const upstream = `${UNSPLASH_API}/search/photos?query=${encodeURIComponent(query)}&per_page=${perPage}&orientation=${orientation}&content_filter=high&client_id=${key}`;
+    const res = await fetch(upstream);
+    if (!res.ok) {
+      return new Response(JSON.stringify({ error: "upstream error", status: res.status, results: [] }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const data = await res.json();
+    // Return only the fields the client uses — nothing else from the upstream payload.
+    const results = (data?.results || []).map((p: any) => ({
+      id: p.id,
+      description: p.description,
+      alt_description: p.alt_description,
+      urls: { full: p.urls?.full, regular: p.urls?.regular, small: p.urls?.small, thumb: p.urls?.thumb },
+      links: { html: p.links?.html },
+      user: p.user ? { name: p.user.name } : undefined,
+    }));
+    return new Response(JSON.stringify({ results }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "public, max-age=3600" },
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: (e as Error).message, results: [] }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
