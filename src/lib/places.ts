@@ -86,6 +86,7 @@ export interface PlaceImage {
   thumb: string;
   source: string;
   title: string;
+  unsplashId?: string;
 }
 
 const NOMINATIM = "https://nominatim.openstreetmap.org";
@@ -125,13 +126,12 @@ function saveSet(k: string, s: Set<string>) {
 }
 
 const summaryTextCache = loadSS<string | null>("helola.placeExtract.v5");
-const summaryImageCache = loadSS<{ image?: string; thumb?: string } | null>("helola.placeSummaryImage.v4");
 const IMAGE_CACHE_KEY = "helola.placeImages.v11";
 const USED_IMAGE_CACHE_KEY = "helola.usedImg.v11";
 const imagesCache = loadSS<PlaceImage[]>(IMAGE_CACHE_KEY);
 const searchCache = new Map<string, PlaceSuggestion[]>();
 // Global dedupe so two different destinations never get the same photo.
-const usedImageIds = loadSet(USED_IMAGE_CACHE_KEY);
+const selectedImageDestinations = loadSS<string>(USED_IMAGE_CACHE_KEY);
 
 const photoQueue: Array<() => void> = [];
 let activePhotoRequests = 0;
@@ -484,6 +484,7 @@ function toPlaceImage(p: UnsplashPhoto, place: string): PlaceImage {
     thumb: p.urls.small,
     source: p.links.html,
     title: p.alt_description || p.description || place,
+    unsplashId: p.id,
   };
 }
 
@@ -514,7 +515,7 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
   const cached = imagesCache.get(cacheKey);
   if (cached?.length) {
     const first = cached[0];
-    console.info(`[destination-photo] selected for ${profile.exact}: cache=true fallback=false query="cache:${cacheKey}" id=${first.source || first.url} url=${first.url} reason="served from unique destination cache key ${cacheKey}"`);
+    console.info(`[destination-photo] selected for ${profile.exact}: cache=true fallback=false query="cache:${cacheKey}" id=${first.unsplashId || first.source || first.url} url=${first.url} reason="served from unique destination cache key ${cacheKey}"`);
     return cached;
   }
 
@@ -539,10 +540,16 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
     if (byId.size >= Math.min(limit, 6)) break;
   }
 
-  const shuffled = shuffle(Array.from(byId.values()), seed);
+  const crossDestinationFiltered = Array.from(byId.values()).filter((candidate) => {
+    const usedBy = selectedImageDestinations.get(candidate.photo.id);
+    if (!usedBy || usedBy === profile.exact) return true;
+    console.warn(`[destination-photo] ${profile.exact} candidate ${candidate.photo.id}: rejected because it is already selected for ${usedBy}`);
+    return false;
+  });
+  const shuffled = shuffle(crossDestinationFiltered, seed);
   shuffled.sort((a, b) => {
-    const usagePenaltyA = usedImageIds.has(a.photo.id) ? -50 : 0;
-    const usagePenaltyB = usedImageIds.has(b.photo.id) ? -50 : 0;
+    const usagePenaltyA = selectedImageDestinations.get(a.photo.id) === profile.exact ? -5 : 0;
+    const usagePenaltyB = selectedImageDestinations.get(b.photo.id) === profile.exact ? -5 : 0;
     return (b.score + usagePenaltyB) - (a.score + usagePenaltyA);
   });
 
@@ -555,11 +562,9 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
   const unsplashImages = ordered.slice(0, limit).map(p => toPlaceImage(p, profile.exact));
 
   // Track usage globally so other destinations skip these ids.
-  for (const p of ordered.slice(0, limit)) usedImageIds.add(p.id);
-  saveSet(USED_IMAGE_CACHE_KEY, usedImageIds);
+  for (const p of ordered.slice(0, limit)) selectedImageDestinations.set(p.id, profile.exact);
+  saveSS(USED_IMAGE_CACHE_KEY, selectedImageDestinations);
 
-  // If Unsplash returned nothing suitable, show the bundled scenic
-  // placeholder rather than an unrelated Wikipedia image.
   if (unsplashImages.length > 0) {
     imagesCache.set(cacheKey, unsplashImages);
     saveSS(IMAGE_CACHE_KEY, imagesCache);
