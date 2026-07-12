@@ -98,6 +98,7 @@ import { supabase } from "@/integrations/supabase/client";
 import destinationPlaceholder from "@/assets/destination-placeholder.jpg";
 const FUNCTIONS_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 const UNSPLASH_FN = "unsplash-search";
+const UNSPLASH_FALLBACK_FN = "destination-photo-search";
 
 export const DEFAULT_DESTINATION_IMAGE: PlaceImage = {
   url: destinationPlaceholder,
@@ -334,7 +335,7 @@ async function unsplashSearch(query: string, perPage = 12, orientation: "landsca
       console.info(`[destination-photo] Unsplash search query: "${query}"`);
       const session = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
       const token = session.data.session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const res = await fetch(`${FUNCTIONS_BASE_URL}/${UNSPLASH_FN}`, {
+      const requestInit: RequestInit = {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -342,12 +343,18 @@ async function unsplashSearch(query: string, perPage = 12, orientation: "landsca
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ query, per_page: perPage, orientation }),
-      });
+      };
+
+      let res = await fetch(`${FUNCTIONS_BASE_URL}/${UNSPLASH_FN}`, requestInit);
+      if (res.status === 404) {
+        console.warn(`[destination-photo] ${UNSPLASH_FN} returned 404; retrying ${UNSPLASH_FALLBACK_FN}`);
+        res = await fetch(`${FUNCTIONS_BASE_URL}/${UNSPLASH_FALLBACK_FN}`, requestInit);
+      }
       if (!res.ok) {
         if (res.status === 429 || res.status >= 500) {
           photoServiceDisabledUntil = Date.now() + PHOTO_SERVICE_TRANSIENT_COOLDOWN_MS;
         } else if (res.status === 401 || res.status === 403 || res.status === 404) {
-          photoServiceDisabledUntil = Date.now() + PHOTO_SERVICE_COOLDOWN_MS;
+          photoServiceDisabledUntil = Date.now() + PHOTO_SERVICE_TRANSIENT_COOLDOWN_MS;
         }
         return [];
       }
