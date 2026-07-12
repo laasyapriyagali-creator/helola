@@ -76,11 +76,46 @@ export const PLANS: PlanDef[] = RAW_PLANS.map(p => ({
 }));
 
 export const PREMIUM_BENEFITS = [
-  { icon: "🎟️", title: "Exclusive Helola Community Events", desc: "Curated meetups, dinners, and travel gatherings only for members." },
-  { icon: "🛂", title: "Effortless Travel with Visa Check-in & Support", desc: "Guided visa checklists and priority travel help before every trip." },
-  { icon: "🎁", title: "Exclusive Perks & Member Discounts", desc: "Handpicked partner offers on stays, experiences, and gear." },
-  { icon: "🌍", title: "Welcome on Arrival in Local Tradition", desc: "A warm local welcome at select destinations, where available." },
-  { icon: "🤝", title: "Choose Who You Travel With", desc: "Priority access to trips and the ability to shape your travel circle." },
+  {
+    icon: "🌍",
+    title: "Travel Like a Local",
+    desc: "Chat with verified locals before your trip to uncover hidden cafés, secret viewpoints, and authentic experiences most tourists miss. Get trusted tips, safety insights, and cultural know-how before you even land.",
+  },
+  {
+    icon: "🎉",
+    title: "Premium Experiences",
+    desc: "Unlock unforgettable moments curated only for members — sunrise hikes, rooftop dinners, private yacht trips, and weekend escapes that go far beyond ordinary travel.",
+  },
+  {
+    icon: "🏆",
+    title: "Loyalty Rewards",
+    desc: "Every completed trip earns reward points. Redeem them for Premium months, travel vouchers, partner discounts, exclusive merch, and future Helola experiences.",
+  },
+  {
+    icon: "🚀",
+    title: "Early Access",
+    desc: "Always be first. From brand-new features to exclusive beta releases, Premium members get early access to everything we build before anyone else.",
+  },
+  {
+    icon: "🎁",
+    title: "Birthday & Celebration Perks",
+    desc: "Celebrate your birthday and Helola milestones with exclusive travel discounts, complimentary experiences, and surprise rewards made just for members.",
+  },
+  {
+    icon: "💼",
+    title: "Exclusive Partner Benefits",
+    desc: "Save more wherever you go with special offers from our partners — hotels, cafés, adventure companies, gear brands, airport lounges, and more.",
+  },
+  {
+    icon: "🎥",
+    title: "AI Travel Memory Movie",
+    desc: "After every trip, Helola turns everyone's shared photos and videos into a beautifully edited cinematic travel movie — with music, transitions, and unforgettable moments.",
+  },
+  {
+    icon: "⭐",
+    title: "Premium Verified Traveller",
+    desc: "Stand out with a Premium Verified Traveller badge across your profile. Build trust in the community and enjoy greater visibility when creating trips.",
+  },
 ];
 
 export function planById(id: PremiumPlan) {
