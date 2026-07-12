@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePremium, planById, formatDate, cancelSubscription, setAutoRenew, PLANS, PREMIUM_BENEFITS } from "@/lib/premium";
 import { PremiumSheet } from "@/components/premium/PremiumSheet";
 import { toast } from "sonner";
-import { formatPriceFromINR } from "@/lib/i18n";
+import { formatPriceFromINR, useCurrency } from "@/lib/i18n";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -27,6 +27,7 @@ export default function PremiumSettings() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { sub, isPremium, loading, reload } = usePremium();
+  useCurrency();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [payments, setPayments] = useState<PaymentRow[]>([]);

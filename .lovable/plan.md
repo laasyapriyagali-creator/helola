@@ -1,41 +1,35 @@
-A full app-wide redesign in one shot would be reckless and risks breaking everything we've stabilized (auth, trips, chat, moments, profiles). Instead I'll do a focused, prioritized polish pass that touches every page but only with safe, additive improvements that keep the current design language intact.
+## Why you're seeing £ instead of ₹
 
-## Scope (one pass, in this order)
+`getPreferredCurrency()` in `src/lib/i18n.ts` reads the region from `navigator.language` (BCP-47 locale tag). Your device's system language is likely English (UK) — very common on Android/Samsung in India — so the region resolves to `GB` and the map returns `GBP`. Location, SIM, and timezone are never consulted.
 
-### 1. Global foundations
-- Add a shared `<PageHeader/>` with consistent back button, title, action slot, and safe-area padding.
-- Add `<EmptyState/>`, `<ErrorState/>`, `<LoadingSkeleton/>` primitives so every list uses the same patterns.
-- Add `<Spinner/>` + page transition fade (150ms) via a tiny route wrapper.
-- Tailwind: ensure `h-dvh` (not `h-screen`), `min-h-11 min-w-11` on icon buttons, `focus-visible` rings on all interactive elements.
-- Add `aria-label` to every icon-only button across the app (sweep).
+## Fix
 
-### 2. Per-page friction fixes
-- **Home**: skeleton cards while destinations load; debounce search; "no results" empty state with suggestions.
-- **MyTrips**: skeleton list; smoother countdown chip animation; pull-to-refresh; confirm-before-leave for unsaved itinerary.
-- **TripDetails**: sticky section nav (Overview · Itinerary · Participants · Chat); optimistic join; better transport-alert presentation.
-- **Explore / DestinationDetail**: progressive image grid (blur-up), retry button on failed loads, swipe hint on first lightbox open.
-- **BookTickets**: clearer "live data unavailable" state with retry; collapse providers under tabs.
-- **Chats**: scroll-to-bottom FAB when not at bottom; date separators; typing indicator; image upload progress.
-- **Moments**: double-tap to like; skeleton feed; better composer (drag to reorder photos).
-- **Profile / Public Profile**: skeleton; clearer Edit vs Share affordances; trust the HostCard fix already shipped.
-- **Auth**: inline validation, show/hide password, caps-lock hint, friendlier error copy already in place — add loading state on buttons.
-- **Settings / Security**: consistent section headers and grouping.
-- **Notifications**: empty state, swipe-to-mark-read, group by day.
+Make currency detection prefer the user's actual geography, with an explicit override always available.
 
-### 3. Accessibility + responsiveness sweep
-- Single `<main>` per route, correct heading order.
-- All forms: labels associated, error text linked via `aria-describedby`.
-- Tap targets ≥ 44×44 on mobile.
-- Test at 360px, 414px, 768px, 1024px.
+1. **Timezone-first detection in `getPreferredCurrency()`** — Use `Intl.DateTimeFormat().resolvedOptions().timeZone` (e.g. `Asia/Kolkata`) as the primary signal, since it reflects the device's real location far more reliably than UI language. Fall back to locale region only when the timezone is unknown.
 
-### 4. Motion
-- Framer-motion page fade + list stagger (already partially in place); keep durations 150–250ms. No flashy effects.
+   Add a `TIMEZONE_TO_CURRENCY` map covering the currencies already in `RATES`:
+   - `Asia/Kolkata` → INR
+   - `Europe/London` → GBP, `America/New_York`/`Los_Angeles`/… → USD
+   - `Asia/Tokyo` → JPY, `Asia/Singapore` → SGD, `Asia/Dubai` → AED, `Asia/Hong_Kong` → HKD, `Asia/Shanghai` → CNY, `Asia/Seoul` → KRW, `Asia/Bangkok` → THB, `Asia/Jakarta` → IDR, `Asia/Kuala_Lumpur` → MYR
+   - Eurozone timezones → EUR (Berlin, Paris, Madrid, Rome, Amsterdam, …)
+   - Australia/Sydney → AUD, Pacific/Auckland → NZD, Toronto → CAD, Johannesburg → ZAR, São_Paulo → BRL, Mexico_City → MXN, Istanbul → TRY, Stockholm → SEK, Oslo → NOK, Copenhagen → DKK, Warsaw → PLN, Zurich → CHF
+   - Final fallback: USD
 
-## What I will NOT do
-- No palette/typography/layout changes — design language stays.
-- No backend schema changes.
-- No new features beyond UX primitives above.
-- No rewrites of Auth, transport, or places logic — those are stable.
+   Resolution order: `localStorage` override → timezone map → locale region map → USD.
 
-## Delivery
-I'll ship this in one pass as a single set of edits, then ask you to spot-check. If you want me to narrow further (e.g. "only MyTrips + Chats this round"), say so; otherwise I proceed with the full list above.
+2. **Currency picker in Settings → Preferences** — Add a "Currency" row in `src/components/settings/PreferencesDialog.tsx` (a Select of the supported `CurrencyCode`s labelled "₹ INR — Indian Rupee", etc., plus an "Auto (detect)" option). Selecting a value calls `setPreferredCurrency(code)`; "Auto" clears the localStorage key and cached value so detection re-runs.
+
+3. **Cache invalidation** — Currently `cachedCurrency` persists for the tab's lifetime, so changing the override doesn't repaint prices already computed. `setPreferredCurrency` already updates the cache; also expose a `clearPreferredCurrency()` for the Auto option, and make components that show prices (Premium sheet, Premium settings) re-render on change. Simplest: fire a `window.dispatchEvent(new Event("helola:currency-changed"))` from the setter, and have `PremiumSheet` / `PremiumSettings` subscribe with a small `useCurrency()` hook that forces a re-render.
+
+## Files touched
+
+- `src/lib/i18n.ts` — timezone map, updated `getPreferredCurrency`, add `clearPreferredCurrency`, emit change event, add `useCurrency` hook.
+- `src/components/settings/PreferencesDialog.tsx` — add Currency select row.
+- `src/components/premium/PremiumSheet.tsx`, `src/pages/settings/PremiumSettings.tsx` — call `useCurrency()` so price labels refresh when the user changes currency.
+
+## Not in scope
+
+- Live FX rates (still static snapshot in `RATES`).
+- Server-side geolocation (adds infra; timezone + manual override is enough).
+- Changing storage currency from INR.

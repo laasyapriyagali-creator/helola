@@ -3,6 +3,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Check, Crown, Sparkles, X } from "lucide-react";
 import { PLANS, PREMIUM_BENEFITS, PremiumPlan, subscribeToPlan, usePremium, planById, formatDate } from "@/lib/premium";
+import { useCurrency } from "@/lib/i18n";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -17,6 +18,7 @@ export function PremiumSheet({ open, onOpenChange }: Props) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { sub, isPremium, reload } = usePremium();
+  useCurrency(); // re-render on currency change
   const [selected, setSelected] = useState<PremiumPlan>("six_month");
   const [busy, setBusy] = useState(false);
 
