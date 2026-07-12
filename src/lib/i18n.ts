@@ -72,6 +72,65 @@ const REGION_TO_CURRENCY: Record<string, CurrencyCode> = {
 
 let cachedCurrency: CurrencyCode | null = null;
 const CURRENCY_OVERRIDE_KEY = "helola:preferredCurrency";
+const CURRENCY_CHANGE_EVENT = "helola:currency-changed";
+
+// IANA timezone → currency. This is a far more reliable signal of the user's
+// actual location than navigator.language (which reflects UI language and is
+// commonly "en-GB" on Android devices worldwide, including India).
+const TIMEZONE_TO_CURRENCY: Record<string, CurrencyCode> = {
+  // India
+  "Asia/Kolkata": "INR", "Asia/Calcutta": "INR",
+  // UK
+  "Europe/London": "GBP",
+  // US / Canada
+  "America/New_York": "USD", "America/Chicago": "USD", "America/Denver": "USD",
+  "America/Los_Angeles": "USD", "America/Phoenix": "USD", "America/Anchorage": "USD",
+  "America/Detroit": "USD", "America/Indiana/Indianapolis": "USD", "Pacific/Honolulu": "USD",
+  "America/Toronto": "CAD", "America/Vancouver": "CAD", "America/Edmonton": "CAD",
+  "America/Winnipeg": "CAD", "America/Halifax": "CAD",
+  // Asia-Pacific
+  "Asia/Tokyo": "JPY",
+  "Asia/Singapore": "SGD",
+  "Asia/Dubai": "AED",
+  "Asia/Hong_Kong": "HKD",
+  "Asia/Shanghai": "CNY", "Asia/Chongqing": "CNY", "Asia/Urumqi": "CNY", "Asia/Taipei": "CNY",
+  "Asia/Seoul": "KRW",
+  "Asia/Bangkok": "THB",
+  "Asia/Jakarta": "IDR", "Asia/Makassar": "IDR", "Asia/Jayapura": "IDR",
+  "Asia/Kuala_Lumpur": "MYR", "Asia/Kuching": "MYR",
+  "Asia/Istanbul": "TRY", "Europe/Istanbul": "TRY",
+  // Oceania
+  "Australia/Sydney": "AUD", "Australia/Melbourne": "AUD", "Australia/Brisbane": "AUD",
+  "Australia/Perth": "AUD", "Australia/Adelaide": "AUD",
+  "Pacific/Auckland": "NZD",
+  // Eurozone
+  "Europe/Berlin": "EUR", "Europe/Paris": "EUR", "Europe/Madrid": "EUR",
+  "Europe/Rome": "EUR", "Europe/Amsterdam": "EUR", "Europe/Brussels": "EUR",
+  "Europe/Vienna": "EUR", "Europe/Dublin": "EUR", "Europe/Lisbon": "EUR",
+  "Europe/Helsinki": "EUR", "Europe/Athens": "EUR", "Europe/Luxembourg": "EUR",
+  "Europe/Bratislava": "EUR", "Europe/Ljubljana": "EUR", "Europe/Tallinn": "EUR",
+  "Europe/Riga": "EUR", "Europe/Vilnius": "EUR", "Asia/Nicosia": "EUR",
+  "Europe/Malta": "EUR", "Europe/Zagreb": "EUR",
+  // Other EU / Nordics
+  "Europe/Stockholm": "SEK",
+  "Europe/Oslo": "NOK",
+  "Europe/Copenhagen": "DKK",
+  "Europe/Warsaw": "PLN",
+  "Europe/Zurich": "CHF",
+  // Latin America
+  "America/Sao_Paulo": "BRL", "America/Fortaleza": "BRL", "America/Recife": "BRL",
+  "America/Mexico_City": "MXN", "America/Monterrey": "MXN", "America/Cancun": "MXN",
+  // Africa
+  "Africa/Johannesburg": "ZAR",
+};
+
+function detectTimezoneCurrency(): CurrencyCode | undefined {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz && TIMEZONE_TO_CURRENCY[tz]) return TIMEZONE_TO_CURRENCY[tz];
+  } catch { /* ignore */ }
+  return undefined;
+}
 
 export function getPreferredCurrency(): CurrencyCode {
   if (cachedCurrency) return cachedCurrency;
@@ -83,8 +142,12 @@ export function getPreferredCurrency(): CurrencyCode {
     }
   } catch { /* ignore */ }
 
+  // Timezone is the most reliable geolocation proxy — try it first.
+  const byTz = detectTimezoneCurrency();
+  if (byTz) { cachedCurrency = byTz; return cachedCurrency; }
+
+  // Fall back to locale region (e.g. "en-IN" → IN → INR).
   const locale = getLocale();
-  // Extract region from BCP-47 tag (e.g. "en-US" → "US", "de" → undefined).
   const region = (() => {
     try { return new Intl.Locale(locale).maximize().region; } catch { return undefined; }
   })();
@@ -92,10 +155,69 @@ export function getPreferredCurrency(): CurrencyCode {
   return cachedCurrency;
 }
 
+function emitCurrencyChange() {
+  try {
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(CURRENCY_CHANGE_EVENT));
+  } catch { /* ignore */ }
+}
+
 export function setPreferredCurrency(code: CurrencyCode) {
   cachedCurrency = code;
   try { localStorage.setItem(CURRENCY_OVERRIDE_KEY, code); } catch { /* ignore */ }
+  emitCurrencyChange();
 }
+
+export function clearPreferredCurrency() {
+  cachedCurrency = null;
+  try { localStorage.removeItem(CURRENCY_OVERRIDE_KEY); } catch { /* ignore */ }
+  emitCurrencyChange();
+}
+
+export function isCurrencyOverridden(): boolean {
+  try { return !!localStorage.getItem(CURRENCY_OVERRIDE_KEY); } catch { return false; }
+}
+
+/** React hook: subscribes components to currency changes so price labels refresh. */
+export function useCurrency(): CurrencyCode {
+  // Lazy import of React to keep this file usable in non-React contexts.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const React = require("react") as typeof import("react");
+  const [currency, setCurrency] = React.useState<CurrencyCode>(() => getPreferredCurrency());
+  React.useEffect(() => {
+    const onChange = () => setCurrency(getPreferredCurrency());
+    window.addEventListener(CURRENCY_CHANGE_EVENT, onChange);
+    return () => window.removeEventListener(CURRENCY_CHANGE_EVENT, onChange);
+  }, []);
+  return currency;
+}
+
+export const SUPPORTED_CURRENCIES: { code: CurrencyCode; label: string; symbol: string }[] = [
+  { code: "INR", label: "Indian Rupee", symbol: "₹" },
+  { code: "USD", label: "US Dollar", symbol: "$" },
+  { code: "EUR", label: "Euro", symbol: "€" },
+  { code: "GBP", label: "British Pound", symbol: "£" },
+  { code: "AUD", label: "Australian Dollar", symbol: "A$" },
+  { code: "CAD", label: "Canadian Dollar", symbol: "C$" },
+  { code: "JPY", label: "Japanese Yen", symbol: "¥" },
+  { code: "SGD", label: "Singapore Dollar", symbol: "S$" },
+  { code: "AED", label: "UAE Dirham", symbol: "د.إ" },
+  { code: "CHF", label: "Swiss Franc", symbol: "Fr" },
+  { code: "CNY", label: "Chinese Yuan", symbol: "¥" },
+  { code: "HKD", label: "Hong Kong Dollar", symbol: "HK$" },
+  { code: "NZD", label: "New Zealand Dollar", symbol: "NZ$" },
+  { code: "ZAR", label: "South African Rand", symbol: "R" },
+  { code: "BRL", label: "Brazilian Real", symbol: "R$" },
+  { code: "MXN", label: "Mexican Peso", symbol: "$" },
+  { code: "THB", label: "Thai Baht", symbol: "฿" },
+  { code: "IDR", label: "Indonesian Rupiah", symbol: "Rp" },
+  { code: "MYR", label: "Malaysian Ringgit", symbol: "RM" },
+  { code: "KRW", label: "South Korean Won", symbol: "₩" },
+  { code: "TRY", label: "Turkish Lira", symbol: "₺" },
+  { code: "SEK", label: "Swedish Krona", symbol: "kr" },
+  { code: "NOK", label: "Norwegian Krone", symbol: "kr" },
+  { code: "DKK", label: "Danish Krone", symbol: "kr" },
+  { code: "PLN", label: "Polish Zloty", symbol: "zł" },
+];
 
 export function convertFromINR(amountInr: number, to: CurrencyCode = getPreferredCurrency()): number {
   return amountInr * (RATES[to] ?? RATES.USD);
