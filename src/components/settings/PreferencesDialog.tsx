@@ -99,6 +99,20 @@ export function PreferencesDialog({ open, onOpenChange, focusKey }: { open: bool
             <Input value={interestsText} onChange={(e) => setInterestsText(e.target.value)} placeholder="Adventure, beaches, food, culture..." />
           </div>
         </div>
+          <div className="space-y-1.5 rounded-xl border border-border p-3">
+            <Label>Display currency</Label>
+            <Select value={currency} onValueChange={onCurrencyChange}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value="auto">Auto — detect from my device</SelectItem>
+                {SUPPORTED_CURRENCIES.map(c => (
+                  <SelectItem key={c.code} value={c.code}>{c.symbol} {c.code} — {c.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">Prices across the app display in this currency.</p>
+          </div>
+        </div>
         <DialogFooter><Button onClick={save} disabled={busy} className="rounded-full">{busy && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}Save</Button></DialogFooter>
       </DialogContent>
     </Dialog>
