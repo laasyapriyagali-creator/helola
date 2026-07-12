@@ -96,7 +96,7 @@ const WIKI_REST = "https://en.wikipedia.org/api/rest_v1";
 // of destination photography — Wikipedia/Commons are used solely for text.
 import { supabase } from "@/integrations/supabase/client";
 import destinationPlaceholder from "@/assets/destination-placeholder.jpg";
-const UNSPLASH_FN = "unsplash-search";
+const UNSPLASH_FN = "destination-photo-search";
 
 export const DEFAULT_DESTINATION_IMAGE: PlaceImage = {
   url: destinationPlaceholder,
@@ -131,11 +131,11 @@ function saveSet(k: string, s: Set<string>) {
 }
 
 const summaryTextCache = loadSS<string | null>("helola.placeExtract.v5");
-const summaryImageCache = loadSS<{ image?: string; thumb?: string } | null>("helola.placeSummaryImage.v3");
-const imagesCache = loadSS<PlaceImage[]>("helola.placeImages.v6");
+const summaryImageCache = loadSS<{ image?: string; thumb?: string } | null>("helola.placeSummaryImage.v4");
+const imagesCache = loadSS<PlaceImage[]>("helola.placeImages.v7");
 const searchCache = new Map<string, PlaceSuggestion[]>();
 // Global dedupe so two different destinations never get the same photo.
-const usedImageIds = loadSet("helola.usedImg.v6");
+const usedImageIds = loadSet("helola.usedImg.v7");
 
 export async function searchPlaces(query: string, limit = 6): Promise<PlaceSuggestion[]> {
   const q = query.trim();
@@ -444,7 +444,7 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
 
   // Track usage globally so other destinations skip these ids.
   for (const p of ordered.slice(0, limit)) usedImageIds.add(p.id);
-  saveSet("helola.usedImg.v6", usedImageIds);
+  saveSet("helola.usedImg.v7", usedImageIds);
 
   // If Unsplash returned nothing suitable, show the bundled scenic
   // placeholder rather than an unrelated Wikipedia image.
@@ -454,7 +454,7 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
 
   if (unsplashImages.length > 0) {
     imagesCache.set(cacheKey, final);
-    saveSS("helola.placeImages.v6", imagesCache);
+    saveSS("helola.placeImages.v7", imagesCache);
   }
   return final;
 }
