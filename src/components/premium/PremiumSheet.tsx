@@ -3,6 +3,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Check, Crown, Sparkles, X } from "lucide-react";
 import { PLANS, PREMIUM_BENEFITS, PremiumPlan, subscribeToPlan, usePremium, planById, formatDate } from "@/lib/premium";
+import { useCurrency } from "@/lib/i18n";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
