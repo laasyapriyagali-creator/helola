@@ -162,13 +162,24 @@ export default function PremiumSettings() {
 
       {/* Benefits */}
       <Section title="Your Premium benefits" icon={<Sparkles className="h-4 w-4" />}>
-        <ul className="space-y-3 py-2">
+        <ul className="grid gap-2.5 py-2">
           {PREMIUM_BENEFITS.map((b) => (
-            <li key={b.title} className="flex gap-3">
-              <span className="mt-0.5 text-xl">{b.icon}</span>
-              <div>
-                <p className="text-sm font-semibold">{b.title}</p>
-                <p className="text-xs text-muted-foreground">{b.desc}</p>
+            <li
+              key={b.title}
+              className="group rounded-2xl border border-primary/10 bg-gradient-to-br from-primary/[0.04] to-transparent p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-elegant active:scale-[0.99]"
+            >
+              <div className="flex gap-3.5">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-300/30 to-primary/10 text-2xl ring-1 ring-amber-300/30 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[-4deg]">
+                  {b.icon}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-display text-[15px] font-semibold leading-tight text-foreground">
+                    {b.title}
+                  </p>
+                  <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted-foreground">
+                    {b.desc}
+                  </p>
+                </div>
               </div>
             </li>
           ))}

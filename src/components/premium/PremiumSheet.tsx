@@ -118,17 +118,29 @@ export function PremiumSheet({ open, onOpenChange }: Props) {
         </div>
 
         {/* Benefits */}
-        <div className="mt-6 px-6">
-          <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200/90">
+        <div className="mt-8 px-4">
+          <p className="mb-4 flex items-center justify-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-200/90">
             <Sparkles className="h-3.5 w-3.5" /> Every plan includes
           </p>
-          <ul className="space-y-3">
-            {PREMIUM_BENEFITS.map((b) => (
-              <li key={b.title} className="flex gap-3">
-                <span className="mt-0.5 text-xl">{b.icon}</span>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold">{b.title}</p>
-                  <p className="text-xs text-primary-foreground/70">{b.desc}</p>
+          <ul className="space-y-2.5">
+            {PREMIUM_BENEFITS.map((b, i) => (
+              <li
+                key={b.title}
+                className="group rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.08] to-white/[0.02] p-4 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-300/40 hover:bg-white/[0.1] hover:shadow-[0_8px_24px_-8px_rgba(252,211,77,0.25)] active:scale-[0.99]"
+                style={{ animationDelay: `${i * 40}ms` }}
+              >
+                <div className="flex gap-3.5">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-300/25 to-amber-500/10 text-2xl ring-1 ring-amber-300/20 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[-4deg]">
+                    {b.icon}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-display text-[15px] font-semibold leading-tight text-amber-50">
+                      {b.title}
+                    </p>
+                    <p className="mt-1.5 text-[12.5px] leading-relaxed text-primary-foreground/75">
+                      {b.desc}
+                    </p>
+                  </div>
                 </div>
               </li>
             ))}
