@@ -278,14 +278,16 @@ interface UnsplashPhoto {
   urls: { full: string; regular: string; small: string; thumb: string };
   links: { html: string };
   user?: { name: string };
+  tags?: { title: string }[];
 }
 
 interface WikiSummary {
   extract: string;
-  thumb?: string;
-  image?: string;
 }
 
+// Wikipedia is used ONLY for text summaries. Never surface Wikipedia
+// thumbnails as destination imagery — they are frequently maps, flags,
+// booth/exhibition photos, or other non-travel content.
 async function fetchWikiSummary(name: string): Promise<WikiSummary> {
   for (const title of titleCandidates(name)) {
     try {
@@ -293,9 +295,7 @@ async function fetchWikiSummary(name: string): Promise<WikiSummary> {
       if (!r || !r.ok) continue;
       const d = await r.json();
       if (d?.type === "disambiguation") continue;
-      const thumb = isUsefulPhotoUrl(d?.thumbnail?.source) ? d.thumbnail.source : undefined;
-      const image = isUsefulPhotoUrl(d?.originalimage?.source) ? d.originalimage.source : thumb;
-      return { extract: d?.extract || "", thumb, image };
+      return { extract: d?.extract || "" };
     } catch { /* try next title */ }
   }
   return { extract: "" };
@@ -303,7 +303,6 @@ async function fetchWikiSummary(name: string): Promise<WikiSummary> {
 
 async function unsplashSearch(query: string, perPage = 12, orientation: "landscape" | "squarish" = "landscape"): Promise<UnsplashPhoto[]> {
   try {
-    const { supabase } = await import("@/integrations/supabase/client");
     const { data, error } = await supabase.functions.invoke(UNSPLASH_FN, {
       body: { query, per_page: perPage, orientation },
     });
@@ -312,6 +311,66 @@ async function unsplashSearch(query: string, perPage = 12, orientation: "landsca
   } catch {
     return [];
   }
+}
+
+// Tokens that indicate the photo is NOT a real travel/destination shot.
+const REJECT_TOKENS = [
+  "booth", "expo", "exposition", "exhibition", "exhibit", "convention",
+  "conference", "trade show", "tradeshow", "fair stall", "stall", "kiosk",
+  "showroom", "indoor event", "poster", "brochure", "flyer", "leaflet",
+  "document", "paperwork", "logo", "signage", "billboard", "screenshot",
+  "map", "atlas", "diagram", "chart", "infographic",
+  "portrait", "headshot", "selfie", "closeup", "close-up", "close up",
+  "menu", "product shot", "mockup", "mock-up", "illustration", "drawing",
+  "cartoon", "vector", "3d render", "render", "clipart",
+];
+
+const PREFER_TOKENS = [
+  "beach", "coast", "coastline", "shore", "ocean", "sea", "island",
+  "mountain", "mountains", "valley", "hill", "hills", "forest", "lake",
+  "river", "waterfall", "desert", "dune", "sunset", "sunrise", "sky",
+  "skyline", "cityscape", "aerial", "landscape", "panorama", "vista",
+  "temple", "palace", "fort", "monument", "harbor", "harbour", "bay",
+  "street", "architecture", "cathedral", "mosque", "old town", "square",
+];
+
+function isRelevantTravelPhoto(p: UnsplashPhoto, placeName: string): boolean {
+  const haystack = [
+    p.description || "",
+    p.alt_description || "",
+    ...(p.tags || []).map(t => t.title || ""),
+  ].join(" ").toLowerCase();
+
+  // Empty metadata → we can't verify, but Unsplash's "high" content_filter
+  // is already applied server-side. Allow it through.
+  if (!haystack.trim()) return true;
+
+  for (const bad of REJECT_TOKENS) {
+    if (haystack.includes(bad)) return false;
+  }
+
+  // Extra guard: shots that read as pure people/food closeups with no
+  // destination anchor are almost never good hero images.
+  const placeKey = cleanPlaceName(placeName).toLowerCase();
+  const mentionsPlace = placeKey && haystack.includes(placeKey);
+  const mentionsPreferred = PREFER_TOKENS.some(t => haystack.includes(t));
+  const looksLikePerson = /\b(man|woman|boy|girl|kid|baby|face|smiling|posing|wearing)\b/.test(haystack);
+  if (looksLikePerson && !mentionsPlace && !mentionsPreferred) return false;
+
+  return true;
+}
+
+function scorePhoto(p: UnsplashPhoto, placeName: string): number {
+  const haystack = [
+    p.description || "",
+    p.alt_description || "",
+    ...(p.tags || []).map(t => t.title || ""),
+  ].join(" ").toLowerCase();
+  const placeKey = cleanPlaceName(placeName).toLowerCase();
+  let score = 0;
+  if (placeKey && haystack.includes(placeKey)) score += 5;
+  for (const t of PREFER_TOKENS) if (haystack.includes(t)) score += 1;
+  return score;
 }
 
 function toPlaceImage(p: UnsplashPhoto, place: string): PlaceImage {
@@ -323,75 +382,24 @@ function toPlaceImage(p: UnsplashPhoto, place: string): PlaceImage {
   };
 }
 
-async function commonsImageSearch(query: string, limit = 12): Promise<PlaceImage[]> {
-  const params = new URLSearchParams({
-    origin: "*",
-    action: "query",
-    generator: "search",
-    gsrsearch: query,
-    gsrnamespace: "6",
-    gsrlimit: String(Math.min(Math.max(limit * 2, 6), 30)),
-    prop: "imageinfo",
-    iiprop: "url|mime|extmetadata",
-    iiurlwidth: "900",
-    format: "json",
-  });
-  const res = await safeFetch(`https://commons.wikimedia.org/w/api.php?${params.toString()}`, {}, 6000);
-  if (!res || !res.ok) return [];
-  try {
-    const data = await res.json();
-    const pages = Object.values(data?.query?.pages || {}) as any[];
-    return pages
-      .map((p) => {
-        const info = p?.imageinfo?.[0];
-        const url = info?.thumburl || info?.url;
-        const full = info?.url || url;
-        const mime = String(info?.mime || "").toLowerCase();
-        if (!url || !mime.startsWith("image/") || mime.includes("svg") || !isUsefulPhotoUrl(url)) return null;
-        const title = String(p?.title || query).replace(/^File:/, "").replace(/\.[^.]+$/, "").replace(/_/g, " ");
-        return {
-          url: full,
-          thumb: url,
-          source: info?.descriptionurl || full,
-          title,
-        } as PlaceImage;
-      })
-      .filter(Boolean)
-      .slice(0, limit) as PlaceImage[];
-  } catch { return []; }
-}
-
-function mergeImages(...groups: PlaceImage[][]): PlaceImage[] {
-  const seen = new Set<string>();
-  const merged: PlaceImage[] = [];
-  for (const group of groups) {
-    for (const img of group) {
-      const key = img.url || img.thumb;
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      merged.push(img);
-    }
-  }
-  return merged;
-}
-
 export async function getPlaceSummary(name: string): Promise<{ extract: string; thumb?: string; image?: string } | null> {
   let extract = summaryTextCache.get(name) || "";
-  let imageMeta = summaryImageCache.get(name) || null;
 
-  if (!summaryTextCache.has(name) || !imageMeta?.image) {
+  if (!summaryTextCache.has(name)) {
     const wiki = await fetchWikiSummary(name);
     extract = wiki.extract || extract;
-    imageMeta = { image: wiki.image, thumb: wiki.thumb };
     summaryTextCache.set(name, extract || null);
-    summaryImageCache.set(name, imageMeta);
-    saveSS("helola.placeExtract.v4", summaryTextCache);
-    saveSS("helola.placeSummaryImage.v1", summaryImageCache);
+    saveSS("helola.placeExtract.v5", summaryTextCache);
   }
 
+  // Hero image comes from the Unsplash-only imagesCache, never Wikipedia.
   const cachedImgs = imagesCache.get(`${cleanPlaceName(name).toLowerCase()}::6`) || imagesCache.get(`${cleanPlaceName(name).toLowerCase()}::12`);
   const hero = cachedImgs?.[0];
-  return { extract, image: hero?.url || imageMeta?.image, thumb: hero?.thumb || imageMeta?.thumb };
+  return {
+    extract,
+    image: hero?.url || DEFAULT_DESTINATION_IMAGE.url,
+    thumb: hero?.thumb || DEFAULT_DESTINATION_IMAGE.thumb,
+  };
 }
 
 export async function getPlaceImages(name: string, limit = 12): Promise<PlaceImage[]> {
@@ -412,18 +420,28 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
   for (const p of pool) if (!byId.has(p.id)) byId.set(p.id, p);
   pool = Array.from(byId.values());
 
-  // Prefer photos NOT already used by another destination.
-  const fresh = pool.filter(p => !usedImageIds.has(p.id));
-  const reused = pool.filter(p => usedImageIds.has(p.id));
-  let ordered = [...shuffle(fresh, seed), ...shuffle(reused, seed ^ 0x9e3779b9)];
+  // Reject exhibition/booth/logo/map/etc. shots.
+  pool = pool.filter(p => isRelevantTravelPhoto(p, name));
 
-  // Fallback chain if pool is empty.
+  // Sort by relevance score (place name + travel keywords) but keep a
+  // deterministic seeded shuffle within equal scores for variety.
+  const shuffled = shuffle(pool, seed);
+  shuffled.sort((a, b) => scorePhoto(b, name) - scorePhoto(a, name));
+
+  // Prefer photos NOT already used by another destination.
+  const fresh = shuffled.filter(p => !usedImageIds.has(p.id));
+  const reused = shuffled.filter(p => usedImageIds.has(p.id));
+  let ordered = [...fresh, ...reused];
+
+  // Fallback chains — each still runs through the relevance filter.
   if (ordered.length === 0) {
-    const fb = await unsplashSearch(`${cleaned} travel`, 12);
+    const fb = (await unsplashSearch(`${cleaned} travel landscape`, 12))
+      .filter(p => isRelevantTravelPhoto(p, name));
     ordered = shuffle(fb, seed);
   }
   if (ordered.length === 0) {
-    const fb = await unsplashSearch("travel destination landscape", 12);
+    const fb = (await unsplashSearch(`${cleaned} city`, 12))
+      .filter(p => isRelevantTravelPhoto(p, name));
     ordered = shuffle(fb, seed);
   }
 
@@ -431,28 +449,17 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
 
   // Track usage globally so other destinations skip these ids.
   for (const p of ordered.slice(0, limit)) usedImageIds.add(p.id);
-  saveSet("helola.usedImg.v4", usedImageIds);
+  saveSet("helola.usedImg.v5", usedImageIds);
 
-  const commonsBatches = unsplashImages.length >= limit ? [] : await Promise.all(
-    queries.slice(0, 3).map(q => commonsImageSearch(q, limit).catch(() => [])),
-  );
-  const wiki = await fetchWikiSummary(name);
-  const wikiImage = wiki.image ? [{
-    url: wiki.image,
-    thumb: wiki.thumb || wiki.image,
-    source: `https://en.wikipedia.org/wiki/${encodeURIComponent(titleCandidates(name)[0] || cleaned)}`,
-    title: `${cleaned} photograph`,
-  } as PlaceImage] : [];
+  // If Unsplash returned nothing suitable, show the bundled scenic
+  // placeholder rather than an unrelated Wikipedia image.
+  const final = unsplashImages.length > 0
+    ? unsplashImages
+    : [DEFAULT_DESTINATION_IMAGE];
 
-  const genericCommons = unsplashImages.length || commonsBatches.flat().length || wikiImage.length
-    ? []
-    : await commonsImageSearch(`${cleaned} travel landscape`, limit).catch(() => []);
-
-  const final = mergeImages(unsplashImages, commonsBatches.flat(), wikiImage, genericCommons).slice(0, limit);
-
-  if (final.length) {
+  if (unsplashImages.length > 0) {
     imagesCache.set(cacheKey, final);
-    saveSS("helola.placeImages.v4", imagesCache);
+    saveSS("helola.placeImages.v5", imagesCache);
   }
   return final;
 }
