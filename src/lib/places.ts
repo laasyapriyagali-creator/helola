@@ -259,8 +259,26 @@ interface UnsplashPhoto {
 }
 
 async function unsplashSearch(query: string, perPage = 12, orientation: "landscape" | "squarish" = "landscape"): Promise<UnsplashPhoto[]> {
-  const url = `${UNSPLASH_API}/search/photos?query=${encodeURIComponent(query)}&per_page=${perPage}&orientation=${orientation}&content_filter=high&client_id=${UNSPLASH_ACCESS_KEY}`;
-  const res = await safeFetch(url, {}, 7000);
+  try {
+    const { data, error } = await supabase.functions.invoke(UNSPLASH_FN, {
+      body: null,
+      method: "GET",
+      // Pass query params via headers-safe URL: supabase-js appends query when using `?` in name
+    } as any);
+    // supabase-js v2 doesn't expose query params directly for invoke; fall through to fetch below.
+    if (!error && data && Array.isArray((data as any).results)) {
+      return (data as any).results as UnsplashPhoto[];
+    }
+  } catch { /* fall through */ }
+
+  // Direct call to the edge function URL with query params.
+  const base = (import.meta.env.VITE_SUPABASE_URL as string | undefined);
+  if (!base) return [];
+  const url = `${base}/functions/v1/${UNSPLASH_FN}?query=${encodeURIComponent(query)}&per_page=${perPage}&orientation=${orientation}`;
+  const anon = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
+  const res = await safeFetch(url, {
+    headers: anon ? { Authorization: `Bearer ${anon}`, apikey: anon } : {},
+  }, 7000);
   if (!res || !res.ok) return [];
   try {
     const data = await res.json();
