@@ -198,11 +198,6 @@ function titleCandidates(name: string): string[] {
   return Array.from(new Set([full, first].filter(Boolean)));
 }
 
-function isUsefulPhotoUrl(url?: string): url is string {
-  if (!url) return false;
-  const lower = url.toLowerCase();
-  return !lower.includes(".svg") && !lower.includes("flag_of_") && !lower.includes("_map") && !lower.includes("map_");
-}
 
 // Deterministic seed so the random rotation is stable per-session-per-place
 // but different across destinations.
