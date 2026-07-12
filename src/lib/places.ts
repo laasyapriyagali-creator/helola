@@ -86,6 +86,7 @@ export interface PlaceImage {
   thumb: string;
   source: string;
   title: string;
+  unsplashId?: string;
 }
 
 const NOMINATIM = "https://nominatim.openstreetmap.org";
@@ -95,17 +96,9 @@ const WIKI_REST = "https://en.wikipedia.org/api/rest_v1";
 // access key never ships in the client bundle. Unsplash is the ONLY source
 // of destination photography — Wikipedia/Commons are used solely for text.
 import { supabase } from "@/integrations/supabase/client";
-import destinationPlaceholder from "@/assets/destination-placeholder.jpg";
 const FUNCTIONS_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 const UNSPLASH_FN = "unsplash-search";
 const UNSPLASH_FALLBACK_FN = "destination-photo-search";
-
-export const DEFAULT_DESTINATION_IMAGE: PlaceImage = {
-  url: destinationPlaceholder,
-  thumb: destinationPlaceholder,
-  source: "",
-  title: "Scenic travel destination",
-};
 
 /** Fetch wrapper with a strict timeout — prevents hung UI when a third party stalls. */
 async function safeFetch(url: string, opts: RequestInit = {}, timeoutMs = 6000): Promise<Response | null> {
@@ -133,11 +126,12 @@ function saveSet(k: string, s: Set<string>) {
 }
 
 const summaryTextCache = loadSS<string | null>("helola.placeExtract.v5");
-const summaryImageCache = loadSS<{ image?: string; thumb?: string } | null>("helola.placeSummaryImage.v4");
-const imagesCache = loadSS<PlaceImage[]>("helola.placeImages.v10");
+const IMAGE_CACHE_KEY = "helola.placeImages.v11";
+const USED_IMAGE_CACHE_KEY = "helola.usedImg.v11";
+const imagesCache = loadSS<PlaceImage[]>(IMAGE_CACHE_KEY);
 const searchCache = new Map<string, PlaceSuggestion[]>();
 // Global dedupe so two different destinations never get the same photo.
-const usedImageIds = loadSet("helola.usedImg.v10");
+const selectedImageDestinations = loadSS<string>(USED_IMAGE_CACHE_KEY);
 
 const photoQueue: Array<() => void> = [];
 let activePhotoRequests = 0;
@@ -305,6 +299,15 @@ interface ScoredPhoto {
   score: number;
   reason: string;
   query: string;
+  functionName: string;
+  usedFallbackFunction: boolean;
+}
+
+interface UnsplashSearchResponse {
+  photos: UnsplashPhoto[];
+  functionName: string;
+  usedFallbackFunction: boolean;
+  fallbackReason?: string;
 }
 
 interface WikiSummary {
@@ -327,12 +330,16 @@ async function fetchWikiSummary(name: string): Promise<WikiSummary> {
   return { extract: "" };
 }
 
-async function unsplashSearch(query: string, perPage = 12, orientation: "landscape" | "squarish" = "landscape"): Promise<UnsplashPhoto[]> {
-  if (Date.now() < photoServiceDisabledUntil) return [];
+async function unsplashSearch(destinationName: string, query: string, perPage = 12, orientation: "landscape" | "squarish" = "landscape"): Promise<UnsplashSearchResponse> {
+  if (Date.now() < photoServiceDisabledUntil) {
+    const reason = `photo service cooldown active until ${new Date(photoServiceDisabledUntil).toISOString()}`;
+    console.warn(`[destination-photo] destination="${destinationName}" query="${query}" fallback=true reason="${reason}"`);
+    return { photos: [], functionName: UNSPLASH_FN, usedFallbackFunction: false, fallbackReason: reason };
+  }
 
   return queuePhotoRequest(async () => {
     try {
-      console.info(`[destination-photo] Unsplash search query: "${query}"`);
+      console.info(`[destination-photo] destination="${destinationName}" searchQuery="${query}" cache=false fallback=false function="${UNSPLASH_FN}"`);
       const session = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
       const token = session.data.session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const requestInit: RequestInit = {
@@ -345,34 +352,46 @@ async function unsplashSearch(query: string, perPage = 12, orientation: "landsca
         body: JSON.stringify({ query, per_page: perPage, orientation }),
       };
 
+      let functionName = UNSPLASH_FN;
+      let usedFallbackFunction = false;
       let res = await fetch(`${FUNCTIONS_BASE_URL}/${UNSPLASH_FN}`, requestInit);
       if (res.status === 404) {
-        console.warn(`[destination-photo] ${UNSPLASH_FN} returned 404; retrying ${UNSPLASH_FALLBACK_FN}`);
+        usedFallbackFunction = true;
+        functionName = UNSPLASH_FALLBACK_FN;
+        console.warn(`[destination-photo] destination="${destinationName}" query="${query}" fallback=true reason="${UNSPLASH_FN} returned 404; retrying ${UNSPLASH_FALLBACK_FN}"`);
         res = await fetch(`${FUNCTIONS_BASE_URL}/${UNSPLASH_FALLBACK_FN}`, requestInit);
       }
       if (!res.ok) {
+        const reason = `${functionName} returned HTTP ${res.status}`;
         if (res.status === 429 || res.status >= 500) {
           photoServiceDisabledUntil = Date.now() + PHOTO_SERVICE_TRANSIENT_COOLDOWN_MS;
         } else if (res.status === 401 || res.status === 403 || res.status === 404) {
           photoServiceDisabledUntil = Date.now() + PHOTO_SERVICE_TRANSIENT_COOLDOWN_MS;
         }
-        return [];
+        console.warn(`[destination-photo] destination="${destinationName}" query="${query}" fallback=true reason="${reason}"`);
+        return { photos: [], functionName, usedFallbackFunction, fallbackReason: reason };
       }
       const data = await res.json().catch(() => null);
       if (data?.fallback) {
+        const reason = data?.error || `${functionName} requested fallback`;
         photoServiceDisabledUntil = Date.now() + PHOTO_SERVICE_TRANSIENT_COOLDOWN_MS;
-        return [];
+        console.warn(`[destination-photo] destination="${destinationName}" query="${query}" fallback=true reason="${reason}"`);
+        return { photos: [], functionName, usedFallbackFunction, fallbackReason: reason };
       }
       if (data?.error || data?.status === 401 || data?.status === 403 || data?.status === 429) {
+        const reason = data?.error || `${functionName} returned status ${data?.status}`;
         photoServiceDisabledUntil = Date.now() + PHOTO_SERVICE_COOLDOWN_MS;
-        return [];
+        console.warn(`[destination-photo] destination="${destinationName}" query="${query}" fallback=true reason="${reason}"`);
+        return { photos: [], functionName, usedFallbackFunction, fallbackReason: reason };
       }
       const results = (data?.results || []) as UnsplashPhoto[];
-      console.info(`[destination-photo] Unsplash returned ${results.length} result(s) for "${query}"`);
-      return results;
-    } catch {
+      console.info(`[destination-photo] destination="${destinationName}" query="${query}" function="${functionName}" fallback=${usedFallbackFunction} results=${results.length}`);
+      return { photos: results, functionName, usedFallbackFunction };
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "network/client exception while invoking photo function";
       photoServiceDisabledUntil = Date.now() + PHOTO_SERVICE_TRANSIENT_COOLDOWN_MS;
-      return [];
+      console.warn(`[destination-photo] destination="${destinationName}" query="${query}" fallback=true reason="${reason}"`);
+      return { photos: [], functionName: UNSPLASH_FN, usedFallbackFunction: false, fallbackReason: reason };
     }
   });
 }
@@ -465,6 +484,7 @@ function toPlaceImage(p: UnsplashPhoto, place: string): PlaceImage {
     thumb: p.urls.small,
     source: p.links.html,
     title: p.alt_description || p.description || place,
+    unsplashId: p.id,
   };
 }
 
@@ -479,12 +499,13 @@ export async function getPlaceSummary(name: string): Promise<{ extract: string; 
   }
 
   // Hero image comes from the Unsplash-only imagesCache, never Wikipedia.
-  const cachedImgs = imagesCache.get(`${cleanPlaceName(name).toLowerCase()}::6`) || imagesCache.get(`${cleanPlaceName(name).toLowerCase()}::12`);
+  const profile = getDestinationPhotoProfile(name);
+  const cachedImgs = imagesCache.get(`${profile.exact.toLowerCase()}::6`) || imagesCache.get(`${profile.exact.toLowerCase()}::12`) || imagesCache.get(`${profile.exact.toLowerCase()}::1`);
   const hero = cachedImgs?.[0];
   return {
     extract,
-    image: hero?.url || DEFAULT_DESTINATION_IMAGE.url,
-    thumb: hero?.thumb || DEFAULT_DESTINATION_IMAGE.thumb,
+    image: hero?.url,
+    thumb: hero?.thumb,
   };
 }
 
@@ -492,57 +513,68 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
   const profile = getDestinationPhotoProfile(name);
   const cacheKey = `${profile.exact.toLowerCase()}::${limit}`;
   const cached = imagesCache.get(cacheKey);
-  if (cached?.length && cached[0]?.url !== DEFAULT_DESTINATION_IMAGE.url) return cached;
+  if (cached?.length) {
+    const first = cached[0];
+    console.info(`[destination-photo] selected for ${profile.exact}: cache=true fallback=false query="cache:${cacheKey}" id=${first.unsplashId || first.source || first.url} url=${first.url} reason="served from unique destination cache key ${cacheKey}"`);
+    return cached;
+  }
 
   const queries = buildQueriesFor(name);
   const seed = seedFromString(profile.exact.toLowerCase());
   const byId = new Map<string, ScoredPhoto>();
 
   for (const query of queries) {
-    const results = await unsplashSearch(query, 30);
-    for (const photo of results) {
+    const { photos, functionName, usedFallbackFunction, fallbackReason } = await unsplashSearch(profile.exact, query, 30);
+    if (fallbackReason) {
+      console.warn(`[destination-photo] ${profile.exact} query="${query}" produced no images because fallback was triggered: ${fallbackReason}`);
+    }
+    for (const photo of photos) {
       const evaluated = evaluateTravelPhoto(photo, name, query);
       console.info(`[destination-photo] ${profile.exact} candidate ${photo.id}: ${evaluated.reason}`);
       if (!evaluated.accepted) continue;
       const existing = byId.get(photo.id);
       if (!existing || evaluated.score > existing.score) {
-        byId.set(photo.id, { photo, score: evaluated.score, reason: evaluated.reason, query });
+        byId.set(photo.id, { photo, score: evaluated.score, reason: evaluated.reason, query, functionName, usedFallbackFunction });
       }
     }
     if (byId.size >= Math.min(limit, 6)) break;
   }
 
-  const shuffled = shuffle(Array.from(byId.values()), seed);
+  const crossDestinationFiltered = Array.from(byId.values()).filter((candidate) => {
+    const usedBy = selectedImageDestinations.get(candidate.photo.id);
+    if (!usedBy || usedBy === profile.exact) return true;
+    console.warn(`[destination-photo] ${profile.exact} candidate ${candidate.photo.id}: rejected because it is already selected for ${usedBy}`);
+    return false;
+  });
+  const shuffled = shuffle(crossDestinationFiltered, seed);
   shuffled.sort((a, b) => {
-    const usagePenaltyA = usedImageIds.has(a.photo.id) ? -50 : 0;
-    const usagePenaltyB = usedImageIds.has(b.photo.id) ? -50 : 0;
+    const usagePenaltyA = selectedImageDestinations.get(a.photo.id) === profile.exact ? -5 : 0;
+    const usagePenaltyB = selectedImageDestinations.get(b.photo.id) === profile.exact ? -5 : 0;
     return (b.score + usagePenaltyB) - (a.score + usagePenaltyA);
   });
 
   const ordered = shuffled.map(s => s.photo);
   const selected = shuffled[0];
   if (selected) {
-    console.info(`[destination-photo] selected for ${profile.exact}: query="${selected.query}", id=${selected.photo.id}, url=${selected.photo.urls.regular}, reason=${selected.reason}`);
+    console.info(`[destination-photo] selected for ${profile.exact}: cache=false fallback=${selected.usedFallbackFunction} query="${selected.query}", id=${selected.photo.id}, url=${selected.photo.urls.regular}, function="${selected.functionName}", reason=${selected.reason}`);
   }
 
   const unsplashImages = ordered.slice(0, limit).map(p => toPlaceImage(p, profile.exact));
 
   // Track usage globally so other destinations skip these ids.
-  for (const p of ordered.slice(0, limit)) usedImageIds.add(p.id);
-  saveSet("helola.usedImg.v10", usedImageIds);
+  for (const p of ordered.slice(0, limit)) selectedImageDestinations.set(p.id, profile.exact);
+  saveSS(USED_IMAGE_CACHE_KEY, selectedImageDestinations);
 
-  // If Unsplash returned nothing suitable, show the bundled scenic
-  // placeholder rather than an unrelated Wikipedia image.
   if (unsplashImages.length > 0) {
     imagesCache.set(cacheKey, unsplashImages);
-    saveSS("helola.placeImages.v10", imagesCache);
+    saveSS(IMAGE_CACHE_KEY, imagesCache);
     return unsplashImages;
   }
 
-  // Do not cache the placeholder. If the API key was just replaced or the
-  // photo service had a temporary hiccup, the next load should try again.
-  console.info(`[destination-photo] selected placeholder for ${profile.exact}: no destination-appropriate Unsplash Search Photos result found`);
-  return [DEFAULT_DESTINATION_IMAGE];
+  // Do not cache empty results. If the API key was just replaced, the function
+  // was redeployed, or Unsplash had a temporary hiccup, the next load should try again.
+  console.warn(`[destination-photo] no image selected for ${profile.exact}: cache=false fallback=false query="${queries.join(" | ")}" id=none url=none reason="no destination-appropriate Unsplash Search Photos result found"`);
+  return [];
 }
 
 

@@ -83,6 +83,7 @@ const App = () => (
                 <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/chats/:tripId" element={<AppShell><ChatRoom /></AppShell>} />
                 <Route path="/" element={<AppShell><Index /></AppShell>} />
+                <Route path="/index" element={<AppShell><Index /></AppShell>} />
                 <Route path="/trips" element={<AppShell><MyTrips /></AppShell>} />
                 <Route path="/trips/new" element={<AppShell><CreateTrip /></AppShell>} />
                 <Route path="/trips/:id" element={<AppShell><TripDetails /></AppShell>} />
