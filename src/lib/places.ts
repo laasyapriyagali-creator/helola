@@ -88,6 +88,9 @@ export interface PlaceImage {
   title: string;
 }
 
+const NOMINATIM = "https://nominatim.openstreetmap.org";
+const WIKI_REST = "https://en.wikipedia.org/api/rest_v1";
+
 // Unsplash requests are proxied through a Lovable Cloud edge function so the
 // access key never ships in the client bundle.
 import { supabase } from "@/integrations/supabase/client";
