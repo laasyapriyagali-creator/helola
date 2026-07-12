@@ -12,7 +12,7 @@ import { TripImage } from "@/components/TripImage";
 import { PremiumInviteCard } from "@/components/premium/PremiumInviteCard";
 import { PlaceSearchInput } from "@/components/PlaceSearchInput";
 import type { PlaceSuggestion } from "@/lib/places";
-import helolaMapHeader from "@/assets/helola-map-header.jpg";
+import helolaMapHeader from "@/assets/helola-map-header.png.asset.json";
 import { formatPriceFromINR } from "@/lib/i18n";
 
 interface Trip {
