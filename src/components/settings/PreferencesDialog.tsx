@@ -29,6 +29,14 @@ export function PreferencesDialog({ open, onOpenChange, focusKey }: { open: bool
   const [budgetMax, setBudgetMax] = useState<string>("");
   const [interestsText, setInterestsText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [currency, setCurrency] = useState<CurrencyCode | "auto">(
+    isCurrencyOverridden() ? getPreferredCurrency() : "auto"
+  );
+
+  const onCurrencyChange = (v: string) => {
+    if (v === "auto") { clearPreferredCurrency(); setCurrency("auto"); }
+    else { setPreferredCurrency(v as CurrencyCode); setCurrency(v as CurrencyCode); }
+  };
 
   useEffect(() => {
     if (!open || !user) return;
