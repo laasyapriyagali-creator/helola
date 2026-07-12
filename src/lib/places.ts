@@ -97,7 +97,7 @@ const WIKI_REST = "https://en.wikipedia.org/api/rest_v1";
 import { supabase } from "@/integrations/supabase/client";
 import destinationPlaceholder from "@/assets/destination-placeholder.jpg";
 const FUNCTIONS_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
-const UNSPLASH_FN = "destination-photo-search";
+const UNSPLASH_FN = "unsplash-search";
 
 export const DEFAULT_DESTINATION_IMAGE: PlaceImage = {
   url: destinationPlaceholder,
