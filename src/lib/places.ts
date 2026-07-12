@@ -96,6 +96,7 @@ const WIKI_REST = "https://en.wikipedia.org/api/rest_v1";
 // of destination photography — Wikipedia/Commons are used solely for text.
 import { supabase } from "@/integrations/supabase/client";
 import destinationPlaceholder from "@/assets/destination-placeholder.jpg";
+const FUNCTIONS_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 const UNSPLASH_FN = "destination-photo-search";
 
 export const DEFAULT_DESTINATION_IMAGE: PlaceImage = {
@@ -316,10 +317,20 @@ async function fetchWikiSummary(name: string): Promise<WikiSummary> {
 async function unsplashSearch(query: string, perPage = 12, orientation: "landscape" | "squarish" = "landscape"): Promise<UnsplashPhoto[]> {
   return queuePhotoRequest(async () => {
     try {
-      const { data, error } = await supabase.functions.invoke(UNSPLASH_FN, {
-        body: { query, per_page: perPage, orientation },
+      const session = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+      const token = session.data.session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const res = await fetch(`${FUNCTIONS_BASE_URL}/${UNSPLASH_FN}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ query, per_page: perPage, orientation }),
       });
-      if (error || data?.fallback) return [];
+      if (!res.ok) return [];
+      const data = await res.json().catch(() => null);
+      if (data?.fallback) return [];
       return (data?.results || []) as UnsplashPhoto[];
     } catch {
       return [];

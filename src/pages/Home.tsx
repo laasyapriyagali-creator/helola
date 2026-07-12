@@ -12,7 +12,7 @@ import { TripImage } from "@/components/TripImage";
 import { PremiumInviteCard } from "@/components/premium/PremiumInviteCard";
 import { PlaceSearchInput } from "@/components/PlaceSearchInput";
 import type { PlaceSuggestion } from "@/lib/places";
-import helolaMapHeader from "@/assets/helola-map-header.png.asset.json";
+import helolaMapHeader from "@/assets/helola-map-header.jpg";
 import { formatPriceFromINR } from "@/lib/i18n";
 
 interface Trip {
@@ -163,10 +163,12 @@ export default function Home() {
       {/* Hero */}
       <section className="relative overflow-hidden px-4 py-12 md:py-20">
         <img
-          src={helolaMapHeader.url}
+          src={helolaMapHeader}
           alt="Illustrated travel map of Helola Trips destinations across Europe and Asia"
           className="absolute inset-0 h-full w-full object-cover"
           loading="eager"
+          width={1920}
+          height={768}
         />
         <div className="absolute inset-0 bg-primary/35" />
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-primary/55 to-transparent" />
