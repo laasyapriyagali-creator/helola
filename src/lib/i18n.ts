@@ -181,11 +181,8 @@ export function isCurrencyOverridden(): boolean {
 
 /** React hook: subscribes components to currency changes so price labels refresh. */
 export function useCurrency(): CurrencyCode {
-  // Lazy import of React to keep this file usable in non-React contexts.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const React = require("react") as typeof import("react");
-  const [currency, setCurrency] = React.useState<CurrencyCode>(() => getPreferredCurrency());
-  React.useEffect(() => {
+  const [currency, setCurrency] = useState<CurrencyCode>(() => getPreferredCurrency());
+  useEffect(() => {
     const onChange = () => setCurrency(getPreferredCurrency());
     window.addEventListener(CURRENCY_CHANGE_EVENT, onChange);
     return () => window.removeEventListener(CURRENCY_CHANGE_EVENT, onChange);
