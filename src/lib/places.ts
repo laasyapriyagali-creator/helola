@@ -92,9 +92,18 @@ const NOMINATIM = "https://nominatim.openstreetmap.org";
 const WIKI_REST = "https://en.wikipedia.org/api/rest_v1";
 
 // Unsplash requests are proxied through a Lovable Cloud edge function so the
-// access key never ships in the client bundle.
+// access key never ships in the client bundle. Unsplash is the ONLY source
+// of destination photography — Wikipedia/Commons are used solely for text.
 import { supabase } from "@/integrations/supabase/client";
+import destinationPlaceholder from "@/assets/destination-placeholder.jpg";
 const UNSPLASH_FN = "unsplash-search";
+
+export const DEFAULT_DESTINATION_IMAGE: PlaceImage = {
+  url: destinationPlaceholder,
+  thumb: destinationPlaceholder,
+  source: "",
+  title: "Scenic travel destination",
+};
 
 /** Fetch wrapper with a strict timeout — prevents hung UI when a third party stalls. */
 async function safeFetch(url: string, opts: RequestInit = {}, timeoutMs = 6000): Promise<Response | null> {
