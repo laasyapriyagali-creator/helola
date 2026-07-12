@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePremium, planById, formatDate, cancelSubscription, setAutoRenew, PLANS, PREMIUM_BENEFITS } from "@/lib/premium";
 import { PremiumSheet } from "@/components/premium/PremiumSheet";
 import { toast } from "sonner";
-import { formatPriceFromINR } from "@/lib/i18n";
+import { formatPriceFromINR, useCurrency } from "@/lib/i18n";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
