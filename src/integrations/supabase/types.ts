@@ -792,6 +792,10 @@ export type Database = {
       }
       request_account_deletion: { Args: never; Returns: undefined }
       set_premium_auto_renew: { Args: { _value: boolean }; Returns: undefined }
+      users_blocked_either_way: {
+        Args: { _a: string; _b: string }
+        Returns: boolean
+      }
     }
     Enums: {
       premium_plan: "monthly" | "six_month" | "yearly"
