@@ -18,6 +18,7 @@ export function PremiumSheet({ open, onOpenChange }: Props) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { sub, isPremium, reload } = usePremium();
+  useCurrency(); // re-render on currency change
   const [selected, setSelected] = useState<PremiumPlan>("six_month");
   const [busy, setBusy] = useState(false);
 
