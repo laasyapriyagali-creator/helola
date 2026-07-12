@@ -133,10 +133,10 @@ function saveSet(k: string, s: Set<string>) {
 
 const summaryTextCache = loadSS<string | null>("helola.placeExtract.v5");
 const summaryImageCache = loadSS<{ image?: string; thumb?: string } | null>("helola.placeSummaryImage.v4");
-const imagesCache = loadSS<PlaceImage[]>("helola.placeImages.v9");
+const imagesCache = loadSS<PlaceImage[]>("helola.placeImages.v10");
 const searchCache = new Map<string, PlaceSuggestion[]>();
 // Global dedupe so two different destinations never get the same photo.
-const usedImageIds = loadSet("helola.usedImg.v9");
+const usedImageIds = loadSet("helola.usedImg.v10");
 
 const photoQueue: Array<() => void> = [];
 let activePhotoRequests = 0;
@@ -249,25 +249,26 @@ interface DestinationPhotoProfile {
   match: RegExp;
   exact: string;
   anchors: string[];
+  requiredAnchors?: string[];
   queries?: string[];
 }
 
 const DESTINATION_PHOTO_PROFILES: DestinationPhotoProfile[] = [
-  { match: /\bgoa\b/i, exact: "Goa India", anchors: ["goa", "india", "anjuna", "palolem", "baga", "calangute", "candolim", "vagator", "arambol", "dudhsagar", "chapora", "konkan", "beach", "palm", "coconut"], queries: ["Goa India", "Goa India beach palms", "Goa India Palolem beach"] },
-  { match: /munnar/i, exact: "Munnar Kerala India", anchors: ["munnar", "kerala", "india", "tea", "plantation", "tea garden", "western ghats", "idukki", "hills", "green hillside"], queries: ["Munnar Kerala India", "Munnar Kerala India tea plantation", "Munnar India tea gardens"] },
-  { match: /paris/i, exact: "Paris France", anchors: ["paris", "france", "eiffel", "louvre", "seine", "montmartre", "arc de triomphe", "notre dame", "parisian"], queries: ["Paris France", "Paris France Eiffel Tower", "Paris France Seine"] },
-  { match: /tokyo/i, exact: "Tokyo Japan", anchors: ["tokyo", "japan", "shibuya", "shinjuku", "asakusa", "sensoji", "tokyo tower", "skytree", "fuji", "cherry blossom"], queries: ["Tokyo Japan", "Tokyo Japan skyline", "Tokyo Japan Shibuya"] },
-  { match: /\bbali\b|denpasar/i, exact: "Bali Indonesia", anchors: ["bali", "indonesia", "ubud", "uluwatu", "tanah lot", "rice terrace", "rice terraces", "tegallalang", "temple", "volcano"], queries: ["Bali Indonesia", "Bali Indonesia rice terraces", "Bali Indonesia temple"] },
-  { match: /new york|manhattan/i, exact: "New York USA", anchors: ["new york", "nyc", "usa", "manhattan", "brooklyn", "times square", "central park", "empire state", "statue of liberty", "skyline"], queries: ["New York USA", "New York USA skyline", "New York USA Manhattan"] },
-  { match: /manali|himachal/i, exact: "Manali Himachal Pradesh India", anchors: ["manali", "himachal", "india", "himalaya", "himalayas", "snow", "solang", "kullu", "mountain", "pine"], queries: ["Manali Himachal Pradesh India", "Manali India Himalayas", "Manali India snow mountains"] },
-  { match: /leh|ladakh/i, exact: "Leh Ladakh India", anchors: ["leh", "ladakh", "india", "pangong", "himalaya", "monastery", "khardung", "nubra", "zanskar", "mountain"], queries: ["Leh Ladakh India", "Leh Ladakh India monastery", "Ladakh India landscape"] },
-  { match: /jaipur/i, exact: "Jaipur Rajasthan India", anchors: ["jaipur", "rajasthan", "india", "hawa mahal", "amber fort", "amer fort", "city palace", "pink city", "jal mahal"], queries: ["Jaipur Rajasthan India", "Jaipur India Hawa Mahal", "Jaipur India Amber Fort"] },
-  { match: /udaipur/i, exact: "Udaipur Rajasthan India", anchors: ["udaipur", "rajasthan", "india", "lake pichola", "city palace", "lake palace", "jag mandir", "ghat"], queries: ["Udaipur Rajasthan India", "Udaipur India Lake Pichola", "Udaipur India City Palace"] },
-  { match: /andaman|port blair/i, exact: "Andaman India", anchors: ["andaman", "port blair", "india", "havelock", "swaraj dweep", "radhanagar", "island", "beach", "turquoise", "coral"], queries: ["Andaman India", "Andaman India beach", "Havelock Island Andaman India"] },
-  { match: /rishikesh|uttarakhand/i, exact: "Rishikesh Uttarakhand India", anchors: ["rishikesh", "uttarakhand", "india", "ganga", "ganges", "lakshman jhula", "ram jhula", "rafting", "himalaya"], queries: ["Rishikesh Uttarakhand India", "Rishikesh India Ganga", "Rishikesh India bridge"] },
-  { match: /bangkok|thailand/i, exact: "Bangkok Thailand", anchors: ["bangkok", "thailand", "wat arun", "grand palace", "chao phraya", "temple", "sukhumvit", "skyline"], queries: ["Bangkok Thailand", "Bangkok Thailand Wat Arun", "Bangkok Thailand Grand Palace"] },
-  { match: /dubai/i, exact: "Dubai United Arab Emirates", anchors: ["dubai", "uae", "united arab emirates", "burj khalifa", "marina", "jumeirah", "desert", "skyline"], queries: ["Dubai United Arab Emirates", "Dubai UAE Burj Khalifa", "Dubai UAE skyline"] },
-  { match: /singapore/i, exact: "Singapore", anchors: ["singapore", "marina bay", "gardens by the bay", "merlion", "supertree", "sentosa", "skyline"], queries: ["Singapore", "Singapore Marina Bay", "Singapore Gardens by the Bay"] },
+  { match: /\bgoa\b/i, exact: "Goa India", anchors: ["goa", "india", "anjuna", "palolem", "baga", "calangute", "candolim", "vagator", "arambol", "dudhsagar", "chapora", "konkan", "beach", "palm", "coconut"], requiredAnchors: ["goa", "anjuna", "palolem", "baga", "calangute", "candolim", "vagator", "arambol", "dudhsagar", "chapora"], queries: ["Goa India", "Goa India beach palms", "Goa India Palolem beach"] },
+  { match: /munnar/i, exact: "Munnar Kerala India", anchors: ["munnar", "kerala", "india", "tea", "plantation", "tea garden", "western ghats", "idukki", "hills", "green hillside"], requiredAnchors: ["munnar", "tea", "plantation", "tea garden", "western ghats", "idukki"], queries: ["Munnar Kerala India", "Munnar Kerala India tea plantation", "Munnar India tea gardens"] },
+  { match: /paris/i, exact: "Paris France", anchors: ["paris", "france", "eiffel", "louvre", "seine", "montmartre", "arc de triomphe", "notre dame", "parisian"], requiredAnchors: ["paris", "eiffel", "louvre", "seine", "montmartre", "arc de triomphe", "notre dame"], queries: ["Paris France", "Paris France Eiffel Tower", "Paris France Seine"] },
+  { match: /tokyo/i, exact: "Tokyo Japan", anchors: ["tokyo", "japan", "shibuya", "shinjuku", "asakusa", "sensoji", "tokyo tower", "skytree", "fuji", "cherry blossom"], requiredAnchors: ["tokyo", "shibuya", "shinjuku", "asakusa", "sensoji", "tokyo tower", "skytree"], queries: ["Tokyo Japan", "Tokyo Japan skyline", "Tokyo Japan Shibuya"] },
+  { match: /\bbali\b|denpasar/i, exact: "Bali Indonesia", anchors: ["bali", "indonesia", "ubud", "uluwatu", "tanah lot", "rice terrace", "rice terraces", "tegallalang", "temple", "volcano"], requiredAnchors: ["bali", "ubud", "uluwatu", "tanah lot", "rice terrace", "rice terraces", "tegallalang"], queries: ["Bali Indonesia", "Bali Indonesia rice terraces", "Bali Indonesia temple"] },
+  { match: /new york|manhattan/i, exact: "New York USA", anchors: ["new york", "nyc", "usa", "manhattan", "brooklyn", "times square", "central park", "empire state", "statue of liberty", "skyline"], requiredAnchors: ["new york", "nyc", "manhattan", "brooklyn", "times square", "central park", "empire state", "statue of liberty"], queries: ["New York USA", "New York USA skyline", "New York USA Manhattan"] },
+  { match: /manali|himachal/i, exact: "Manali Himachal Pradesh India", anchors: ["manali", "himachal", "india", "himalaya", "himalayas", "snow", "solang", "kullu", "mountain", "pine"], requiredAnchors: ["manali", "solang", "kullu"], queries: ["Manali Himachal Pradesh India", "Manali India Himalayas", "Manali India snow mountains"] },
+  { match: /leh|ladakh/i, exact: "Leh Ladakh India", anchors: ["leh", "ladakh", "india", "pangong", "himalaya", "monastery", "khardung", "nubra", "zanskar", "mountain"], requiredAnchors: ["leh", "ladakh", "pangong", "khardung", "nubra", "zanskar"], queries: ["Leh Ladakh India", "Leh Ladakh India monastery", "Ladakh India landscape"] },
+  { match: /jaipur/i, exact: "Jaipur Rajasthan India", anchors: ["jaipur", "rajasthan", "india", "hawa mahal", "amber fort", "amer fort", "city palace", "pink city", "jal mahal"], requiredAnchors: ["jaipur", "hawa mahal", "amber fort", "amer fort", "city palace", "pink city", "jal mahal"], queries: ["Jaipur Rajasthan India", "Jaipur India Hawa Mahal", "Jaipur India Amber Fort"] },
+  { match: /udaipur/i, exact: "Udaipur Rajasthan India", anchors: ["udaipur", "rajasthan", "india", "lake pichola", "city palace", "lake palace", "jag mandir", "ghat"], requiredAnchors: ["udaipur", "lake pichola", "city palace", "lake palace", "jag mandir"], queries: ["Udaipur Rajasthan India", "Udaipur India Lake Pichola", "Udaipur India City Palace"] },
+  { match: /andaman|port blair/i, exact: "Andaman India", anchors: ["andaman", "port blair", "india", "havelock", "swaraj dweep", "radhanagar", "island", "beach", "turquoise", "coral"], requiredAnchors: ["andaman", "port blair", "havelock", "swaraj dweep", "radhanagar"], queries: ["Andaman India", "Andaman India beach", "Havelock Island Andaman India"] },
+  { match: /rishikesh|uttarakhand/i, exact: "Rishikesh Uttarakhand India", anchors: ["rishikesh", "uttarakhand", "india", "ganga", "ganges", "lakshman jhula", "ram jhula", "rafting", "himalaya"], requiredAnchors: ["rishikesh", "lakshman jhula", "ram jhula"], queries: ["Rishikesh Uttarakhand India", "Rishikesh India Ganga", "Rishikesh India bridge"] },
+  { match: /bangkok|thailand/i, exact: "Bangkok Thailand", anchors: ["bangkok", "thailand", "wat arun", "grand palace", "chao phraya", "temple", "sukhumvit", "skyline"], requiredAnchors: ["bangkok", "wat arun", "grand palace", "chao phraya"], queries: ["Bangkok Thailand", "Bangkok Thailand Wat Arun", "Bangkok Thailand Grand Palace"] },
+  { match: /dubai/i, exact: "Dubai United Arab Emirates", anchors: ["dubai", "uae", "united arab emirates", "burj khalifa", "marina", "jumeirah", "desert", "skyline"], requiredAnchors: ["dubai", "burj khalifa", "jumeirah"], queries: ["Dubai United Arab Emirates", "Dubai UAE Burj Khalifa", "Dubai UAE skyline"] },
+  { match: /singapore/i, exact: "Singapore", anchors: ["singapore", "marina bay", "gardens by the bay", "merlion", "supertree", "sentosa", "skyline"], requiredAnchors: ["singapore", "marina bay", "gardens by the bay", "merlion", "supertree", "sentosa"], queries: ["Singapore", "Singapore Marina Bay", "Singapore Gardens by the Bay"] },
 ];
 
 function getDestinationPhotoProfile(name: string): DestinationPhotoProfile {
@@ -418,7 +419,8 @@ function evaluateTravelPhoto(p: UnsplashPhoto, placeName: string, query: string)
   const looksLikePerson = /\b(man|woman|boy|girl|kid|baby|face|smiling|posing|wearing|person|people|tourist|model)\b/.test(haystack);
   const hasScenery = PREFER_TOKENS.some(t => haystack.includes(t));
   const anchorHits = profile.anchors.filter(anchor => haystack.includes(anchor.toLowerCase()));
-  const destinationHits = profile.exact.toLowerCase().split(/\s+/).filter(t => t.length > 3 && haystack.includes(t));
+  const requiredHits = (profile.requiredAnchors || profile.anchors).filter(anchor => haystack.includes(anchor.toLowerCase()));
+  const destinationHits = profile.exact.toLowerCase().split(/\s+/).filter(t => t.length > 3 && !["india", "france", "japan", "indonesia", "usa", "united", "arab", "emirates"].includes(t) && haystack.includes(t));
 
   if (looksLikePerson && !hasScenery && anchorHits.length === 0) {
     return { accepted: false, score: 0, reason: "rejected: people-only photo without destination scenery" };
@@ -426,12 +428,16 @@ function evaluateTravelPhoto(p: UnsplashPhoto, placeName: string, query: string)
 
   const hasSpecificAnchor = anchorHits.length > 0;
   const hasDestinationName = destinationHits.length > 0;
+  if (requiredHits.length === 0 && !hasDestinationName) {
+    return { accepted: false, score: 0, reason: "rejected: metadata does not mention the destination or a known destination landmark" };
+  }
   if (!hasSpecificAnchor && !hasDestinationName) {
-    return { accepted: false, score: 0, reason: "rejected: metadata does not mention destination, country, or known landmark/scenery" };
+    return { accepted: false, score: 0, reason: "rejected: metadata does not mention destination or known landmark/scenery" };
   }
 
   let score = 0;
   score += destinationHits.length * 6;
+  score += requiredHits.length * 8;
   score += anchorHits.length * 4;
   for (const t of PREFER_TOKENS) if (haystack.includes(t)) score += 1;
   if (query.toLowerCase() === profile.exact.toLowerCase()) score += 2;
@@ -441,7 +447,7 @@ function evaluateTravelPhoto(p: UnsplashPhoto, placeName: string, query: string)
     accepted: score >= 4,
     score,
     reason: score >= 4
-      ? `chosen: matched ${[...new Set([...destinationHits, ...anchorHits])].slice(0, 5).join(", ") || "destination metadata"}`
+      ? `chosen: matched ${[...new Set([...destinationHits, ...requiredHits, ...anchorHits])].slice(0, 5).join(", ") || "destination metadata"}`
       : "rejected: score too low after destination checks",
   };
 }
@@ -516,13 +522,13 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
 
   // Track usage globally so other destinations skip these ids.
   for (const p of ordered.slice(0, limit)) usedImageIds.add(p.id);
-  saveSet("helola.usedImg.v9", usedImageIds);
+  saveSet("helola.usedImg.v10", usedImageIds);
 
   // If Unsplash returned nothing suitable, show the bundled scenic
   // placeholder rather than an unrelated Wikipedia image.
   if (unsplashImages.length > 0) {
     imagesCache.set(cacheKey, unsplashImages);
-    saveSS("helola.placeImages.v9", imagesCache);
+    saveSS("helola.placeImages.v10", imagesCache);
     return unsplashImages;
   }
 
