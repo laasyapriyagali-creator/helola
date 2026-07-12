@@ -158,7 +158,7 @@ export default function DestinationDetail() {
             ))}
           </div>
         )}
-        <p className="mt-3 text-[11px] text-muted-foreground">Photos via Wikimedia Commons, Wikipedia. Map data © OpenStreetMap contributors.</p>
+        <p className="mt-3 text-[11px] text-muted-foreground">Photos via Unsplash Search. Map data © OpenStreetMap contributors.</p>
       </div>
 
       {lightbox !== null && images[lightbox] && (

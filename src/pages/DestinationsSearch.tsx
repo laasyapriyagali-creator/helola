@@ -34,7 +34,7 @@ export default function DestinationsSearch() {
       </button>
       <div className="mx-auto max-w-2xl">
         <h1 className="font-display text-3xl font-bold md:text-4xl">Search any place</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Powered by OpenStreetMap. Real photos via Wikipedia.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Powered by OpenStreetMap. Real photos via Unsplash.</p>
 
         <div className="mt-5">
           <PlaceSearchInput value={q} onChange={setQ} onSelect={onPick} placeholder="Try: Hampi, Kyoto, Iceland…" />
