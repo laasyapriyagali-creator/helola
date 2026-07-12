@@ -27,6 +27,7 @@ export default function PremiumSettings() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { sub, isPremium, loading, reload } = usePremium();
+  useCurrency();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
