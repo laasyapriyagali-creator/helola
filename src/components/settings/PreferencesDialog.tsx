@@ -98,7 +98,6 @@ export function PreferencesDialog({ open, onOpenChange, focusKey }: { open: bool
             <Label>Travel interests</Label>
             <Input value={interestsText} onChange={(e) => setInterestsText(e.target.value)} placeholder="Adventure, beaches, food, culture..." />
           </div>
-        </div>
           <div className="space-y-1.5 rounded-xl border border-border p-3">
             <Label>Display currency</Label>
             <Select value={currency} onValueChange={onCurrencyChange}>
