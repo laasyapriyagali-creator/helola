@@ -88,12 +88,10 @@ export interface PlaceImage {
   title: string;
 }
 
-const NOMINATIM = "https://nominatim.openstreetmap.org";
-const WIKI_REST = "https://en.wikipedia.org/api/rest_v1";
-
-// Unsplash public Access Key — designed for client-side use (rate-limited per key).
-const UNSPLASH_ACCESS_KEY = "eUOrgIfI2JDJlcSM08aqcW01hSq9xusChqKxUuDbMmc";
-const UNSPLASH_API = "https://api.unsplash.com";
+// Unsplash requests are proxied through a Lovable Cloud edge function so the
+// access key never ships in the client bundle.
+import { supabase } from "@/integrations/supabase/client";
+const UNSPLASH_FN = "unsplash-search";
 
 /** Fetch wrapper with a strict timeout — prevents hung UI when a third party stalls. */
 async function safeFetch(url: string, opts: RequestInit = {}, timeoutMs = 6000): Promise<Response | null> {
