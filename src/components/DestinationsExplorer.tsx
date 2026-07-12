@@ -21,18 +21,25 @@ export function DestinationsExplorer() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const enriched = await Promise.all(
-        FEATURED_DESTINATIONS.map(async (d) => {
-          // Fetch summary text and images in parallel so cards show a photo on first render.
+      const initial = FEATURED_DESTINATIONS.map((d) => ({ ...d }));
+      if (!cancelled) setItems(initial);
+
+      for (const d of FEATURED_DESTINATIONS) {
+        if (cancelled) break;
+        try {
           const [sum, imgs] = await Promise.all([
-            getPlaceSummary(d.query),
-            getPlaceImages(d.query, 6).catch(() => []),
+            getPlaceSummary(d.query).catch(() => null),
+            getPlaceImages(d.query, 1).catch(() => []),
           ]);
           const image = imgs?.[0]?.thumb || imgs?.[0]?.url || sum?.image;
-          return { ...d, image, extract: sum?.extract };
-        }),
-      );
-      if (!cancelled) { setItems(enriched); setLoading(false); }
+          if (!cancelled) {
+            setItems((current) => current.map((item) => (
+              item.query === d.query ? { ...item, image, extract: sum?.extract } : item
+            )));
+          }
+        } catch { /* keep the destination card with its text fallback */ }
+      }
+      if (!cancelled) setLoading(false);
     })();
     return () => { cancelled = true; };
   }, []);

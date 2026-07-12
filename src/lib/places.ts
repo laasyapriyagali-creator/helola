@@ -137,6 +137,23 @@ const searchCache = new Map<string, PlaceSuggestion[]>();
 // Global dedupe so two different destinations never get the same photo.
 const usedImageIds = loadSet("helola.usedImg.v7");
 
+const photoQueue: Array<() => void> = [];
+let activePhotoRequests = 0;
+const MAX_PHOTO_REQUESTS = 2;
+
+async function queuePhotoRequest<T>(task: () => Promise<T>): Promise<T> {
+  if (activePhotoRequests >= MAX_PHOTO_REQUESTS) {
+    await new Promise<void>((resolve) => photoQueue.push(resolve));
+  }
+  activePhotoRequests += 1;
+  try {
+    return await task();
+  } finally {
+    activePhotoRequests = Math.max(0, activePhotoRequests - 1);
+    photoQueue.shift()?.();
+  }
+}
+
 export async function searchPlaces(query: string, limit = 6): Promise<PlaceSuggestion[]> {
   const q = query.trim();
   if (!q) return [];
@@ -297,15 +314,17 @@ async function fetchWikiSummary(name: string): Promise<WikiSummary> {
 }
 
 async function unsplashSearch(query: string, perPage = 12, orientation: "landscape" | "squarish" = "landscape"): Promise<UnsplashPhoto[]> {
-  try {
-    const { data, error } = await supabase.functions.invoke(UNSPLASH_FN, {
-      body: { query, per_page: perPage, orientation },
-    });
-    if (error) return [];
-    return (data?.results || []) as UnsplashPhoto[];
-  } catch {
-    return [];
-  }
+  return queuePhotoRequest(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke(UNSPLASH_FN, {
+        body: { query, per_page: perPage, orientation },
+      });
+      if (error || data?.fallback) return [];
+      return (data?.results || []) as UnsplashPhoto[];
+    } catch {
+      return [];
+    }
+  });
 }
 
 // Tokens that indicate the photo is NOT a real travel/destination shot.
@@ -406,9 +425,9 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
   const queries = buildQueriesFor(name);
   const seed = seedFromString(cleaned.toLowerCase());
 
-  // Run up to 3 themed queries in parallel, merge results.
-  const batches = await Promise.all(queries.slice(0, 3).map(q => unsplashSearch(q, 12)));
-  let pool: UnsplashPhoto[] = ([] as UnsplashPhoto[]).concat(...batches);
+  // Keep image loading gentle: one primary photo query first. Extra themed
+  // searches only run if the primary query produced no suitable travel photo.
+  let pool = await unsplashSearch(queries[0], Math.min(limit + 4, 12));
 
   // Dedupe by Unsplash id.
   const byId = new Map<string, UnsplashPhoto>();
@@ -430,12 +449,12 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
 
   // Fallback chains — each still runs through the relevance filter.
   if (ordered.length === 0) {
-    const fb = (await unsplashSearch(`${cleaned} travel landscape`, 12))
+    const fb = (await unsplashSearch(queries[1] || `${cleaned} travel landscape`, Math.min(limit + 4, 12)))
       .filter(p => isRelevantTravelPhoto(p, name));
     ordered = shuffle(fb, seed);
   }
   if (ordered.length === 0) {
-    const fb = (await unsplashSearch(`${cleaned} city`, 12))
+    const fb = (await unsplashSearch(queries[2] || `${cleaned} city`, Math.min(limit + 4, 12)))
       .filter(p => isRelevantTravelPhoto(p, name));
     ordered = shuffle(fb, seed);
   }
