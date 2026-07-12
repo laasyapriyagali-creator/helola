@@ -28,7 +28,7 @@ export function DestinationsExplorer() {
             getPlaceSummary(d.query),
             getPlaceImages(d.query, 6).catch(() => []),
           ]);
-          const image = sum?.image || imgs?.[0]?.url;
+          const image = imgs?.[0]?.thumb || imgs?.[0]?.url || sum?.image;
           return { ...d, image, extract: sum?.extract };
         }),
       );
@@ -59,6 +59,8 @@ export function DestinationsExplorer() {
                     src={d.image}
                     alt={`${d.name} — real photograph`}
                     loading="lazy"
+                    decoding="async"
+                    referrerPolicy="no-referrer"
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                   />

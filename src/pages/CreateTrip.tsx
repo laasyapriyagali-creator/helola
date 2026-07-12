@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Users, ImageOff } from "lucide-react";
 import { PlaceSearchInput } from "@/components/PlaceSearchInput";
-import { getPlaceSummary } from "@/lib/places";
+import { getPlaceImages, getPlaceSummary } from "@/lib/places";
 import { formatPriceFromINR } from "@/lib/i18n";
 import { reportError } from "@/lib/reportError";
 
@@ -42,8 +42,12 @@ export default function CreateTrip() {
   useEffect(() => { if (!loading && !user) navigate("/auth"); }, [user, loading, navigate]);
 
   async function loadPlaceMeta(name: string) {
-    const sum = await getPlaceSummary(name);
-    if (sum?.image) setCoverImage(sum.image);
+    const [sum, imgs] = await Promise.all([
+      getPlaceSummary(name),
+      getPlaceImages(name, 1).catch(() => []),
+    ]);
+    const image = imgs[0]?.thumb || imgs[0]?.url || sum?.image;
+    if (image) setCoverImage(image);
     if (sum?.extract) setPlaceBlurb(sum.extract);
   }
 
@@ -120,7 +124,7 @@ export default function CreateTrip() {
             {(coverImage || placeBlurb) && (
               <div className="mt-2 overflow-hidden rounded-xl border border-border bg-card">
                 {coverImage ? (
-                  <img src={coverImage} alt={`${destination} real photograph`} className="h-32 w-full object-cover md:h-40" />
+                  <img src={coverImage} alt={`${destination} real photograph`} className="h-32 w-full object-cover md:h-40" referrerPolicy="no-referrer" />
                 ) : (
                   <div className="flex h-32 w-full items-center justify-center bg-muted text-muted-foreground"><ImageOff className="h-5 w-5" /></div>
                 )}
