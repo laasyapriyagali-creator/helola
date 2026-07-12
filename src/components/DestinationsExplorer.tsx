@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, ImageOff } from "lucide-react";
-import { FEATURED_DESTINATIONS, getPlaceSummary } from "@/lib/places";
+import { FEATURED_DESTINATIONS, getPlaceSummary, getPlaceImages } from "@/lib/places";
 
 interface DestCard {
   name: string;
@@ -23,8 +23,13 @@ export function DestinationsExplorer() {
     (async () => {
       const enriched = await Promise.all(
         FEATURED_DESTINATIONS.map(async (d) => {
-          const sum = await getPlaceSummary(d.query);
-          return { ...d, image: sum?.image, extract: sum?.extract };
+          // Fetch summary text and images in parallel so cards show a photo on first render.
+          const [sum, imgs] = await Promise.all([
+            getPlaceSummary(d.query),
+            getPlaceImages(d.query, 6).catch(() => []),
+          ]);
+          const image = sum?.image || imgs?.[0]?.url;
+          return { ...d, image, extract: sum?.extract };
         }),
       );
       if (!cancelled) { setItems(enriched); setLoading(false); }
