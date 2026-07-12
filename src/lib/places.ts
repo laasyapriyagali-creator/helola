@@ -213,7 +213,7 @@ function cleanPlaceName(name: string): string {
 function titleCandidates(name: string): string[] {
   const full = (name || "").replace(/\([^)]*\)/g, "").replace(/\s+/g, " ").trim();
   const first = cleanPlaceName(name);
-  return Array.from(new Set([full, first].filter(Boolean)));
+  return Array.from(new Set([first, full].filter(Boolean)));
 }
 
 

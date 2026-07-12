@@ -49,7 +49,7 @@ export function DestinationsExplorer() {
       <div className="mb-3 flex items-end justify-between">
         <div>
           <h2 className="font-display text-2xl font-semibold text-foreground">Real destinations</h2>
-          <p className="text-xs text-muted-foreground">Live photos & info from Wikipedia · OpenStreetMap</p>
+          <p className="text-xs text-muted-foreground">Unsplash photos · Wikipedia info · OpenStreetMap data</p>
         </div>
         <Link to="/destinations/search" className="text-xs font-semibold text-primary hover:underline">Search any place →</Link>
       </div>
