@@ -3,6 +3,8 @@
 // - Currency conversion uses a static rate table from INR (app's storage
 //   currency). Rates are rounded, curated snapshots — no live FX. Users see
 //   prices in their local currency; storage stays INR until a schema change.
+import { useEffect, useState } from "react";
+
 
 export function getLocale(): string {
   if (typeof navigator === "undefined") return "en";
