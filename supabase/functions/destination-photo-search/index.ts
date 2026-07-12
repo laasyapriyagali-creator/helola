@@ -37,8 +37,8 @@ Deno.serve(async (req) => {
 
     const key = Deno.env.get("UNSPLASH_ACCESS_KEY");
     if (!key) {
-      return new Response(JSON.stringify({ error: "Unsplash key not configured", results: [] }), {
-        status: 500,
+      return new Response(JSON.stringify({ error: "UNSPLASH_KEY_MISSING", fallback: true, results: [] }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -46,7 +46,9 @@ Deno.serve(async (req) => {
     const upstream = `${UNSPLASH_API}/search/photos?query=${encodeURIComponent(query)}&per_page=${perPage}&orientation=${orientation}&content_filter=high&client_id=${key}`;
     const res = await fetch(upstream);
     if (!res.ok) {
-      return new Response(JSON.stringify({ error: "upstream error", status: res.status, results: [] }), {
+      const fallback = res.status === 429 || res.status >= 500;
+      console.error("Unsplash upstream error", res.status, await res.text().catch(() => ""));
+      return new Response(JSON.stringify({ error: "UNSPLASH_UPSTREAM_ERROR", status: res.status, fallback, results: [] }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -68,7 +70,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "public, max-age=3600" },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: (e as Error).message, results: [] }), {
+    console.error("Unsplash proxy error", (e as Error).message);
+    return new Response(JSON.stringify({ error: "UNSPLASH_PROXY_ERROR", fallback: true, results: [] }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
