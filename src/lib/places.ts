@@ -293,18 +293,16 @@ async function fetchWikiSummary(name: string): Promise<WikiSummary> {
 }
 
 async function unsplashSearch(query: string, perPage = 12, orientation: "landscape" | "squarish" = "landscape"): Promise<UnsplashPhoto[]> {
-  const base = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-  const anon = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
-  if (!base) return [];
-  const url = `${base}/functions/v1/${UNSPLASH_FN}?query=${encodeURIComponent(query)}&per_page=${perPage}&orientation=${orientation}`;
-  const res = await safeFetch(url, {
-    headers: anon ? { Authorization: `Bearer ${anon}`, apikey: anon } : {},
-  }, 7000);
-  if (!res || !res.ok) return [];
   try {
-    const data = await res.json();
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data, error } = await supabase.functions.invoke(UNSPLASH_FN, {
+      body: { query, per_page: perPage, orientation },
+    });
+    if (error) return [];
     return (data?.results || []) as UnsplashPhoto[];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 function toPlaceImage(p: UnsplashPhoto, place: string): PlaceImage {

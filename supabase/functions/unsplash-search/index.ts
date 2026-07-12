@@ -10,9 +10,23 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const query = (url.searchParams.get("query") || "").trim();
-    const perPage = Math.min(Math.max(parseInt(url.searchParams.get("per_page") || "12", 10) || 12, 1), 30);
-    const orientation = url.searchParams.get("orientation") === "squarish" ? "squarish" : "landscape";
+    let query = (url.searchParams.get("query") || "").trim();
+    let perPageRaw = url.searchParams.get("per_page");
+    let orientationRaw = url.searchParams.get("orientation");
+
+    if (req.method === "POST") {
+      try {
+        const body = await req.json();
+        if (body && typeof body === "object") {
+          if (!query && typeof body.query === "string") query = body.query.trim();
+          if (!perPageRaw && body.per_page != null) perPageRaw = String(body.per_page);
+          if (!orientationRaw && typeof body.orientation === "string") orientationRaw = body.orientation;
+        }
+      } catch { /* ignore malformed body */ }
+    }
+
+    const perPage = Math.min(Math.max(parseInt(perPageRaw || "12", 10) || 12, 1), 30);
+    const orientation = orientationRaw === "squarish" ? "squarish" : "landscape";
 
     if (!query) {
       return new Response(JSON.stringify({ error: "query is required" }), {
