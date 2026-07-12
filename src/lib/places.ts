@@ -95,17 +95,9 @@ const WIKI_REST = "https://en.wikipedia.org/api/rest_v1";
 // access key never ships in the client bundle. Unsplash is the ONLY source
 // of destination photography — Wikipedia/Commons are used solely for text.
 import { supabase } from "@/integrations/supabase/client";
-import destinationPlaceholder from "@/assets/destination-placeholder.jpg";
 const FUNCTIONS_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 const UNSPLASH_FN = "unsplash-search";
 const UNSPLASH_FALLBACK_FN = "destination-photo-search";
-
-export const DEFAULT_DESTINATION_IMAGE: PlaceImage = {
-  url: destinationPlaceholder,
-  thumb: destinationPlaceholder,
-  source: "",
-  title: "Scenic travel destination",
-};
 
 /** Fetch wrapper with a strict timeout — prevents hung UI when a third party stalls. */
 async function safeFetch(url: string, opts: RequestInit = {}, timeoutMs = 6000): Promise<Response | null> {
@@ -134,10 +126,12 @@ function saveSet(k: string, s: Set<string>) {
 
 const summaryTextCache = loadSS<string | null>("helola.placeExtract.v5");
 const summaryImageCache = loadSS<{ image?: string; thumb?: string } | null>("helola.placeSummaryImage.v4");
-const imagesCache = loadSS<PlaceImage[]>("helola.placeImages.v10");
+const IMAGE_CACHE_KEY = "helola.placeImages.v11";
+const USED_IMAGE_CACHE_KEY = "helola.usedImg.v11";
+const imagesCache = loadSS<PlaceImage[]>(IMAGE_CACHE_KEY);
 const searchCache = new Map<string, PlaceSuggestion[]>();
 // Global dedupe so two different destinations never get the same photo.
-const usedImageIds = loadSet("helola.usedImg.v10");
+const usedImageIds = loadSet(USED_IMAGE_CACHE_KEY);
 
 const photoQueue: Array<() => void> = [];
 let activePhotoRequests = 0;
