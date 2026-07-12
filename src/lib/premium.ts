@@ -71,9 +71,9 @@ const RAW_PLANS: Omit<PlanDef, "priceLabel" | "savingsLabel">[] = [
 
 export const PLANS: PlanDef[] = RAW_PLANS.map(p => ({
   ...p,
-  priceLabel: formatPriceFromINR(p.price),
-  savingsLabel: p.savingsVsMonthly ? formatPriceFromINR(p.savingsVsMonthly) : undefined,
-}));
+  get priceLabel() { return formatPriceFromINR(p.price); },
+  get savingsLabel() { return p.savingsVsMonthly ? formatPriceFromINR(p.savingsVsMonthly) : undefined; },
+} as PlanDef));
 
 export const PREMIUM_BENEFITS = [
   {
