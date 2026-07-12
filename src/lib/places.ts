@@ -121,11 +121,12 @@ function saveSet(k: string, s: Set<string>) {
   try { sessionStorage.setItem(k, JSON.stringify(Array.from(s).slice(-500))); } catch { /* quota */ }
 }
 
-const summaryTextCache = loadSS<string | null>("helola.placeExtract.v3");
-const imagesCache = loadSS<PlaceImage[]>("helola.placeImages.v3");
+const summaryTextCache = loadSS<string | null>("helola.placeExtract.v4");
+const summaryImageCache = loadSS<{ image?: string; thumb?: string } | null>("helola.placeSummaryImage.v1");
+const imagesCache = loadSS<PlaceImage[]>("helola.placeImages.v4");
 const searchCache = new Map<string, PlaceSuggestion[]>();
 // Global dedupe so two different destinations never get the same photo.
-const usedImageIds = loadSet("helola.usedImg.v3");
+const usedImageIds = loadSet("helola.usedImg.v4");
 
 export async function searchPlaces(query: string, limit = 6): Promise<PlaceSuggestion[]> {
   const q = query.trim();
@@ -180,6 +181,18 @@ export async function searchPlaces(query: string, limit = 6): Promise<PlaceSugge
 
 function cleanPlaceName(name: string): string {
   return (name || "").split(",")[0].replace(/\([^)]*\)/g, "").trim();
+}
+
+function titleCandidates(name: string): string[] {
+  const full = (name || "").replace(/\([^)]*\)/g, "").replace(/\s+/g, " ").trim();
+  const first = cleanPlaceName(name);
+  return Array.from(new Set([full, first].filter(Boolean)));
+}
+
+function isUsefulPhotoUrl(url?: string): url is string {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  return !lower.includes(".svg") && !lower.includes("flag_of_") && !lower.includes("_map") && !lower.includes("map_");
 }
 
 // Deterministic seed so the random rotation is stable per-session-per-place
@@ -258,6 +271,27 @@ interface UnsplashPhoto {
   user?: { name: string };
 }
 
+interface WikiSummary {
+  extract: string;
+  thumb?: string;
+  image?: string;
+}
+
+async function fetchWikiSummary(name: string): Promise<WikiSummary> {
+  for (const title of titleCandidates(name)) {
+    try {
+      const r = await safeFetch(`${WIKI_REST}/page/summary/${encodeURIComponent(title)}?redirect=true`, {}, 4000);
+      if (!r || !r.ok) continue;
+      const d = await r.json();
+      if (d?.type === "disambiguation") continue;
+      const thumb = isUsefulPhotoUrl(d?.thumbnail?.source) ? d.thumbnail.source : undefined;
+      const image = isUsefulPhotoUrl(d?.originalimage?.source) ? d.originalimage.source : thumb;
+      return { extract: d?.extract || "", thumb, image };
+    } catch { /* try next title */ }
+  }
+  return { extract: "" };
+}
+
 async function unsplashSearch(query: string, perPage = 12, orientation: "landscape" | "squarish" = "landscape"): Promise<UnsplashPhoto[]> {
   const base = import.meta.env.VITE_SUPABASE_URL as string | undefined;
   const anon = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
@@ -282,34 +316,81 @@ function toPlaceImage(p: UnsplashPhoto, place: string): PlaceImage {
   };
 }
 
+async function commonsImageSearch(query: string, limit = 12): Promise<PlaceImage[]> {
+  const params = new URLSearchParams({
+    origin: "*",
+    action: "query",
+    generator: "search",
+    gsrsearch: query,
+    gsrnamespace: "6",
+    gsrlimit: String(Math.min(Math.max(limit * 2, 6), 30)),
+    prop: "imageinfo",
+    iiprop: "url|mime|extmetadata",
+    iiurlwidth: "900",
+    format: "json",
+  });
+  const res = await safeFetch(`https://commons.wikimedia.org/w/api.php?${params.toString()}`, {}, 6000);
+  if (!res || !res.ok) return [];
+  try {
+    const data = await res.json();
+    const pages = Object.values(data?.query?.pages || {}) as any[];
+    return pages
+      .map((p) => {
+        const info = p?.imageinfo?.[0];
+        const url = info?.thumburl || info?.url;
+        const full = info?.url || url;
+        const mime = String(info?.mime || "").toLowerCase();
+        if (!url || !mime.startsWith("image/") || mime.includes("svg") || !isUsefulPhotoUrl(url)) return null;
+        const title = String(p?.title || query).replace(/^File:/, "").replace(/\.[^.]+$/, "").replace(/_/g, " ");
+        return {
+          url: full,
+          thumb: url,
+          source: info?.descriptionurl || full,
+          title,
+        } as PlaceImage;
+      })
+      .filter(Boolean)
+      .slice(0, limit) as PlaceImage[];
+  } catch { return []; }
+}
+
+function mergeImages(...groups: PlaceImage[][]): PlaceImage[] {
+  const seen = new Set<string>();
+  const merged: PlaceImage[] = [];
+  for (const group of groups) {
+    for (const img of group) {
+      const key = img.url || img.thumb;
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      merged.push(img);
+    }
+  }
+  return merged;
+}
+
 export async function getPlaceSummary(name: string): Promise<{ extract: string; thumb?: string; image?: string } | null> {
-  // Text from Wikipedia. Images are fetched separately by callers so the
-  // description isn't blocked waiting on Unsplash.
-  let extract = "";
-  if (summaryTextCache.has(name)) {
-    extract = summaryTextCache.get(name) || "";
-  } else {
-    try {
-      const title = name.split(",")[0].trim();
-      const r = await safeFetch(`${WIKI_REST}/page/summary/${encodeURIComponent(title)}?redirect=true`, {}, 4000);
-      if (r && r.ok) {
-        const d = await r.json();
-        if (d?.type !== "disambiguation") extract = d?.extract || "";
-      }
-    } catch { /* ignore */ }
+  let extract = summaryTextCache.get(name) || "";
+  let imageMeta = summaryImageCache.get(name) || null;
+
+  if (!summaryTextCache.has(name) || !imageMeta?.image) {
+    const wiki = await fetchWikiSummary(name);
+    extract = wiki.extract || extract;
+    imageMeta = { image: wiki.image, thumb: wiki.thumb };
     summaryTextCache.set(name, extract || null);
-    saveSS("helola.placeExtract.v3", summaryTextCache);
+    summaryImageCache.set(name, imageMeta);
+    saveSS("helola.placeExtract.v4", summaryTextCache);
+    saveSS("helola.placeSummaryImage.v1", summaryImageCache);
   }
 
-  // Opportunistically include a hero image only if already cached — never block on it.
   const cachedImgs = imagesCache.get(`${cleanPlaceName(name).toLowerCase()}::6`) || imagesCache.get(`${cleanPlaceName(name).toLowerCase()}::12`);
   const hero = cachedImgs?.[0];
-  return { extract, image: hero?.url, thumb: hero?.thumb };
+  return { extract, image: hero?.url || imageMeta?.image, thumb: hero?.thumb || imageMeta?.thumb };
 }
 
 export async function getPlaceImages(name: string, limit = 12): Promise<PlaceImage[]> {
   const cacheKey = `${cleanPlaceName(name).toLowerCase()}::${limit}`;
-  if (imagesCache.has(cacheKey)) return imagesCache.get(cacheKey)!;
+  const cached = imagesCache.get(cacheKey);
+  if (cached?.length) return cached;
 
   const cleaned = cleanPlaceName(name);
   const queries = buildQueriesFor(name);
@@ -339,14 +420,33 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
     ordered = shuffle(fb, seed);
   }
 
-  const final = ordered.slice(0, limit).map(p => toPlaceImage(p, cleaned));
+  const unsplashImages = ordered.slice(0, limit).map(p => toPlaceImage(p, cleaned));
 
   // Track usage globally so other destinations skip these ids.
   for (const p of ordered.slice(0, limit)) usedImageIds.add(p.id);
-  saveSet("helola.usedImg.v3", usedImageIds);
+  saveSet("helola.usedImg.v4", usedImageIds);
 
-  imagesCache.set(cacheKey, final);
-  saveSS("helola.placeImages.v3", imagesCache);
+  const commonsBatches = unsplashImages.length >= limit ? [] : await Promise.all(
+    queries.slice(0, 3).map(q => commonsImageSearch(q, limit).catch(() => [])),
+  );
+  const wiki = await fetchWikiSummary(name);
+  const wikiImage = wiki.image ? [{
+    url: wiki.image,
+    thumb: wiki.thumb || wiki.image,
+    source: `https://en.wikipedia.org/wiki/${encodeURIComponent(titleCandidates(name)[0] || cleaned)}`,
+    title: `${cleaned} photograph`,
+  } as PlaceImage] : [];
+
+  const genericCommons = unsplashImages.length || commonsBatches.flat().length || wikiImage.length
+    ? []
+    : await commonsImageSearch(`${cleaned} travel landscape`, limit).catch(() => []);
+
+  const final = mergeImages(unsplashImages, commonsBatches.flat(), wikiImage, genericCommons).slice(0, limit);
+
+  if (final.length) {
+    imagesCache.set(cacheKey, final);
+    saveSS("helola.placeImages.v4", imagesCache);
+  }
   return final;
 }
 
