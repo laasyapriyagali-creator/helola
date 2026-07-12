@@ -1,35 +1,55 @@
-## Why you're seeing £ instead of ₹
+# HELOLA Passport — Profile section
 
-`getPreferredCurrency()` in `src/lib/i18n.ts` reads the region from `navigator.language` (BCP-47 locale tag). Your device's system language is likely English (UK) — very common on Android/Samsung in India — so the region resolves to `GB` and the map returns `GBP`. Location, SIM, and timezone are never consulted.
+A new "coming soon" teaser section on the Profile page, styled after the selected **Hardcover Foil Passport v4** direction (deep midnight cover, silver foil typography, constellation motif, coordinates + north star).
 
-## Fix
+## Placement
 
-Make currency detection prefer the user's actual geography, with an explicit override always available.
+`src/pages/Profile.tsx`: insert between `<ProfilePublicSections />` and the `<PremiumInviteCard />` block. Show on **own profile only** (framed as "your adventures").
 
-1. **Timezone-first detection in `getPreferredCurrency()`** — Use `Intl.DateTimeFormat().resolvedOptions().timeZone` (e.g. `Asia/Kolkata`) as the primary signal, since it reflects the device's real location far more reliably than UI language. Fall back to locale region only when the timezone is unknown.
+## Files to create
 
-   Add a `TIMEZONE_TO_CURRENCY` map covering the currencies already in `RATES`:
-   - `Asia/Kolkata` → INR
-   - `Europe/London` → GBP, `America/New_York`/`Los_Angeles`/… → USD
-   - `Asia/Tokyo` → JPY, `Asia/Singapore` → SGD, `Asia/Dubai` → AED, `Asia/Hong_Kong` → HKD, `Asia/Shanghai` → CNY, `Asia/Seoul` → KRW, `Asia/Bangkok` → THB, `Asia/Jakarta` → IDR, `Asia/Kuala_Lumpur` → MYR
-   - Eurozone timezones → EUR (Berlin, Paris, Madrid, Rome, Amsterdam, …)
-   - Australia/Sydney → AUD, Pacific/Auckland → NZD, Toronto → CAD, Johannesburg → ZAR, São_Paulo → BRL, Mexico_City → MXN, Istanbul → TRY, Stockholm → SEK, Oslo → NOK, Copenhagen → DKK, Warsaw → PLN, Zurich → CHF
-   - Final fallback: USD
+1. `src/components/passport/PassportCard.tsx` — the tappable cover, styled per v4.
+2. `src/components/passport/PassportPreviewDialog.tsx` — the modal opened on tap.
 
-   Resolution order: `localStorage` override → timezone map → locale region map → USD.
+## Cover (`PassportCard`)
 
-2. **Currency picker in Settings → Preferences** — Add a "Currency" row in `src/components/settings/PreferencesDialog.tsx` (a Select of the supported `CurrencyCode`s labelled "₹ INR — Indian Rupee", etc., plus an "Auto (detect)" option). Selecting a value calls `setPreferredCurrency(code)`; "Auto" clears the localStorage key and cached value so detection re-runs.
+Faithful port of v4 into the project's stack:
 
-3. **Cache invalidation** — Currently `cachedCurrency` persists for the tab's lifetime, so changing the override doesn't repaint prices already computed. `setPreferredCurrency` already updates the cache; also expose a `clearPreferredCurrency()` for the Auto option, and make components that show prices (Premium sheet, Premium settings) re-render on change. Simplest: fire a `window.dispatchEvent(new Event("helola:currency-changed"))` from the setter, and have `PremiumSheet` / `PremiumSettings` subscribe with a small `useCurrency()` hook that forces a re-render.
+- Full-width, `aspect-[16/10]`, `rounded-2xl`, dark base `bg-[#020617]` with layered shadow + `ring-1 ring-white/10`.
+- Constellation SVG background at `opacity-25` — star points with staggered `animate-pulse` durations, faint constellation lines.
+- North-star icon bottom-right, monospace "Origin — 51.5074° N, 0.1278° W" coordinate label top-left.
+- Left "spine" gradient strip.
+- Silver-foil title **HELOLA Passport** using `font-display` (project's existing serif — no new Google Font import needed) with `bg-gradient-to-b from-white via-slate-300 to-slate-500 bg-clip-text text-transparent`.
+- Tagline "*Your adventures, beautifully preserved.*" flanked by short slate hairlines.
+- Top-right "In Development" pill: pulsing dot, `bg-white/5 border-white/20 backdrop-blur`.
+- Hover shimmer sweep, `hover:scale-[1.01] active:scale-[0.99]` press feedback.
 
-## Files touched
+Whole card is a `<button>` that opens the dialog.
 
-- `src/lib/i18n.ts` — timezone map, updated `getPreferredCurrency`, add `clearPreferredCurrency`, emit change event, add `useCurrency` hook.
-- `src/components/settings/PreferencesDialog.tsx` — add Currency select row.
-- `src/components/premium/PremiumSheet.tsx`, `src/pages/settings/PremiumSettings.tsx` — call `useCurrency()` so price labels refresh when the user changes currency.
+## Modal (`PassportPreviewDialog`)
+
+Uses existing `Dialog` from `@/components/ui/dialog`. Visually echoes the cover (same midnight + silver palette on the header, cream body for readability).
+
+- Header row: 🛂 **HELOLA Passport** in `font-display`.
+- Slim divider (silver gradient line + tiny star glyph centered).
+- Pull-quote (serif italic): *"Every journey tells a story."*
+- Body copy (verbatim from the request):
+  - "Soon, every completed trip will automatically become part of your personal travel passport. You'll collect destination stamps, preserve memories, unlock travel achievements, revisit your travel timeline, reconnect with people you've traveled with, and relive every adventure through AI-generated journals and memories."
+  - "In the future, you'll also be able to order a beautifully printed hardcover version of your passport to keep your travel story forever."
+- Footer buttons:
+  - Primary **Notify Me** — solid button; on click, `toast.success("We'll let you know the moment HELOLA Passport is ready.")` and close.
+  - Secondary **Close** — `variant="ghost"`.
+
+No backend / no waitlist table (MVP teaser). If you'd like the "Notify Me" click persisted later, I'll add a `passport_waitlist` table with RLS in a follow-up.
+
+## Styling notes
+
+- Colors used are scoped locally to the card (celestial silver + midnight) — no changes to global tokens, no theme drift.
+- Reuses `font-display` (project serif) — no new font import.
+- Pure Tailwind + inline SVG; no new dependencies.
+- Respects mobile viewport (360px): 16:10 aspect ratio scales cleanly; typography drops to `text-4xl` on small screens.
 
 ## Not in scope
 
-- Live FX rates (still static snapshot in `RATES`).
-- Server-side geolocation (adds infra; timezone + manual override is enough).
-- Changing storage currency from INR.
+- Real trip→stamp generation, achievements, AI journals, ordering printed passports (all mentioned in modal copy as future).
+- Showing the card on other users' profiles.
