@@ -91,9 +91,10 @@ export interface PlaceImage {
 const NOMINATIM = "https://nominatim.openstreetmap.org";
 const WIKI_REST = "https://en.wikipedia.org/api/rest_v1";
 
-// Unsplash public Access Key — designed for client-side use (rate-limited per key).
-const UNSPLASH_ACCESS_KEY = "eUOrgIfI2JDJlcSM08aqcW01hSq9xusChqKxUuDbMmc";
-const UNSPLASH_API = "https://api.unsplash.com";
+// Unsplash requests are proxied through a Lovable Cloud edge function so the
+// access key never ships in the client bundle.
+import { supabase } from "@/integrations/supabase/client";
+const UNSPLASH_FN = "unsplash-search";
 
 /** Fetch wrapper with a strict timeout — prevents hung UI when a third party stalls. */
 async function safeFetch(url: string, opts: RequestInit = {}, timeoutMs = 6000): Promise<Response | null> {
@@ -258,8 +259,13 @@ interface UnsplashPhoto {
 }
 
 async function unsplashSearch(query: string, perPage = 12, orientation: "landscape" | "squarish" = "landscape"): Promise<UnsplashPhoto[]> {
-  const url = `${UNSPLASH_API}/search/photos?query=${encodeURIComponent(query)}&per_page=${perPage}&orientation=${orientation}&content_filter=high&client_id=${UNSPLASH_ACCESS_KEY}`;
-  const res = await safeFetch(url, {}, 7000);
+  const base = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  const anon = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
+  if (!base) return [];
+  const url = `${base}/functions/v1/${UNSPLASH_FN}?query=${encodeURIComponent(query)}&per_page=${perPage}&orientation=${orientation}`;
+  const res = await safeFetch(url, {
+    headers: anon ? { Authorization: `Bearer ${anon}`, apikey: anon } : {},
+  }, 7000);
   if (!res || !res.ok) return [];
   try {
     const data = await res.json();
