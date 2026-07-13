@@ -86,19 +86,15 @@ export interface PlaceImage {
   thumb: string;
   source: string;
   title: string;
-  unsplashId?: string;
 }
 
 const NOMINATIM = "https://nominatim.openstreetmap.org";
 const WIKI_REST = "https://en.wikipedia.org/api/rest_v1";
 
-// Unsplash requests are proxied through a Lovable Cloud edge function so the
-// access key never ships in the client bundle. Unsplash is the ONLY source
-// of destination photography — Wikipedia/Commons are used solely for text.
+// Unsplash requests go through a Lovable Cloud edge function so the access
+// key never ships in the client bundle. Unsplash is the ONLY source of
+// destination photography — Wikipedia is used solely for text summaries.
 import { supabase } from "@/integrations/supabase/client";
-const FUNCTIONS_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
-const UNSPLASH_FN = "unsplash-search";
-const UNSPLASH_FALLBACK_FN = "destination-photo-search";
 
 /** Fetch wrapper with a strict timeout — prevents hung UI when a third party stalls. */
 async function safeFetch(url: string, opts: RequestInit = {}, timeoutMs = 6000): Promise<Response | null> {
@@ -125,33 +121,12 @@ function saveSet(k: string, s: Set<string>) {
   try { sessionStorage.setItem(k, JSON.stringify(Array.from(s).slice(-500))); } catch { /* quota */ }
 }
 
-const summaryTextCache = loadSS<string | null>("helola.placeExtract.v5");
-const IMAGE_CACHE_KEY = "helola.placeImages.v11";
-const USED_IMAGE_CACHE_KEY = "helola.usedImg.v11";
-const imagesCache = loadSS<PlaceImage[]>(IMAGE_CACHE_KEY);
+const summaryTextCache = loadSS<string | null>("helola.placeExtract.v3");
+const imagesCache = loadSS<PlaceImage[]>("helola.placeImages.v3");
 const searchCache = new Map<string, PlaceSuggestion[]>();
 // Global dedupe so two different destinations never get the same photo.
-const selectedImageDestinations = loadSS<string>(USED_IMAGE_CACHE_KEY);
+const usedImageIds = loadSet("helola.usedImg.v3");
 
-const photoQueue: Array<() => void> = [];
-let activePhotoRequests = 0;
-const MAX_PHOTO_REQUESTS = 2;
-let photoServiceDisabledUntil = 0;
-const PHOTO_SERVICE_COOLDOWN_MS = 2 * 60 * 1000;
-const PHOTO_SERVICE_TRANSIENT_COOLDOWN_MS = 30 * 1000;
-
-async function queuePhotoRequest<T>(task: () => Promise<T>): Promise<T> {
-  if (activePhotoRequests >= MAX_PHOTO_REQUESTS) {
-    await new Promise<void>((resolve) => photoQueue.push(resolve));
-  }
-  activePhotoRequests += 1;
-  try {
-    return await task();
-  } finally {
-    activePhotoRequests = Math.max(0, activePhotoRequests - 1);
-    photoQueue.shift()?.();
-  }
-}
 
 export async function searchPlaces(query: string, limit = 6): Promise<PlaceSuggestion[]> {
   const q = query.trim();
