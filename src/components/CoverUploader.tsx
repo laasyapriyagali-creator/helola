@@ -1,12 +1,9 @@
 import { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { Eye, Image as ImageIcon, Loader2, Pencil, Trash2 } from "lucide-react";
+import { Camera, Loader2, Pencil, Trash2 } from "lucide-react";
 import { CoverEditorDialog } from "@/components/CoverEditorDialog";
-import { reportError } from "@/lib/reportError";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 
 interface Props {
   userId: string;
@@ -53,8 +50,7 @@ export function CoverUploader({ userId, currentUrl, onChange, className, compact
       setEditorSrc(null);
       toast({ title: "Cover updated ✨" });
     } catch (err) {
-      reportError("src/components/CoverUploader.tsx", err);
-      toast({ title: "Upload failed", description: "Try again", variant: "destructive" });
+      toast({ title: "Upload failed", description: err instanceof Error ? err.message : "Try again", variant: "destructive" });
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -69,8 +65,7 @@ export function CoverUploader({ userId, currentUrl, onChange, className, compact
       onChange(null);
       toast({ title: "Cover removed" });
     } catch (err) {
-      reportError("src/components/CoverUploader.tsx", err);
-      toast({ title: "Error", description: "Couldn't remove", variant: "destructive" });
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Couldn't remove", variant: "destructive" });
     } finally { setBusy(false); }
   };
 
@@ -92,34 +87,39 @@ export function CoverUploader({ userId, currentUrl, onChange, className, compact
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20" />
 
       {!compact && (
-        <div className="absolute right-14 top-3 z-10">
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              disabled={busy}
-              aria-label="Edit cover photo"
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-background/85 text-primary shadow-soft backdrop-blur transition hover:bg-background disabled:opacity-60"
-            >
-              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Pencil className="h-3.5 w-3.5" />}
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              {currentUrl && (
-                <DropdownMenuItem onClick={(e) => { e.preventDefault(); onView?.(); }}>
-                  <Eye className="mr-2 h-4 w-4" /> View photo
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={openPicker}>
-                <ImageIcon className="mr-2 h-4 w-4" /> {currentUrl ? "Change photo" : "Add photo"}
-              </DropdownMenuItem>
-              {currentUrl && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={remove} className="text-destructive focus:text-destructive">
-                    <Trash2 className="mr-2 h-4 w-4" /> Remove photo
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="absolute right-4 top-4 flex gap-2">
+          <Button
+            type="button"
+            size="sm"
+            onClick={openPicker}
+            disabled={busy}
+            className="h-9 rounded-full bg-primary px-4 text-primary-foreground shadow-soft hover:bg-primary/90"
+          >
+            {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Camera className="mr-1 h-3.5 w-3.5" />}
+            {currentUrl ? "Change cover" : "Add cover"}
+          </Button>
+          {currentUrl && !busy && (
+            <>
+              <Button
+                type="button"
+                size="icon"
+                onClick={editExisting}
+                className="h-9 w-9 rounded-full bg-primary text-primary-foreground shadow-soft hover:bg-primary/90"
+                aria-label="Edit cover"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                type="button"
+                size="icon"
+                onClick={remove}
+                className="h-9 w-9 rounded-full bg-primary text-primary-foreground shadow-soft hover:bg-primary/90"
+                aria-label="Remove background photo"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </>
+          )}
         </div>
       )}
       <input

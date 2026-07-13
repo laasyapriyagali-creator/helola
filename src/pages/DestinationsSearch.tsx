@@ -4,7 +4,7 @@ import { ArrowLeft, MapPin, ImageOff } from "lucide-react";
 import { PlaceSearchInput } from "@/components/PlaceSearchInput";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getPlaceImages, getPlaceSummary, type PlaceSuggestion } from "@/lib/places";
+import { getPlaceSummary, type PlaceSuggestion } from "@/lib/places";
 
 interface Result extends PlaceSuggestion { image?: string; extract?: string }
 
@@ -19,11 +19,8 @@ export default function DestinationsSearch() {
   const onPick = async (p: PlaceSuggestion) => {
     setPicked({ ...p });
     setLoading(true);
-    const [sum, imgs] = await Promise.all([
-      getPlaceSummary(p.display_name || p.name),
-      getPlaceImages(p.display_name || p.name, 1).catch(() => []),
-    ]);
-    setPicked({ ...p, image: imgs[0]?.thumb || imgs[0]?.url || sum?.image, extract: sum?.extract });
+    const sum = await getPlaceSummary(p.name);
+    setPicked({ ...p, image: sum?.image, extract: sum?.extract });
     setLoading(false);
   };
 
@@ -34,7 +31,7 @@ export default function DestinationsSearch() {
       </button>
       <div className="mx-auto max-w-2xl">
         <h1 className="font-display text-3xl font-bold md:text-4xl">Search any place</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Powered by OpenStreetMap. Real photos via Unsplash.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Powered by OpenStreetMap. Real photos via Wikipedia.</p>
 
         <div className="mt-5">
           <PlaceSearchInput value={q} onChange={setQ} onSelect={onPick} placeholder="Try: Hampi, Kyoto, Iceland…" />
@@ -44,7 +41,7 @@ export default function DestinationsSearch() {
           <Card className="mt-6 overflow-hidden border-border/60 shadow-soft">
             <div className="relative h-48 bg-muted md:h-64">
               {loading ? <Skeleton className="h-full w-full" /> : picked.image ? (
-                <img src={picked.image} alt={picked.name} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                <img src={picked.image} alt={picked.name} className="h-full w-full object-cover" />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-muted-foreground"><ImageOff className="h-6 w-6" /></div>
               )}

@@ -14,30 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      account_deletion_audit: {
-        Row: {
-          created_at: string
-          event: string
-          id: string
-          metadata: Json | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          event: string
-          id?: string
-          metadata?: Json | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          event?: string
-          id?: string
-          metadata?: Json | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       blocked_users: {
         Row: {
           blocked_id: string
@@ -56,93 +32,6 @@ export type Database = {
           blocker_id?: string
           created_at?: string
           id?: string
-        }
-        Relationships: []
-      }
-      email_send_log: {
-        Row: {
-          created_at: string
-          error_message: string | null
-          id: string
-          message_id: string | null
-          metadata: Json | null
-          recipient_email: string
-          status: string
-          template_name: string
-        }
-        Insert: {
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          message_id?: string | null
-          metadata?: Json | null
-          recipient_email: string
-          status: string
-          template_name: string
-        }
-        Update: {
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          message_id?: string | null
-          metadata?: Json | null
-          recipient_email?: string
-          status?: string
-          template_name?: string
-        }
-        Relationships: []
-      }
-      email_send_state: {
-        Row: {
-          auth_email_ttl_minutes: number
-          batch_size: number
-          id: number
-          retry_after_until: string | null
-          send_delay_ms: number
-          transactional_email_ttl_minutes: number
-          updated_at: string
-        }
-        Insert: {
-          auth_email_ttl_minutes?: number
-          batch_size?: number
-          id?: number
-          retry_after_until?: string | null
-          send_delay_ms?: number
-          transactional_email_ttl_minutes?: number
-          updated_at?: string
-        }
-        Update: {
-          auth_email_ttl_minutes?: number
-          batch_size?: number
-          id?: number
-          retry_after_until?: string | null
-          send_delay_ms?: number
-          transactional_email_ttl_minutes?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      email_unsubscribe_tokens: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-          token: string
-          used_at: string | null
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id?: string
-          token: string
-          used_at?: string | null
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          token?: string
-          used_at?: string | null
         }
         Relationships: []
       }
@@ -312,101 +201,6 @@ export type Database = {
         }
         Relationships: []
       }
-      premium_payment_history: {
-        Row: {
-          amount_inr: number
-          created_at: string
-          id: string
-          paid_at: string
-          plan: Database["public"]["Enums"]["premium_plan"]
-          provider: string | null
-          provider_payment_id: string | null
-          status: string
-          subscription_id: string | null
-          user_id: string
-        }
-        Insert: {
-          amount_inr: number
-          created_at?: string
-          id?: string
-          paid_at?: string
-          plan: Database["public"]["Enums"]["premium_plan"]
-          provider?: string | null
-          provider_payment_id?: string | null
-          status?: string
-          subscription_id?: string | null
-          user_id: string
-        }
-        Update: {
-          amount_inr?: number
-          created_at?: string
-          id?: string
-          paid_at?: string
-          plan?: Database["public"]["Enums"]["premium_plan"]
-          provider?: string | null
-          provider_payment_id?: string | null
-          status?: string
-          subscription_id?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "premium_payment_history_subscription_id_fkey"
-            columns: ["subscription_id"]
-            isOneToOne: false
-            referencedRelation: "premium_subscriptions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      premium_subscriptions: {
-        Row: {
-          auto_renew: boolean
-          cancelled_at: string | null
-          created_at: string
-          expiry_date: string | null
-          id: string
-          plan: Database["public"]["Enums"]["premium_plan"]
-          provider: string | null
-          provider_subscription_id: string | null
-          renewal_date: string | null
-          start_date: string
-          status: Database["public"]["Enums"]["premium_status"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          auto_renew?: boolean
-          cancelled_at?: string | null
-          created_at?: string
-          expiry_date?: string | null
-          id?: string
-          plan: Database["public"]["Enums"]["premium_plan"]
-          provider?: string | null
-          provider_subscription_id?: string | null
-          renewal_date?: string | null
-          start_date?: string
-          status?: Database["public"]["Enums"]["premium_status"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          auto_renew?: boolean
-          cancelled_at?: string | null
-          created_at?: string
-          expiry_date?: string | null
-          id?: string
-          plan?: Database["public"]["Enums"]["premium_plan"]
-          provider?: string | null
-          provider_subscription_id?: string | null
-          renewal_date?: string | null
-          start_date?: string
-          status?: Database["public"]["Enums"]["premium_status"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           age: number | null
@@ -415,7 +209,6 @@ export type Database = {
           bio: string | null
           cover_url: string | null
           created_at: string
-          date_of_birth: string | null
           full_name: string | null
           gender: string | null
           hobbies: string[] | null
@@ -423,16 +216,12 @@ export type Database = {
           identity_locked: boolean
           is_verified: boolean
           location: string | null
-          location_city: string | null
-          location_country: string | null
           message_permission: string
           pending_deletion_at: string | null
-          previous_usernames: string[] | null
           profile_visibility: string
           updated_at: string
           username: string | null
           username_change_count: number
-          username_changed_at: string | null
         }
         Insert: {
           age?: number | null
@@ -441,7 +230,6 @@ export type Database = {
           bio?: string | null
           cover_url?: string | null
           created_at?: string
-          date_of_birth?: string | null
           full_name?: string | null
           gender?: string | null
           hobbies?: string[] | null
@@ -449,16 +237,12 @@ export type Database = {
           identity_locked?: boolean
           is_verified?: boolean
           location?: string | null
-          location_city?: string | null
-          location_country?: string | null
           message_permission?: string
           pending_deletion_at?: string | null
-          previous_usernames?: string[] | null
           profile_visibility?: string
           updated_at?: string
           username?: string | null
           username_change_count?: number
-          username_changed_at?: string | null
         }
         Update: {
           age?: number | null
@@ -467,7 +251,6 @@ export type Database = {
           bio?: string | null
           cover_url?: string | null
           created_at?: string
-          date_of_birth?: string | null
           full_name?: string | null
           gender?: string | null
           hobbies?: string[] | null
@@ -475,40 +258,12 @@ export type Database = {
           identity_locked?: boolean
           is_verified?: boolean
           location?: string | null
-          location_city?: string | null
-          location_country?: string | null
           message_permission?: string
           pending_deletion_at?: string | null
-          previous_usernames?: string[] | null
           profile_visibility?: string
           updated_at?: string
           username?: string | null
           username_change_count?: number
-          username_changed_at?: string | null
-        }
-        Relationships: []
-      }
-      suppressed_emails: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-          metadata: Json | null
-          reason: string
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id?: string
-          metadata?: Json | null
-          reason: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          metadata?: Json | null
-          reason?: string
         }
         Relationships: []
       }
@@ -710,46 +465,10 @@ export type Database = {
       }
     }
     Views: {
-      my_profile_private: {
-        Row: {
-          date_of_birth: string | null
-          id: string | null
-          identity_locked: boolean | null
-          pending_deletion_at: string | null
-          previous_usernames: string[] | null
-          username_changed_at: string | null
-        }
-        Insert: {
-          date_of_birth?: string | null
-          id?: string | null
-          identity_locked?: boolean | null
-          pending_deletion_at?: string | null
-          previous_usernames?: string[] | null
-          username_changed_at?: string | null
-        }
-        Update: {
-          date_of_birth?: string | null
-          id?: string | null
-          identity_locked?: boolean | null
-          pending_deletion_at?: string | null
-          previous_usernames?: string[] | null
-          username_changed_at?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       cancel_account_deletion: { Args: never; Returns: undefined }
-      cancel_premium_subscription: { Args: never; Returns: undefined }
-      delete_email: {
-        Args: { message_id: number; queue_name: string }
-        Returns: boolean
-      }
-      email_queue_dispatch: { Args: never; Returns: undefined }
-      enqueue_email: {
-        Args: { payload: Json; queue_name: string }
-        Returns: number
-      }
       get_memory_authors: {
         Args: { _ids: string[] }
         Returns: {
@@ -759,47 +478,14 @@ export type Database = {
           username: string
         }[]
       }
-      get_trip_coordinator_contact: {
-        Args: { _trip_id: string }
-        Returns: string
-      }
-      is_trip_creator: {
-        Args: { _trip_id: string; _user_id: string }
-        Returns: boolean
-      }
       is_trip_member: {
         Args: { _trip_id: string; _user_id: string }
         Returns: boolean
       }
-      move_to_dlq: {
-        Args: {
-          dlq_name: string
-          message_id: number
-          payload: Json
-          source_queue: string
-        }
-        Returns: number
-      }
       purge_expired_accounts: { Args: never; Returns: number }
-      purge_user_data: { Args: { _user_id: string }; Returns: undefined }
-      read_email_batch: {
-        Args: { batch_size: number; queue_name: string; vt: number }
-        Returns: {
-          message: Json
-          msg_id: number
-          read_ct: number
-        }[]
-      }
       request_account_deletion: { Args: never; Returns: undefined }
-      set_premium_auto_renew: { Args: { _value: boolean }; Returns: undefined }
-      users_blocked_either_way: {
-        Args: { _a: string; _b: string }
-        Returns: boolean
-      }
     }
     Enums: {
-      premium_plan: "monthly" | "six_month" | "yearly"
-      premium_status: "active" | "cancelled" | "expired" | "pending"
       trip_status: "upcoming" | "ongoing" | "completed" | "cancelled"
     }
     CompositeTypes: {
@@ -928,8 +614,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      premium_plan: ["monthly", "six_month", "yearly"],
-      premium_status: ["active", "cancelled", "expired", "pending"],
       trip_status: ["upcoming", "ongoing", "completed", "cancelled"],
     },
   },

@@ -8,31 +8,27 @@ import { AvatarViewerDialog } from "@/components/AvatarViewerDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Settings as SettingsIcon } from "lucide-react";
+import { MapPin, Settings as SettingsIcon, Bell } from "lucide-react";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { CoverUploader } from "@/components/CoverUploader";
 import { CoverViewerDialog } from "@/components/CoverViewerDialog";
 import { EditProfileSheet } from "@/components/EditProfileSheet";
 import { ProfilePublicSections } from "@/components/ProfilePublicSections";
-import { PremiumInviteCard } from "@/components/premium/PremiumInviteCard";
-import { PassportCard } from "@/components/passport/PassportCard";
-import { computeAge } from "@/lib/age";
-import { formatLocation } from "@/lib/location";
 
 interface Profile {
   id: string;
   full_name: string | null;
   username: string | null;
   bio: string | null;
-  date_of_birth?: string | null;
+  age?: number | null;
   gender?: string | null;
-  location_city?: string | null;
-  location_country?: string | null;
+  location: string | null;
   hobbies: string[] | null;
   avatar_url: string | null;
   cover_url: string | null;
   is_verified: boolean;
   identity_locked?: boolean;
-  username_changed_at?: string | null;
+  username_change_count?: number;
 }
 
 export default function Profile() {
@@ -44,7 +40,7 @@ export default function Profile() {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [coverViewerOpen, setCoverViewerOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
-  
+  const unread = useUnreadNotifications();
 
   const targetId = userId || user?.id;
   const isOwn = !userId || userId === user?.id;
@@ -58,8 +54,8 @@ export default function Profile() {
     setLoading(true);
     let cancelled = false;
     (async () => {
-      const ownColumns = "id,full_name,username,bio,date_of_birth,gender,location_city,location_country,hobbies,avatar_url,cover_url,is_verified,identity_locked,username_changed_at";
-      const publicColumns = "id,full_name,username,bio,location_city,location_country,hobbies,avatar_url,cover_url,is_verified";
+      const ownColumns = "id,full_name,username,bio,age,gender,location,hobbies,avatar_url,cover_url,is_verified,identity_locked,username_change_count";
+      const publicColumns = "id,full_name,username,bio,avatar_url,cover_url,is_verified";
       const { data, error } = await supabase
         .from("profiles")
         .select(isOwn ? ownColumns : publicColumns)
@@ -109,16 +105,31 @@ export default function Profile() {
           </button>
         )}
 
-        {/* Settings gear — top-right corner */}
+        {/* Settings gear — top-right, only on own profile */}
         {isOwn && (
-          <button
-            type="button"
-            onClick={() => navigate("/settings")}
-            aria-label="Settings"
-            className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-background/85 text-primary shadow-soft backdrop-blur hover:bg-background"
-          >
-            <SettingsIcon className="h-4 w-4" />
-          </button>
+          <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate("/notifications")}
+              aria-label="Notifications"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full bg-background/85 text-primary shadow-soft backdrop-blur hover:bg-background"
+            >
+              <Bell className="h-4 w-4" />
+              {unread > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/settings")}
+              aria-label="Settings"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-background/85 text-primary shadow-soft backdrop-blur hover:bg-background"
+            >
+              <SettingsIcon className="h-4 w-4" />
+            </button>
+          </div>
         )}
       </div>
 
@@ -185,16 +196,16 @@ export default function Profile() {
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/8 text-primary">
                 <MapPin className="h-3.5 w-3.5" strokeWidth={1.5} />
               </span>
-              {formatLocation(profile.location_city, profile.location_country) || <span className="text-muted-foreground">Not set</span>}
+              {profile.location || <span className="text-muted-foreground">Not set</span>}
             </span>
           } />
 
           {isOwn && (
             <DetailRow label="Age & gender" value={
               <span>
-                {computeAge(profile.date_of_birth) ?? <span className="text-muted-foreground">—</span>}
+                {profile.age ? `${profile.age}` : <span className="text-muted-foreground">—</span>}
                 <span className="mx-2 text-muted-foreground/60">·</span>
-                <span className="capitalize">{(profile.gender || "").replace(/_/g, " ") || <span className="text-muted-foreground">—</span>}</span>
+                <span className="capitalize">{profile.gender || <span className="text-muted-foreground">—</span>}</span>
               </span>
             } />
           )}
@@ -219,18 +230,6 @@ export default function Profile() {
         </div>
 
         <ProfilePublicSections userId={profile.id} />
-
-        {isOwn && (
-          <div className="mt-10">
-            <PassportCard />
-          </div>
-        )}
-
-        {isOwn && (
-          <div className="mt-10">
-            <PremiumInviteCard variant="profile" />
-          </div>
-        )}
       </div>
 
 

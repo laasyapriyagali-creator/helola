@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { reportError } from "@/lib/reportError";
 
 interface Prefs {
   trip_updates: boolean;
@@ -40,8 +39,7 @@ export function NotificationDialog({ open, onOpenChange, focusKey }: { open: boo
     setBusy(true);
     const { error } = await supabase.from("notification_prefs").upsert({ user_id: user.id, ...prefs });
     setBusy(false);
-    reportError("src/components/settings/NotificationDialog.tsx", error);
-    if (error) return toast({ title: "Couldn't save", description: "Please try again in a moment.", variant: "destructive" });
+    if (error) return toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
     toast({ title: "Notifications updated" });
     onOpenChange(false);
   };

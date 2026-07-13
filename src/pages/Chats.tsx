@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Send, Lock, Users, Paperclip, X, Loader2, ChevronDown } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { reportError } from "@/lib/reportError";
 
 interface ChatThread { trip_id: string; destination: string; start_date: string; max_members: number; member_count: number; cover_image_url: string | null }
 
@@ -67,7 +66,7 @@ export default function Chats() {
                     <TripImage destination={t.destination} coverUrl={t.cover_image_url} rounded="xl" className="h-14 w-14 shrink-0" />
                     <div className="min-w-0 flex-1">
                       <p className="font-display text-lg font-bold">{t.destination.toUpperCase()} TRIP</p>
-                      <p className="text-xs text-muted-foreground">{start.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })} · <Users className="inline h-3 w-3" /> {t.member_count}/{t.max_members}</p>
+                      <p className="text-xs text-muted-foreground">{start.toLocaleDateString("en-IN", { month: "long", day: "numeric", year: "numeric" })} · <Users className="inline h-3 w-3" /> {t.member_count}/{t.max_members}</p>
                     </div>
                     <span className="text-2xl text-muted-foreground">›</span>
                   </CardContent>
@@ -196,8 +195,7 @@ export function ChatRoom() {
           attachments.push({ type: f.type.startsWith("video/") ? "video" : "image", url: path });
         }
       } catch (e: any) {
-        reportError("src/pages/Chats.tsx", e);
-        toast({ title: "Upload failed", description: "Please try again in a moment.", variant: "destructive" });
+        toast({ title: "Upload failed", description: e.message, variant: "destructive" });
         setInput(text); setPendingFiles(files); setSending(false); setUploading(false); return;
       }
       setUploading(false);
@@ -243,7 +241,7 @@ export function ChatRoom() {
               const showDay = dayKey !== prevDay;
               const today = new Date().toDateString();
               const yest = new Date(Date.now() - 86400000).toDateString();
-              const label = dayKey === today ? "Today" : dayKey === yest ? "Yesterday" : new Date(m.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+              const label = dayKey === today ? "Today" : dayKey === yest ? "Yesterday" : new Date(m.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" });
               return (
                 <div key={m.id}>
                   {showDay && (
@@ -263,7 +261,7 @@ export function ChatRoom() {
                         </div>
                       )}
                       {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
-                      <p className={`text-[10px] opacity-60 ${me ? "text-right" : ""}`}>{new Date(m.created_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}</p>
+                      <p className={`text-[10px] opacity-60 ${me ? "text-right" : ""}`}>{new Date(m.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</p>
                     </div>
                   </div>
                 </div>

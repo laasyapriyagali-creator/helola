@@ -12,51 +12,33 @@ interface Props { place: string; }
 export function PlaceAboutSection({ place }: Props) {
   const [images, setImages] = useState<PlaceImage[]>([]);
   const [summary, setSummary] = useState<string>("");
-  const [summaryLoading, setSummaryLoading] = useState(true);
-  const [imagesLoading, setImagesLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showFull, setShowFull] = useState(false);
   const [openGallery, setOpenGallery] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
-  const load = useCallback((isCancelled: () => boolean) => {
+  const load = useCallback(async () => {
     if (!place) return;
-    setSummaryLoading(true);
-    setImagesLoading(true);
+    setLoading(true);
     setError(null);
-    setSummary("");
-    setImages([]);
-
-    getPlaceSummary(place)
-      .then((sum) => {
-        if (!isCancelled()) setSummary(sum?.extract || "");
-      })
-      .catch(() => {
-        if (!isCancelled()) setSummary("");
-      })
-      .finally(() => {
-        if (!isCancelled()) setSummaryLoading(false);
-      });
-
-    getPlaceImages(place, 6)
-      .then((rawImgs) => {
-        if (isCancelled()) return;
-        setImages(rawImgs.slice(0, 6));
-        if (rawImgs.length === 0) setError("No photos found for this place yet.");
-      })
-      .catch(() => {
-        if (!isCancelled()) setError("Couldn't load photos right now.");
-      })
-      .finally(() => {
-        if (!isCancelled()) setImagesLoading(false);
-      });
+    try {
+      const [rawImgs, sum] = await Promise.all([
+        getPlaceImages(place, 6).catch(() => [] as PlaceImage[]),
+        getPlaceSummary(place).catch(() => null),
+      ]);
+      // Show immediately — broken tiles self-hide via onError below.
+      setImages(rawImgs.slice(0, 6));
+      setSummary(sum?.extract || "");
+      if (rawImgs.length === 0) setError("No verified photos found for this place.");
+    } catch (e: any) {
+      setError(e?.message || "Couldn't load place info.");
+    } finally {
+      setLoading(false);
+    }
   }, [place]);
 
-  useEffect(() => {
-    let cancelled = false;
-    load(() => cancelled);
-    return () => { cancelled = true; };
-  }, [load, attempt]);
+  useEffect(() => { load(); }, [load, attempt]);
 
   const short = summary.length > 220 ? summary.slice(0, 220).trimEnd() + "…" : summary;
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
@@ -73,30 +55,31 @@ export function PlaceAboutSection({ place }: Props) {
       </div>
       <Card className="border-border/60 shadow-soft">
         <CardContent className="p-4">
-          {summaryLoading ? (
-            <Skeleton className="mb-3 h-16 w-full rounded-md" />
-          ) : summary ? (
-            <p className="mb-3 text-sm leading-relaxed text-foreground/80">
-              {showFull ? summary : short}
-              {summary.length > 220 && (
-                <button onClick={() => setShowFull(s => !s)} className="ml-1 text-xs font-semibold text-primary">
-                  {showFull ? "Show less" : "View more"}
-                </button>
-              )}
-            </p>
-          ) : null}
-
-          {imagesLoading && images.length === 0 ? (
-            <div className="grid grid-cols-3 gap-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="relative h-24 overflow-hidden rounded-lg bg-muted">
-                  <Skeleton className="h-full w-full" />
-                  <Loader2 className="absolute inset-0 m-auto h-4 w-4 animate-spin text-muted-foreground" />
-                </div>
-              ))}
-            </div>
+          {loading ? (
+            <>
+              <Skeleton className="mb-3 h-16 w-full rounded-md" />
+              <div className="grid grid-cols-3 gap-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="relative h-24 overflow-hidden rounded-lg bg-muted">
+                    <Skeleton className="h-full w-full" />
+                    <Loader2 className="absolute inset-0 m-auto h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                ))}
+              </div>
+            </>
           ) : (
             <>
+              {summary && (
+                <p className="mb-3 text-sm leading-relaxed text-foreground/80">
+                  {showFull ? summary : short}
+                  {summary.length > 220 && (
+                    <button onClick={() => setShowFull(s => !s)} className="ml-1 text-xs font-semibold text-primary">
+                      {showFull ? "Show less" : "View more"}
+                    </button>
+                  )}
+                </p>
+              )}
+
               {error && images.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center">
                   <AlertCircle className="h-5 w-5 text-muted-foreground" />

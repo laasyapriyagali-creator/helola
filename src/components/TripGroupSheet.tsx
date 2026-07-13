@@ -65,7 +65,7 @@ export function TripGroupSheet({ open, onOpenChange, tripId }: Props) {
   }, [open, tripId]);
 
   const dateLabel = trip
-    ? `${new Date(trip.start_date).toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${new Date(trip.end_date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`
+    ? `${new Date(trip.start_date).toLocaleDateString("en-IN", { month: "short", day: "numeric" })} – ${new Date(trip.end_date).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}`
     : "";
 
   return (
@@ -119,7 +119,7 @@ export function TripGroupSheet({ open, onOpenChange, tripId }: Props) {
                         <p className="truncate text-sm font-medium">{m.full_name ?? "Traveler"}</p>
                         {m.joined_at && (
                           <p className="text-[11px] text-muted-foreground">
-                            Joined {new Date(m.joined_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                            Joined {new Date(m.joined_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
                           </p>
                         )}
                       </div>

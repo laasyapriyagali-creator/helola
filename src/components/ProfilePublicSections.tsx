@@ -97,7 +97,7 @@ export function ProfilePublicSections({ userId }: { userId: string }) {
                   <p className="line-clamp-1 font-display text-base font-semibold leading-tight">{t.destination}</p>
                   <p className="mt-0.5 flex items-center gap-1 text-[11px] opacity-85">
                     <Calendar className="h-3 w-3" />
-                    {new Date(t.start_date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                    {new Date(t.start_date).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
                   </p>
                 </div>
               </Link>

@@ -6,18 +6,8 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { reportError } from "@/lib/reportError";
-import {
-  SUPPORTED_CURRENCIES,
-  getPreferredCurrency,
-  setPreferredCurrency,
-  clearPreferredCurrency,
-  isCurrencyOverridden,
-  type CurrencyCode,
-} from "@/lib/i18n";
 
 type FocusKey = "location" | "destinations" | "budget" | "interests";
 
@@ -29,14 +19,6 @@ export function PreferencesDialog({ open, onOpenChange, focusKey }: { open: bool
   const [budgetMax, setBudgetMax] = useState<string>("");
   const [interestsText, setInterestsText] = useState("");
   const [busy, setBusy] = useState(false);
-  const [currency, setCurrency] = useState<CurrencyCode | "auto">(
-    isCurrencyOverridden() ? getPreferredCurrency() : "auto"
-  );
-
-  const onCurrencyChange = (v: string) => {
-    if (v === "auto") { clearPreferredCurrency(); setCurrency("auto"); }
-    else { setPreferredCurrency(v as CurrencyCode); setCurrency(v as CurrencyCode); }
-  };
 
   useEffect(() => {
     if (!open || !user) return;
@@ -64,8 +46,7 @@ export function PreferencesDialog({ open, onOpenChange, focusKey }: { open: bool
     const { error } = await supabase.from("travel_prefs").upsert(payload);
     if (locationAccess && navigator.geolocation) navigator.geolocation.getCurrentPosition(() => {}, () => {});
     setBusy(false);
-    reportError("src/components/settings/PreferencesDialog.tsx", error);
-    if (error) return toast({ title: "Couldn't save", description: "Please try again in a moment.", variant: "destructive" });
+    if (error) return toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
     toast({ title: "Preferences saved" });
     onOpenChange(false);
   };
@@ -87,29 +68,15 @@ export function PreferencesDialog({ open, onOpenChange, focusKey }: { open: bool
             <p className="text-xs text-muted-foreground">Comma separated.</p>
           </div>
           <div className={`space-y-1.5 rounded-xl ${ring("budget")} ${focusKey === "budget" ? "p-3" : ""}`}>
-            <Label>Budget range</Label>
+            <Label>Budget range (₹)</Label>
             <div className="flex gap-2">
               <Input type="number" value={budgetMin} onChange={(e) => setBudgetMin(e.target.value)} placeholder="Min" />
               <Input type="number" value={budgetMax} onChange={(e) => setBudgetMax(e.target.value)} placeholder="Max" />
             </div>
-            <p className="text-xs text-muted-foreground">Enter amounts in INR — prices display in your local currency.</p>
           </div>
           <div className={`space-y-1.5 rounded-xl ${ring("interests")} ${focusKey === "interests" ? "p-3" : ""}`}>
             <Label>Travel interests</Label>
             <Input value={interestsText} onChange={(e) => setInterestsText(e.target.value)} placeholder="Adventure, beaches, food, culture..." />
-          </div>
-          <div className="space-y-1.5 rounded-xl border border-border p-3">
-            <Label>Display currency</Label>
-            <Select value={currency} onValueChange={onCurrencyChange}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent className="max-h-72">
-                <SelectItem value="auto">Auto — detect from my device</SelectItem>
-                {SUPPORTED_CURRENCIES.map(c => (
-                  <SelectItem key={c.code} value={c.code}>{c.symbol} {c.code} — {c.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">Prices across the app display in this currency.</p>
           </div>
         </div>
         <DialogFooter><Button onClick={save} disabled={busy} className="rounded-full">{busy && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}Save</Button></DialogFooter>

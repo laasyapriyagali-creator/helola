@@ -22,42 +22,22 @@ export default function DestinationDetail() {
   useEffect(() => {
     document.title = `${decoded} · Real photos & trip info · HELOLA`;
     let cancelled = false;
-    setLoading(true);
-    setSummary(null);
-    setImages([]);
-    setCoords(null);
-
-    // Fire all three in parallel and update the UI as each resolves — no waterfall.
-    getPlaceSummary(decoded)
-      .then((sum) => {
-        if (cancelled) return;
-        setSummary({ extract: sum?.extract || "", image: sum?.image });
-      })
-      .catch(() => {
-        if (!cancelled) setSummary({ extract: "" });
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false); // text drives the primary skeleton
-      });
-
-    getPlaceImages(decoded, 12)
-      .then((imgs) => {
-        if (cancelled) return;
-        setImages((prev) => {
-          const combined: PlaceImage[] = [...prev];
-          for (const i of imgs) if (!combined.find(c => c.url === i.url)) combined.push(i);
-          return combined;
-        });
-      })
-      .catch(() => undefined);
-
-    searchPlaces(decoded, 1)
-      .then((geo) => {
-        if (cancelled || !geo[0]) return;
-        setCoords({ lat: geo[0].lat, lon: geo[0].lon });
-      })
-      .catch(() => undefined);
-
+    (async () => {
+      setLoading(true);
+      const [sum, imgs, geo] = await Promise.all([
+        getPlaceSummary(decoded),
+        getPlaceImages(decoded, 12),
+        searchPlaces(decoded, 1),
+      ]);
+      if (cancelled) return;
+      setSummary(sum ? { extract: sum.extract, image: sum.image } : null);
+      const combined: PlaceImage[] = [];
+      if (sum?.image) combined.push({ url: sum.image, thumb: sum.image, source: "https://en.wikipedia.org", title: decoded });
+      for (const i of imgs) if (!combined.find(c => c.url === i.url)) combined.push(i);
+      setImages(combined);
+      if (geo[0]) setCoords({ lat: geo[0].lat, lon: geo[0].lon });
+      setLoading(false);
+    })();
     return () => { cancelled = true; };
   }, [decoded]);
 
@@ -158,7 +138,7 @@ export default function DestinationDetail() {
             ))}
           </div>
         )}
-        <p className="mt-3 text-[11px] text-muted-foreground">Photos via Unsplash Search. Map data © OpenStreetMap contributors.</p>
+        <p className="mt-3 text-[11px] text-muted-foreground">Photos via Wikimedia Commons, Wikipedia. Map data © OpenStreetMap contributors.</p>
       </div>
 
       {lightbox !== null && images[lightbox] && (

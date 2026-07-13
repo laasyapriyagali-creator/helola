@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, ImageOff } from "lucide-react";
-import { FEATURED_DESTINATIONS, getPlaceSummary, getPlaceImages } from "@/lib/places";
+import { FEATURED_DESTINATIONS, getPlaceSummary } from "@/lib/places";
 
 interface DestCard {
   name: string;
@@ -21,25 +21,13 @@ export function DestinationsExplorer() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const initial = FEATURED_DESTINATIONS.map((d) => ({ ...d }));
-      if (!cancelled) setItems(initial);
-
-      for (const d of FEATURED_DESTINATIONS) {
-        if (cancelled) break;
-        try {
-          const [sum, imgs] = await Promise.all([
-            getPlaceSummary(d.query).catch(() => null),
-            getPlaceImages(d.query, 1).catch(() => []),
-          ]);
-          const image = imgs?.[0]?.thumb || imgs?.[0]?.url || sum?.image;
-          if (!cancelled) {
-            setItems((current) => current.map((item) => (
-              item.query === d.query ? { ...item, image, extract: sum?.extract } : item
-            )));
-          }
-        } catch { /* keep the destination card with its text fallback */ }
-      }
-      if (!cancelled) setLoading(false);
+      const enriched = await Promise.all(
+        FEATURED_DESTINATIONS.map(async (d) => {
+          const sum = await getPlaceSummary(d.query);
+          return { ...d, image: sum?.image, extract: sum?.extract };
+        }),
+      );
+      if (!cancelled) { setItems(enriched); setLoading(false); }
     })();
     return () => { cancelled = true; };
   }, []);
@@ -49,7 +37,7 @@ export function DestinationsExplorer() {
       <div className="mb-3 flex items-end justify-between">
         <div>
           <h2 className="font-display text-2xl font-semibold text-foreground">Real destinations</h2>
-          <p className="text-xs text-muted-foreground">Unsplash photos · Wikipedia info · OpenStreetMap data</p>
+          <p className="text-xs text-muted-foreground">Live photos & info from Wikipedia · OpenStreetMap</p>
         </div>
         <Link to="/destinations/search" className="text-xs font-semibold text-primary hover:underline">Search any place →</Link>
       </div>
@@ -66,8 +54,6 @@ export function DestinationsExplorer() {
                     src={d.image}
                     alt={`${d.name} — real photograph`}
                     loading="lazy"
-                    decoding="async"
-                    referrerPolicy="no-referrer"
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                   />

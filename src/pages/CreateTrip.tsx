@@ -10,9 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Users, ImageOff } from "lucide-react";
 import { PlaceSearchInput } from "@/components/PlaceSearchInput";
-import { getPlaceImages, getPlaceSummary } from "@/lib/places";
-import { formatPriceFromINR } from "@/lib/i18n";
-import { reportError } from "@/lib/reportError";
+import { getPlaceSummary } from "@/lib/places";
 
 const INTERESTS = ["Beach", "Mountains", "Adventure", "Culture", "Food", "Nightlife", "Wellness", "Wildlife", "Road Trip"];
 
@@ -42,12 +40,8 @@ export default function CreateTrip() {
   useEffect(() => { if (!loading && !user) navigate("/auth"); }, [user, loading, navigate]);
 
   async function loadPlaceMeta(name: string) {
-    const [sum, imgs] = await Promise.all([
-      getPlaceSummary(name),
-      getPlaceImages(name, 1).catch(() => []),
-    ]);
-    const image = imgs[0]?.thumb || imgs[0]?.url || sum?.image;
-    if (image) setCoverImage(image);
+    const sum = await getPlaceSummary(name);
+    if (sum?.image) setCoverImage(sum.image);
     if (sum?.extract) setPlaceBlurb(sum.extract);
   }
 
@@ -95,8 +89,7 @@ export default function CreateTrip() {
       toast({ title: "Trip created!", description: `${destination} is live. Share it with friends.` });
       navigate(`/trips/${data.id}`);
     } catch (err: unknown) {
-      reportError("src/pages/CreateTrip.tsx", err);
-      toast({ title: "Couldn't create trip", description: "Try again", variant: "destructive" });
+      toast({ title: "Couldn't create trip", description: err instanceof Error ? err.message : "Try again", variant: "destructive" });
     } finally {
       setBusy(false);
     }
@@ -108,7 +101,7 @@ export default function CreateTrip() {
         <ArrowLeft className="h-4 w-4" /> Back
       </button>
       <h1 className="font-display text-3xl font-bold md:text-4xl">Create a group trip</h1>
-      <p className="mt-1 text-sm text-muted-foreground">2 to 20 friendly faces. Share what makes it special.</p>
+      <p className="mt-1 text-sm text-muted-foreground">4 to 20 friendly faces. Share what makes it special.</p>
 
       <form onSubmit={submit} className="mt-6 max-w-2xl space-y-5">
         <Card className="border-border/60 shadow-soft"><CardContent className="space-y-4 p-5">
@@ -124,7 +117,7 @@ export default function CreateTrip() {
             {(coverImage || placeBlurb) && (
               <div className="mt-2 overflow-hidden rounded-xl border border-border bg-card">
                 {coverImage ? (
-                  <img src={coverImage} alt={`${destination} real photograph`} className="h-32 w-full object-cover md:h-40" referrerPolicy="no-referrer" />
+                  <img src={coverImage} alt={`${destination} real photograph`} className="h-32 w-full object-cover md:h-40" />
                 ) : (
                   <div className="flex h-32 w-full items-center justify-center bg-muted text-muted-foreground"><ImageOff className="h-5 w-5" /></div>
                 )}
@@ -151,8 +144,8 @@ export default function CreateTrip() {
               <span>Max members</span>
               <span className="flex items-center gap-1 text-primary"><Users className="h-4 w-4" /> {maxMembers}</span>
             </Label>
-            <input type="range" min={2} max={20} value={maxMembers} onChange={(e) => setMaxMembers(Number(e.target.value))} className="w-full accent-primary" />
-            <div className="flex justify-between text-xs text-muted-foreground"><span>2</span><span>20</span></div>
+            <input type="range" min={4} max={20} value={maxMembers} onChange={(e) => setMaxMembers(Number(e.target.value))} className="w-full accent-primary" />
+            <div className="flex justify-between text-xs text-muted-foreground"><span>4</span><span>20</span></div>
           </div>
         </CardContent></Card>
 
@@ -182,14 +175,14 @@ export default function CreateTrip() {
               { label: "Other", v: other, set: setOther },
             ].map(({ label, v, set }) => (
               <div key={label} className="space-y-2">
-                <Label>{label} <span className="text-[10px] font-normal text-muted-foreground">(INR — shown to travelers in their local currency)</span></Label>
+                <Label>{label} (₹)</Label>
                 <Input type="number" min={0} value={v} onChange={(e) => set(e.target.value === "" ? "" : Number(e.target.value))} placeholder="0" />
               </div>
             ))}
           </div>
           <div className="flex items-center justify-between rounded-xl bg-rose px-4 py-3">
             <span className="text-sm font-medium text-rose-foreground">Total per person</span>
-            <span className="font-display text-2xl font-bold text-primary">{formatPriceFromINR(total)}</span>
+            <span className="font-display text-2xl font-bold text-primary">₹{total.toLocaleString("en-IN")}</span>
           </div>
         </CardContent></Card>
 
