@@ -178,6 +178,177 @@ export async function searchPlaces(query: string, limit = 6): Promise<PlaceSugge
 
 
 
+// ─── Unsplash-powered destination images ────────────────────────────────────
+// Wikipedia is no longer used for images — only for text summaries.
+
+function cleanPlaceName(name: string): string {
+  return (name || "").split(",")[0].replace(/\([^)]*\)/g, "").trim();
+}
+
+// Deterministic seed so the random rotation is stable per-session-per-place
+// but different across destinations.
+function seedFromString(s: string): number {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function mulberry32(a: number) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffle<T>(arr: T[], seed: number): T[] {
+  const rand = mulberry32(seed);
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Hand-tuned themes — drives "landmarks / beaches / mountains / skylines"
+// search terms per destination. Falls back to a generic travel theme.
+const PLACE_THEMES: { match: RegExp; queries: string[] }[] = [
+  { match: /goa/i,                    queries: ["Goa beach", "Goa palolem", "Goa sunset"] },
+  { match: /manali|himachal/i,        queries: ["Manali snow mountains", "Himachal Pradesh landscape", "Himalayas village"] },
+  { match: /leh|ladakh/i,             queries: ["Ladakh landscape", "Leh monastery", "Pangong lake"] },
+  { match: /jaipur/i,                 queries: ["Jaipur hawa mahal", "Amber fort Jaipur", "Jaipur city palace"] },
+  { match: /udaipur/i,                queries: ["Udaipur lake palace", "Udaipur city", "Pichola lake"] },
+  { match: /munnar|kerala/i,          queries: ["Munnar tea plantation", "Kerala backwaters", "Alleppey houseboat"] },
+  { match: /andaman|port blair/i,     queries: ["Andaman beach", "Havelock island", "Radhanagar beach"] },
+  { match: /rishikesh|uttarakhand/i,  queries: ["Rishikesh ganga", "Rishikesh bridge", "Ganges aarti"] },
+  { match: /bali|denpasar/i,          queries: ["Bali rice terraces", "Bali temple", "Ubud Bali"] },
+  { match: /bangkok|thailand/i,       queries: ["Bangkok temple", "Bangkok skyline", "Wat Arun"] },
+  { match: /dubai/i,                  queries: ["Dubai skyline", "Burj Khalifa", "Dubai desert"] },
+  { match: /singapore/i,              queries: ["Singapore marina bay", "Singapore gardens", "Singapore skyline"] },
+  { match: /paris/i,                  queries: ["Paris Eiffel tower", "Paris street", "Louvre Paris"] },
+  { match: /tokyo/i,                  queries: ["Tokyo skyline", "Shibuya Tokyo", "Tokyo street night"] },
+  { match: /london/i,                 queries: ["London Big Ben", "Tower Bridge London", "London skyline"] },
+  { match: /new york/i,               queries: ["New York skyline", "Manhattan", "Brooklyn bridge"] },
+  { match: /mumbai/i,                 queries: ["Mumbai gateway of india", "Marine drive Mumbai", "Mumbai skyline"] },
+  { match: /delhi/i,                  queries: ["India gate Delhi", "Red Fort Delhi", "Humayun tomb"] },
+  { match: /bengaluru|bangalore/i,    queries: ["Bangalore city", "Lalbagh Bangalore", "Vidhana Soudha"] },
+  { match: /chennai/i,                queries: ["Chennai marina beach", "Chennai temple", "Mahabalipuram"] },
+  { match: /kolkata/i,                queries: ["Howrah bridge Kolkata", "Victoria memorial Kolkata", "Kolkata street"] },
+  { match: /hyderabad/i,              queries: ["Charminar Hyderabad", "Hyderabad city", "Golconda fort"] },
+  { match: /visakhapatnam|vizag/i,    queries: ["Visakhapatnam beach", "RK beach Vizag", "Araku valley"] },
+  { match: /bhubaneswar/i,            queries: ["Bhubaneswar temple", "Lingaraj temple", "Konark sun temple"] },
+];
+
+function buildQueriesFor(name: string): string[] {
+  const cleaned = cleanPlaceName(name);
+  const theme = PLACE_THEMES.find(t => t.match.test(cleaned));
+  if (theme) return theme.queries;
+  return [
+    `${cleaned} landmark`,
+    `${cleaned} skyline`,
+    `${cleaned} travel`,
+    `${cleaned} nature`,
+  ];
+}
+
+interface UnsplashPhoto {
+  id: string;
+  description: string | null;
+  alt_description: string | null;
+  urls: { full: string; regular: string; small: string; thumb: string };
+  links: { html: string };
+  user?: { name: string };
+}
+
+// Route Unsplash search through the edge-function proxy so the access key
+// stays server-side. Returns [] on any transport/error — callers already
+// tolerate empty results without falling back to a placeholder image.
+async function unsplashSearch(query: string, perPage = 12, orientation: "landscape" | "squarish" = "landscape"): Promise<UnsplashPhoto[]> {
+  try {
+    const { data, error } = await supabase.functions.invoke("unsplash-search", {
+      body: { query, per_page: perPage, orientation },
+    });
+    if (error) return [];
+    return ((data?.results ?? []) as UnsplashPhoto[]);
+  } catch { return []; }
+}
+
+function toPlaceImage(p: UnsplashPhoto, place: string): PlaceImage {
+  return {
+    url: p.urls.regular,
+    thumb: p.urls.small,
+    source: p.links.html,
+    title: p.alt_description || p.description || place,
+  };
+}
+
+export async function getPlaceSummary(name: string): Promise<{ extract: string; thumb?: string; image?: string } | null> {
+  let extract = "";
+  if (summaryTextCache.has(name)) {
+    extract = summaryTextCache.get(name) || "";
+  } else {
+    try {
+      const title = name.split(",")[0].trim();
+      const r = await safeFetch(`${WIKI_REST}/page/summary/${encodeURIComponent(title)}?redirect=true`);
+      if (r && r.ok) {
+        const d = await r.json();
+        if (d?.type !== "disambiguation") extract = d?.extract || "";
+      }
+    } catch { /* ignore */ }
+    summaryTextCache.set(name, extract || null);
+    saveSS("helola.placeExtract.v3", summaryTextCache);
+  }
+
+  const imgs = await getPlaceImages(name, 6);
+  const hero = imgs[0];
+  return { extract, image: hero?.url, thumb: hero?.thumb };
+}
+
+export async function getPlaceImages(name: string, limit = 12): Promise<PlaceImage[]> {
+  const cacheKey = `${cleanPlaceName(name).toLowerCase()}::${limit}`;
+  if (imagesCache.has(cacheKey)) return imagesCache.get(cacheKey)!;
+
+  const cleaned = cleanPlaceName(name);
+  const queries = buildQueriesFor(name);
+  const seed = seedFromString(cleaned.toLowerCase());
+
+  // Run up to 3 themed queries in parallel, merge results.
+  const batches = await Promise.all(queries.slice(0, 3).map(q => unsplashSearch(q, 12)));
+  let pool: UnsplashPhoto[] = ([] as UnsplashPhoto[]).concat(...batches);
+
+  // Dedupe by Unsplash id.
+  const byId = new Map<string, UnsplashPhoto>();
+  for (const p of pool) if (!byId.has(p.id)) byId.set(p.id, p);
+  pool = Array.from(byId.values());
+
+  // Prefer photos NOT already used by another destination.
+  const fresh = pool.filter(p => !usedImageIds.has(p.id));
+  const reused = pool.filter(p => usedImageIds.has(p.id));
+  let ordered = [...shuffle(fresh, seed), ...shuffle(reused, seed ^ 0x9e3779b9)];
+
+  // Fallback chain if pool is empty.
+  if (ordered.length === 0) {
+    const fb = await unsplashSearch(`${cleaned} travel`, 12);
+    ordered = shuffle(fb, seed);
+  }
+  if (ordered.length === 0) {
+    const fb = await unsplashSearch("travel destination landscape", 12);
+    ordered = shuffle(fb, seed);
+  }
+
+  const final = ordered.slice(0, limit).map(p => toPlaceImage(p, cleaned));
+
+  // Track usage globally so other destinations skip these ids.
+  for (const p of ordered.slice(0, limit)) usedImageIds.add(p.id);
+  saveSet("helola.usedImg.v3", usedImageIds);
+
+  imagesCache.set(cacheKey, final);
+  saveSS("helola.placeImages.v3", imagesCache);
+  return final;
+}
+
+
+
 // Curated, real-world destinations used as the default scrollable list.
 export const FEATURED_DESTINATIONS: { name: string; query: string; region: string; tagline: string }[] = [
   { name: "Goa", query: "Goa, India", region: "India", tagline: "Beach mornings & sunset shacks" },
