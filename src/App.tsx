@@ -26,9 +26,10 @@ const BookTickets = lazy(() => import("./pages/BookTickets"));
 const DestinationDetail = lazy(() => import("./pages/DestinationDetail"));
 const DestinationsSearch = lazy(() => import("./pages/DestinationsSearch"));
 const Moments = lazy(() => import("./pages/Moments"));
-const SecurityChecklist = lazy(() => import("./pages/SecurityChecklist"));
+
 const Notifications = lazy(() => import("./pages/Notifications"));
 const Settings = lazy(() => import("./pages/Settings"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
 
 const About = lazy(() => import("./pages/Legal").then((m) => ({ default: m.About })));
 const CommunityGuidelines = lazy(() => import("./pages/Legal").then((m) => ({ default: m.CommunityGuidelines })));
@@ -45,6 +46,7 @@ const BlockedUsersPage = lazy(() => settingsImport().then((m) => ({ default: m.B
 const ReportIssuePage = lazy(() => settingsImport().then((m) => ({ default: m.ReportIssuePage })));
 const NotificationsSettingsPage = lazy(() => settingsImport().then((m) => ({ default: m.NotificationsPage })));
 const PreferencesPage = lazy(() => settingsImport().then((m) => ({ default: m.PreferencesPage })));
+const PremiumSettings = lazy(() => import("./pages/settings/PremiumSettings"));
 
 // React Query defaults tuned for a high-traffic app: aggressive cache reuse,
 // no aggressive refetch storms, smarter retry policy.
@@ -78,8 +80,10 @@ const App = () => (
               <Routes>
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/chats/:tripId" element={<AppShell><ChatRoom /></AppShell>} />
                 <Route path="/" element={<AppShell><Index /></AppShell>} />
+                <Route path="/index" element={<AppShell><Index /></AppShell>} />
                 <Route path="/trips" element={<AppShell><MyTrips /></AppShell>} />
                 <Route path="/trips/new" element={<AppShell><CreateTrip /></AppShell>} />
                 <Route path="/trips/:id" element={<AppShell><TripDetails /></AppShell>} />
@@ -96,7 +100,7 @@ const App = () => (
                 <Route path="/legal/terms" element={<AppShell><Terms /></AppShell>} />
                 <Route path="/legal/community" element={<AppShell><CommunityGuidelines /></AppShell>} />
                 <Route path="/support" element={<AppShell><Support /></AppShell>} />
-                <Route path="/settings/security" element={<AppShell><SecurityChecklist /></AppShell>} />
+                
                 <Route path="/notifications" element={<AppShell><Notifications /></AppShell>} />
 
                 {/* Settings — full-screen */}
@@ -117,6 +121,7 @@ const App = () => (
                 <Route path="/settings/preferences/destinations" element={<PreferencesPage focusKey="destinations" />} />
                 <Route path="/settings/preferences/budget" element={<PreferencesPage focusKey="budget" />} />
                 <Route path="/settings/preferences/interests" element={<PreferencesPage focusKey="interests" />} />
+                <Route path="/settings/premium" element={<PremiumSettings />} />
 
                 <Route path="*" element={<NotFound />} />
               </Routes>

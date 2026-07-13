@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.get_memory_authors(uuid[]) TO authenticated;

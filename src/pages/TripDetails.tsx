@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Calendar, MapPin, Users, MessageCircle, Heart, Share2, Phone, Plane, Hotel, Cloud, ListChecks, ShieldAlert, Download, X, IndianRupee, Trash2, Pencil, AlertTriangle, ImageIcon } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Users, MessageCircle, Heart, Share2, Phone, Plane, Hotel, Cloud, ListChecks, ShieldAlert, Download, X, Wallet, Trash2, Pencil, AlertTriangle, ImageIcon } from "lucide-react";
 import { computeLiveStatus, statusLabel, statusToneClass, transportBanner } from "@/lib/tripStatus";
 import { EditItineraryDialog, type ItineraryItem } from "@/components/EditItineraryDialog";
 import { PlaceGalleryDialog } from "@/components/PlaceGalleryDialog";
@@ -16,6 +16,8 @@ import { PlaceAboutSection } from "@/components/PlaceAboutSection";
 import { TripImage } from "@/components/TripImage";
 import { HostCard } from "@/components/HostCard";
 import { friendlyJoinError } from "@/lib/joinErrors";
+import { formatPriceFromINR } from "@/lib/i18n";
+import { reportError } from "@/lib/reportError";
 
 interface Trip {
   id: string;
@@ -62,9 +64,15 @@ export default function TripDetails() {
     if (!id) return;
     (async () => {
       setLoading(true);
-      const { data: t } = await supabase.from("trips").select("*").eq("id", id).maybeSingle();
+      const { data: t } = await supabase
+        .from("trips")
+        .select("id,destination,description,start_date,end_date,max_members,price_per_person,cost_stay,cost_travel,cost_food,cost_other,interests,itinerary,stay_details,travel_details,important_notes,coordinator_name,status,creator_id")
+        .eq("id", id)
+        .maybeSingle();
       if (!t) { setLoading(false); return; }
-      setTrip(t as unknown as Trip);
+      // coordinator_contact is column-restricted; fetch via secure RPC (returns null for non-members)
+      const { data: contact } = await supabase.rpc("get_trip_coordinator_contact", { _trip_id: id });
+      setTrip({ ...(t as any), coordinator_contact: (contact as string | null) ?? null } as unknown as Trip);
       document.title = `${t.destination} · HELOLA Trips`;
 
       // Fetch host (trip creator) profile in parallel with member list.
@@ -138,7 +146,8 @@ export default function TripDetails() {
     if (!user || !trip) return;
     if (!confirm("Delete this trip? This can't be undone.")) return;
     const { error } = await supabase.from("trips").delete().eq("id", trip.id);
-    if (error) return toast({ title: "Couldn't delete", description: error.message, variant: "destructive" });
+    reportError("src/pages/TripDetails.tsx", error);
+    if (error) return toast({ title: "Couldn't delete", description: "Please try again in a moment.", variant: "destructive" });
     toast({ title: "Trip deleted" });
     navigate("/trips");
   };
@@ -152,7 +161,7 @@ export default function TripDetails() {
 
   const start = new Date(trip.start_date);
   const end = new Date(trip.end_date);
-  const dateLabel = `${start.toLocaleDateString("en-IN", { month: "long", day: "numeric" })} – ${end.toLocaleDateString("en-IN", { month: "long", day: "numeric", year: "numeric" })}`;
+  const dateLabel = `${start.toLocaleDateString(undefined, { month: "long", day: "numeric" })} – ${end.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}`;
   const total = Number(trip.cost_stay) + Number(trip.cost_travel) + Number(trip.cost_food) + Number(trip.cost_other);
   const itinerary = (Array.isArray(trip.itinerary) && trip.itinerary.length ? trip.itinerary : DEFAULT_ITINERARY);
   const liveStatus = computeLiveStatus(trip);
@@ -256,7 +265,7 @@ export default function TripDetails() {
         </Section>
 
         {/* Cost breakdown */}
-        <Section title="Cost breakdown" icon={<IndianRupee className="h-4 w-4" />}>
+        <Section title="Cost breakdown" icon={<Wallet className="h-4 w-4" />}>
           <div className="space-y-2">
             {[
               ["Stay", trip.cost_stay], ["Travel", trip.cost_travel],
@@ -264,12 +273,12 @@ export default function TripDetails() {
             ].map(([label, v]) => (
               <div key={label as string} className="flex items-center justify-between border-b border-dashed border-border py-1.5 text-sm">
                 <span className="text-foreground/70">{label}</span>
-                <span className="font-medium">₹{Number(v).toLocaleString("en-IN")}</span>
+                <span className="font-medium">{formatPriceFromINR(Number(v))}</span>
               </div>
             ))}
             <div className="flex items-center justify-between pt-2">
               <span className="font-semibold">Total per person</span>
-              <span className="font-display text-2xl font-bold text-primary">₹{total.toLocaleString("en-IN")}</span>
+              <span className="font-display text-2xl font-bold text-primary">{formatPriceFromINR(total)}</span>
             </div>
           </div>
         </Section>
@@ -329,8 +338,8 @@ export default function TripDetails() {
         <Section title="Stay details" icon={<Hotel className="h-4 w-4" />}>
           <KV k="Hotel" v={trip.stay_details?.hotel ?? "To be confirmed"} />
           <KV k="Room" v={trip.stay_details?.room ?? "Twin sharing"} />
-          <KV k="Check-in" v={trip.stay_details?.checkin ?? start.toLocaleDateString("en-IN")} />
-          <KV k="Check-out" v={trip.stay_details?.checkout ?? end.toLocaleDateString("en-IN")} />
+          <KV k="Check-in" v={trip.stay_details?.checkin ?? start.toLocaleDateString(undefined)} />
+          <KV k="Check-out" v={trip.stay_details?.checkout ?? end.toLocaleDateString(undefined)} />
         </Section>
 
         {/* Travel */}

@@ -147,7 +147,7 @@ function TripRow({ t, count, done }: { t: MyTrip & { live: LiveStatus }; count: 
           <div className={`flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-2xl ${done ? "bg-success text-success-foreground" : "bg-primary text-primary-foreground"}`}>
             {done ? <CheckCircle2 className="h-6 w-6" /> : (
               <>
-                <span className="text-[10px] font-semibold uppercase tracking-wide">{start.toLocaleDateString("en-IN", { month: "short" })}</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide">{start.toLocaleDateString(undefined, { month: "short" })}</span>
                 <span className="font-display text-2xl font-bold leading-none">{start.getDate()}</span>
               </>
             )}
@@ -159,7 +159,7 @@ function TripRow({ t, count, done }: { t: MyTrip & { live: LiveStatus }; count: 
             </div>
             <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
               <Calendar className="h-3 w-3" />
-              {start.toLocaleDateString("en-IN", { month: "long", day: "numeric", year: "numeric" })}
+              {start.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}
             </p>
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
               <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.cls}`}>

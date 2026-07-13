@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { ImagePlus, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 import { PhotoEditorDialog } from "./PhotoEditorDialog";
+import { reportError } from "@/lib/reportError";
 
 const MAX_PHOTOS = 10;
 
@@ -133,7 +134,8 @@ export function CreateMemoryDialog({ open, onOpenChange, onCreated }: Props) {
       reset();
       onCreated();
     } catch (e: any) {
-      toast({ title: "Couldn't share", description: e.message, variant: "destructive" });
+      reportError("src/components/CreateMemoryDialog.tsx", e);
+      toast({ title: "Couldn't share", description: "Please try again in a moment.", variant: "destructive" });
     } finally { setBusy(false); }
   }
 

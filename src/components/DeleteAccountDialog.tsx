@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
+import { reportError } from "@/lib/reportError";
 
 interface Props {
   open: boolean;
@@ -29,7 +30,8 @@ export function DeleteAccountDialog({ open, onOpenChange }: Props) {
     const { error } = await supabase.rpc("request_account_deletion");
     setBusy(false);
     if (error) {
-      toast({ title: "Couldn't schedule deletion", description: error.message, variant: "destructive" });
+      reportError("src/components/DeleteAccountDialog.tsx", error);
+      toast({ title: "Couldn't schedule deletion", description: "Please try again in a moment.", variant: "destructive" });
       return;
     }
     toast({
@@ -51,8 +53,9 @@ export function DeleteAccountDialog({ open, onOpenChange }: Props) {
               <DialogTitle className="flex items-center gap-2 text-destructive">
                 <AlertTriangle className="h-5 w-5" /> Are you sure you want to delete the account?
               </DialogTitle>
-              <DialogDescription>
-                This will start the account deletion process.
+              <DialogDescription className="space-y-2 text-foreground/80">
+                <span className="block">Your profile, trips, moments, messages, saved places, and uploaded photos will be permanently deleted.</span>
+                <span className="block">You have <strong>30 days</strong> to sign in and restore your account before everything is erased forever.</span>
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="gap-2 sm:gap-2">

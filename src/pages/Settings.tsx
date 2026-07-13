@@ -2,14 +2,16 @@ import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Settings as SettingsIcon, Lock, Bell, Heart, FileText, UserCircle2, ChevronRight, LogOut, Trash2 } from "lucide-react";
+import { ArrowLeft, Settings as SettingsIcon, Lock, Bell, Heart, FileText, UserCircle2, ChevronRight, LogOut, Trash2, Crown } from "lucide-react";
 import { useState } from "react";
 import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
+import { usePremium, planById, formatDate } from "@/lib/premium";
 
 export default function Settings() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const { sub, isPremium } = usePremium();
 
   useEffect(() => { document.title = "Settings · HELOLA"; }, []);
 
@@ -28,6 +30,29 @@ export default function Settings() {
       </header>
 
       <div className="mx-auto max-w-2xl space-y-10 px-4 py-6 md:px-8">
+        {isPremium && sub && (
+          <section>
+            <div className="mb-2 flex items-center gap-2 text-primary">
+              <Crown className="h-4 w-4" />
+              <h3 className="font-sans text-base font-semibold tracking-tight">Helola Premium</h3>
+            </div>
+            <Link
+              to="/settings/premium"
+              className="relative flex items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary to-[#3d0016] p-4 text-primary-foreground shadow-elegant"
+            >
+              <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-amber-300/20 blur-2xl" />
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-300/20">
+                <Crown className="h-5 w-5 text-amber-300" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-200">Premium Member</p>
+                <p className="text-sm font-semibold">{planById(sub.plan).name} · Renews {formatDate(sub.renewal_date)}</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-primary-foreground/80" />
+            </Link>
+          </section>
+        )}
+
         <Section title="My account" icon={<SettingsIcon className="h-4 w-4" />}>
           <NavRow to="/settings/account" label="Account information" hint="Username, display name, email, phone" />
           <Divider />
@@ -42,8 +67,6 @@ export default function Settings() {
           <NavRow to="/settings/blocked" label="Blocked users" />
           <Divider />
           <NavRow to="/settings/report" label="Report issues" />
-          <Divider />
-          <NavRow to="/settings/security" label="Security checklist" hint="See which scan findings apply to this app" />
         </Section>
 
         <Section title="Notifications" icon={<Bell className="h-4 w-4" />}>
