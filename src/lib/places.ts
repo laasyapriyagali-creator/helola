@@ -338,6 +338,11 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
 
   const final = ordered.slice(0, limit).map(p => toPlaceImage(p, cleaned));
 
+  // Do not cache empty results — a transient Unsplash/edge-function failure
+  // must not poison the session and blank every destination card until the
+  // tab is closed. Next call will retry the themed + fallback searches.
+  if (final.length === 0) return final;
+
   // Track usage globally so other destinations skip these ids.
   for (const p of ordered.slice(0, limit)) usedImageIds.add(p.id);
   saveSet("helola.usedImg.v3", usedImageIds);
@@ -345,6 +350,7 @@ export async function getPlaceImages(name: string, limit = 12): Promise<PlaceIma
   imagesCache.set(cacheKey, final);
   saveSS("helola.placeImages.v3", imagesCache);
   return final;
+
 }
 
 
